@@ -18,3 +18,8 @@ Compare with:
 | [4] HRL-GRG      | 0.25      | 90       | 30       | 90  | n/a                                                  | n/a                  |                |
 | [5] ALFRED       | 0.25      | 90       | 15       | 90  | Put, Pickup, Open, Close, ToggleOn, ToggleOff, Slice | 1.5m                 |                |
 | ours             | 0.25      | 45       | 30       | 90  | open, close                                          | 1.5m                 |                |
+
+
+## Setting up baselines
+
+### IQA
