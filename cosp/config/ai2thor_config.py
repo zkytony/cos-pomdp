@@ -15,6 +15,9 @@ AGENT_MODE = "default"   # from official doc: For iTHOR, it is often safest to s
 IMAGE_WIDTH = 600
 IMAGE_HEIGHT = 600
 
+RENDER_DEPTH = True
+RENDER_INSTANCE_SEGMENTATION = True
+
 # Need in order to not stuck the agent for sub-90 degree rotation.
 # BUT, it actually DOES NOT WORK
 CONTINUOUS = True

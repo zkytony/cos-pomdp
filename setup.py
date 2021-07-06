@@ -10,6 +10,7 @@ setup(name='cos-pomdp',
       python_requires='>3.6',
       install_requires=[
           'ai2thor==3.3.2',
+          'pomdp_py'
       ],
       author='Kaiyu Zheng',
       author_email='kaiyutony@gmail.com'
