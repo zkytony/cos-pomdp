@@ -1,1 +1,1 @@
-from cosp.experiments.framework import TaskEnv
+from cosp.framework import TaskEnv, Agent, Method

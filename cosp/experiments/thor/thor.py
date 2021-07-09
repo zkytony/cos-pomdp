@@ -2,7 +2,8 @@ import pomdp_py
 import ai2thor
 import ai2thor.util.metrics as metrics
 from cosp import TaskEnv
-from sciex import Result, PklResult
+from . import utils
+from cosp.utils.math import euclidean_dist
 
 class ThorEnv(TaskEnv):
     def __init__(self, controller):
@@ -24,17 +25,17 @@ class ThorObjectSearch(ThorEnv):
     This represents the environment of running a single object search task.
     """
     def __init__(self, controller,
-                 target_type, target,
+                 task_type, target,
                  goal_distance=1.0):
         """
-        If target_type is "class", then target is an object type.
-        If target_type is "object", then target is an object ID.
+        If task_type is "class", then target is an object type.
+        If task_type is "object", then target is an object ID.
         """
-        if self.target_type not in {"class", "object"}:
-            raise ValueError("Invalid target type: {}".format(self.target_type))
+        if self.task_type not in {"class", "object"}:
+            raise ValueError("Invalid target type: {}".format(self.task_type))
         super().__init__(controller)
         self.target = target
-        self.target_type = target_type
+        self.task_type = task_type
         self.goal_distance = goal_distance
 
 
@@ -56,7 +57,7 @@ class ThorObjectSearch(ThorEnv):
            result for individual trials, namely, the path length, shortest path length,
            and success
         """
-        if self.target_type == "class":
+        if self.task_type == "class":
             shortest_path = metrics.get_shortest_path_to_object_type(
                 self.controller, self.target,
                 self.init_state.position, init_rotation=self.init_state.rotation)
@@ -75,32 +76,17 @@ class ThorObjectSearch(ThorEnv):
         """
         raise NotImplementedError
 
-
-class SingleSPLResult(PklResult):
-    def __init__(self, shortest_path, actual_path, success):
-        shortest_path_distance = metrics.path_distance(shortest_path)
-        actual_path_distance = metrics.path_distance(actual_path)
-        super().__init__({
-            "shortest_path": shortest_path,
-            "shortest_path_distance": shortest_path_distance,
-            "actual_path": actual_path,
-            "actual_path_distance": shortest_path_distance
-        })
-    @classmethod
-    def FILENAME(cls):
-        return "paths.pkl"
-
-
-class HistorySPLResult(PklResult):
-    def __init__(self, history):
-        """
-        History is a list of (s, a, o, r) tuples
-        """
-        super().__init__(history)
-    @classmethod
-    def FILENAME(cls):
-        return "history.pkl"
-
-
-class ThorAgent(Agent):
-    pass
+    def done(self):
+        event = self.controller.step(action="Pass")
+        visible_objects = utils.thor_visible_objects(event)
+        agent_position = thor_agent_position(event)
+        for obj in visible_objects:
+            if self.task_type == "class":
+                if obj["objectType"] == self.target:
+                    if euclidean_dist(obj["position"], agent_position) <= self.goal_distance:
+                        return True
+            else:
+                if obj["objectId"] == self.target:
+                    if euclidean_dist(obj["position"], agent_position) <= self.goal_distance:
+                        return True
+        return False
