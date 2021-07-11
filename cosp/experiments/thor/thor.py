@@ -1,7 +1,7 @@
 import pomdp_py
 import ai2thor
 import ai2thor.util.metrics as metrics
-from cosp import TaskEnv
+from cosp import TaskEnv, Agent
 from . import utils
 from cosp.utils.math import euclidean_dist
 
@@ -20,6 +20,12 @@ class ThorEnv(TaskEnv):
     def done(self, action):
         event = self.controller.step(action.name, **action.params)
 
+
+class ThorAgent(Agent):
+    pass
+
+
+############# Object Search ##################
 class ThorObjectSearch(ThorEnv):
     """
     This represents the environment of running a single object search task.

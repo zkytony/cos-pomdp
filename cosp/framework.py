@@ -18,7 +18,11 @@ class TaskEnv:
 
 class Agent:
     """Agent acting in the world."""
-    pass
+    def act():
+        pass
+
+    def update(self, observation, reward):
+        pass
 
 
 class Method:

@@ -24,6 +24,11 @@ CONTINUOUS = True
 SNAP_TO_GRID = not CONTINUOUS
 
 #------------------------------------------------------------------------------
+# Ai2thor parameters related to object search
+GOAL_DISTANCE = 1.0
+MAX_STEPS = 100
+
+#------------------------------------------------------------------------------
 # Ai2Thor spawning
 
 # When enabled, the scene will attempt to randomize all moveable objects outside
@@ -259,14 +264,11 @@ SCATTER_GRANULARITY = GRID_SIZE*2
 TRAIN_TIME = 90  # 90 seconds to play around in the home
 TEST_TIME = 180   # 180 seconds to search for the object
 
-
-def load_config():
-    # Load config defined in this file as a dictionary
-    config = {}
-    for k, v in globals().items():
-        if k.startswith("__"):
-            continue
-        if callable(eval(k)):
-            continue
-        config[k] = v
-    return config
+# Create config defined in this file as a dictionary
+CONFIG = {}
+for k, v in globals().items():
+    if k.startswith("__"):
+        continue
+    if callable(eval(k)):
+        continue
+    CONFIG[k] = v
