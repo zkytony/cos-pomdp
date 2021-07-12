@@ -265,10 +265,13 @@ TRAIN_TIME = 90  # 90 seconds to play around in the home
 TEST_TIME = 180   # 180 seconds to search for the object
 
 # Create config defined in this file as a dictionary
-CONFIG = {}
-for k, v in globals().items():
-    if k.startswith("__"):
-        continue
-    if callable(eval(k)):
-        continue
-    CONFIG[k] = v
+def _load_config():
+    config = {}
+    for k, v in globals().items():
+        if k.startswith("__"):
+            continue
+        if callable(eval(k)):
+            continue
+        config[k] = v
+    return config
+CONFIG = _load_config()

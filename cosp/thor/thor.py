@@ -22,7 +22,7 @@ class ThorEnv(TaskEnv):
 
 
 class ThorAgent(Agent):
-    def act():
+    def act(self):
         pass
 
     def update(self, observation, reward):
@@ -41,8 +41,8 @@ class ThorObjectSearch(ThorEnv):
         If task_type is "class", then target is an object type.
         If task_type is "object", then target is an object ID.
         """
-        if self.task_type not in {"class", "object"}:
-            raise ValueError("Invalid target type: {}".format(self.task_type))
+        if task_type not in {"class", "object"}:
+            raise ValueError("Invalid target type: {}".format(task_type))
         super().__init__(controller)
         self.target = target
         self.task_type = task_type

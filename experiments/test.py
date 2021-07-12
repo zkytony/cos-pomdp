@@ -1,17 +1,15 @@
 # Note:
-from .trial import ThorTrial
-from . import constants
+from cosp.thor.trial import ThorTrial
+from cosp.thor import constants
 
 
 def test_out_optimal_agent():
     target = "Apple"
     task_type = "class"
 
-    constants.load_config()
-
     thor_config = {**constants.CONFIG, **{"scene": "FloorPlan1"}}
     config = {
-        "thor_config": thor_config,
+        "thor": thor_config,
         "max_steps": 100,
         "task_env": "ThorObjectSearch",
         "task_env_config": {
@@ -27,5 +25,5 @@ def test_out_optimal_agent():
     trial.run(logging=True)
 
 
-# if __name__ == "__main__":
-#     test_out_optimal_agent()
+if __name__ == "__main__":
+    test_out_optimal_agent()
