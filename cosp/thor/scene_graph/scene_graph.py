@@ -94,6 +94,7 @@ def build_scene_graph(controller, actions, outputfile, **dump_params):
         outputfile (fileobject): file to save this graph
     """
     pose_to_node = {}
+    poses_to_edge = {}
     nodes = {}
     edges = {}
     worklist = deque([])
@@ -126,11 +127,17 @@ def build_scene_graph(controller, actions, outputfile, **dump_params):
                 pose_to_node[new_pose] = new_nid
                 new_position, new_rotation = new_pose
                 nodes[new_nid] = PoseNode(new_nid, new_position, new_rotation)
-                # Add edge
+
+            # Add edge
+            if (pose, new_pose) not in poses_to_edge\
+               and (new_pose, pose) not in poses_to_edge:
                 eid = len(edges)
                 new_node = nodes[new_nid]
                 edge = ActionEdge(eid, node, new_node, action)
                 edges[eid] = edge
+                poses_to_edge[(pose, new_pose)] = eid
+        # Printing progress information
+        print("|V|: {} ; |E|: {}".format(len(nodes), len(edges)), end="\r", flush=True)
 
     graph = SceneGraph(controller.scene.split("_")[0], edges)
     graph.save(outputfile, **dump_params)
