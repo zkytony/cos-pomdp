@@ -46,7 +46,7 @@ class SceneGraph(Graph):
         self.scene = scene
         super().__init__(edges)
 
-    def save(self, outputfile):
+    def save(self, outputfile, **dump_params):
         nodes = []
         for nid in self.nodes:
             node = self.nodes[nid]
@@ -56,13 +56,14 @@ class SceneGraph(Graph):
         edges = []
         for eid in self.edges:
             edge = self.edges[eid]
+            node1, node2 = edge.nodes
             edges.append({"edge_id": eid,
-                          "node_id1": edge.node1.id,
-                          "node_id2": edge.node2.id,
+                          "node_id1": node1.id,
+                          "node_id2": node2.id,
                           "action": edge.action.to_json()})
         json.dump({"nodes": nodes,
                    "edges": edges,
-                   "scene": self.scene}, outputfile)
+                   "scene": self.scene}, outputfile, **dump_params)
 
 
     @classmethod
@@ -85,7 +86,7 @@ class SceneGraph(Graph):
         return SceneGraph(obj["scene"], edges)
 
 
-def build_scene_graph(controller, actions, outputfile):
+def build_scene_graph(controller, actions, outputfile, **dump_params):
     """
     Args:
         controller (ai2thor.Controller)
@@ -105,6 +106,7 @@ def build_scene_graph(controller, actions, outputfile):
 
     while len(worklist) > 0:
         pose = worklist.pop()
+        node = nodes[pose_to_node[pose]]
         position, rotation = pose
         x, y, z = position
         pitch, yaw, roll = rotation
@@ -126,10 +128,10 @@ def build_scene_graph(controller, actions, outputfile):
                 nodes[new_nid] = PoseNode(new_nid, new_position, new_rotation)
                 # Add edge
                 eid = len(edges)
-                edge = ActionEdge(eid, pose_to_node[pose], new_nid, action)
+                new_node = nodes[new_nid]
+                edge = ActionEdge(eid, node, new_node, action)
                 edges[eid] = edge
 
-    graph = SceneGraph(edges)
-    import pdb; pdb.set_trace()
-    graph.save(outputfile)
+    graph = SceneGraph(controller.scene.split("_")[0], edges)
+    graph.save(outputfile, **dump_params)
     return graph

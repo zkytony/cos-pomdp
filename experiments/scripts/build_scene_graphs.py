@@ -14,7 +14,7 @@ def main():
     with open(os.path.join(outdir, "graph-{}.json".format(trial.scene)), "w")as f:
         graph = build_scene_graph(controller,
                                   build_object_search_movements(),
-                                  f)
+                                  f, indent=4)
 
 
 if __name__ == "__main__":
