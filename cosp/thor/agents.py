@@ -1,8 +1,19 @@
-from . import ThorAgent
+import ai2thor
+from ai2thor.util.metrics import get_shortest_path_to_object,\
+    get_shortest_path_to_object_type
 
+from .utils import thor_agent_pose
+from ..framework import Agent
+
+class ThorAgent(Agent):
+    def act(self):
+        pass
+
+    def update(self, observation, reward):
+        pass
 
 class ThorObjectSearchAgent(ThorAgent):
-    pass
+    AGENT_USES_CONTROLLER = False
 
 
 class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
@@ -20,6 +31,30 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
 
     We will actually consider CONTINUOUS underlying state space. But the
     actions are discrete. How to solve this path search problem?
+
+    ... Well, turns out we can just use ai2thor's built-in method.
     """
-    def __init__(self):
-        pass
+
+    # Because this agent is not realistic, we permit it to have
+    # access to the controller.
+    AGENT_USES_CONTROLLER = True
+
+    def __init__(self, controller, target, task_type):
+        self.controller = controller
+        self.target = target
+        self.task_type = task_type
+
+        # Compute the shortest path
+        position, rotation = thor_agent_pose(self.controller)
+        if task_type == "class":
+            path = get_shortest_path_to_object_type(controller,
+                                                    self.target,
+                                                    initial_position=position,
+                                                    initial_rotation=rotation)
+        else:
+            path = get_shortest_path_to_object(self.controller,
+                                               target,
+                                               initial_position=position,
+                                               initial_rotation=rotation)
+        print(position, rotation)
+        print(path)

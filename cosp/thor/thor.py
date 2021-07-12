@@ -1,9 +1,11 @@
 import pomdp_py
 import ai2thor
 import ai2thor.util.metrics as metrics
-from cosp import TaskEnv, Agent
+
 from . import utils
-from cosp.utils.math import euclidean_dist
+from ..framework import TaskEnv
+from ..utils.math import euclidean_dist
+
 
 class ThorEnv(TaskEnv):
     def __init__(self, controller):
@@ -20,13 +22,6 @@ class ThorEnv(TaskEnv):
     def done(self, action):
         event = self.controller.step(action.name, **action.params)
 
-
-class ThorAgent(Agent):
-    def act(self):
-        pass
-
-    def update(self, observation, reward):
-        pass
 
 
 # ------------- Object Search ------------- #
@@ -89,7 +84,7 @@ class ThorObjectSearch(ThorEnv):
     def done(self):
         event = self.controller.step(action="Pass")
         visible_objects = utils.thor_visible_objects(event)
-        agent_position = thor_agent_position(event)
+        agent_position = utils.thor_agent_position(event)
         for obj in visible_objects:
             if self.task_type == "class":
                 if obj["objectType"] == self.target:

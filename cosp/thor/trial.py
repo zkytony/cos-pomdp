@@ -4,6 +4,8 @@ from ai2thor.controller import Controller
 # Import everything related to thor and its agents
 from .thor import *
 from .agents import *
+from . import constants
+from .actions import ThorAction
 
 class ThorTrial(Trial):
 
@@ -39,7 +41,11 @@ class ThorTrial(Trial):
     def run(self, logging=False):
         controller = self._start_controller()
         task_env = eval(self.config["task_env"])(controller, **self.config["task_env_config"])
-        agent = eval(self.config["agent_class"])(**self.config["agent_config"])
+        agent_class = eval(self.config["agent_class"])
+        if agent_class.AGENT_USES_CONTROLLER:
+            agent = agent_class(controller, **self.config["agent_config"])
+        else:
+            agent = agent_class(**self.config["agent_config"])
 
         max_steps = self.config["max_steps"]
         for i in range(max_steps):
@@ -58,3 +64,40 @@ class ThorTrial(Trial):
                 break
         results = task_env.compute_results()
         return results
+
+    @property
+    def scene(self):
+        return self.config["thor"]["scene"]
+
+
+def build_object_search_trial(target, task_type, max_steps=100):
+    """
+    Returns a ThorTrial for object search.
+    """
+    task_config = {
+        "task_type": task_type,
+        "target": target,
+    }
+
+    thor_config = {**constants.CONFIG, **{"scene": "FloorPlan1"}}
+    config = {
+        "thor": thor_config,
+        "max_steps": max_steps,
+        "task_env": "ThorObjectSearch",
+        "task_env_config": {**task_config, **{"goal_distance": constants.GOAL_DISTANCE}},
+        "agent_class": "ThorObjectSearchOptimalAgent",
+        "agent_config": task_config
+    }
+
+    trial = ThorTrial("test_optimal", config, verbose=True)
+    return trial
+
+
+def build_object_search_movements():
+    """
+    Returns a list of object search movement actions
+    """
+    actions = []
+    for move_name in constants.MOVEMENT_PARAMS:
+        actions.append(ThorAction(move_name, constants.MOVEMENT_PARAMS[move_name]))
+    return actions
