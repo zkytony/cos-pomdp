@@ -9,7 +9,7 @@ setup(name='cos-pomdp',
       description='COS-POMDP',
       python_requires='>3.6',
       install_requires=[
-          'ai2thor==3.3.2',
+          'ai2thor==3.3.4',
           'pomdp_py'
       ],
       author='Kaiyu Zheng',

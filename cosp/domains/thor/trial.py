@@ -1,5 +1,5 @@
 from sciex import Trial, Event
-from ai2thor import Controller
+import ai2thor
 
 class ThorTrial(Trial):
 
@@ -14,7 +14,7 @@ class ThorTrial(Trial):
 
     def _start_controller(self):
         thor_config = self.config["thor"]
-        controller = Controller(
+        controller = ai2thor.Controller(
             scene=thor_config["scene"],
             agentMode=thor_config["AGENT_MODE"],
             gridSize=thor_config["GRID_SIZE"],

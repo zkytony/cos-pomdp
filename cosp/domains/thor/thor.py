@@ -22,10 +22,14 @@ class ThorEnv(TaskEnv):
 
 
 class ThorAgent(Agent):
-    pass
+    def act():
+        pass
+
+    def update(self, observation, reward):
+        pass
 
 
-############# Object Search ##################
+# ------------- Object Search ------------- #
 class ThorObjectSearch(ThorEnv):
     """
     This represents the environment of running a single object search task.

@@ -1,8 +1,7 @@
+# Note:
+from .trial import ThorTrial
 from . import constants
-from .agent import *
-from .trial import *
-from .thor import *
-from .utils import *
+
 
 def test_out_optimal_agent():
     target = "Apple"
@@ -27,5 +26,6 @@ def test_out_optimal_agent():
     trial = ThorTrial("test_optimal", config, verbose=True)
     trial.run(logging=True)
 
-if __name__ == "__main__":
-    test_out_optimal_agent()
+
+# if __name__ == "__main__":
+#     test_out_optimal_agent()
