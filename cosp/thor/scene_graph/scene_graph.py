@@ -88,6 +88,9 @@ class SceneGraph(Graph):
 
 def build_scene_graph(controller, actions, outputfile, **dump_params):
     """
+    Warning: this is very slow. It takes several hours to build a graph for a single scene,
+    due to all the Unity processing.
+
     Args:
         controller (ai2thor.Controller)
         actions (list): List of (movement) Action objects

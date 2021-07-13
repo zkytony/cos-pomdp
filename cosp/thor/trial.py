@@ -50,9 +50,9 @@ class ThorTrial(Trial):
         max_steps = self.config["max_steps"]
         for i in range(max_steps):
             action = agent.act()
-            observation, reward = task_env.execute(action)
-            agent.update(observation, reward)
-            planner.update(observation, reward)
+            observation = task_env.execute(action)
+            agent.update(action, observation)
+            planner.update(action, observation)
 
             _step_info = task_env.get_step_info(step=i)
             if logging:

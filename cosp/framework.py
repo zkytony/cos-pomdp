@@ -21,7 +21,7 @@ class Agent:
     def act():
         pass
 
-    def update(self, observation, reward):
+    def update(self, action, observation):
         pass
 
 

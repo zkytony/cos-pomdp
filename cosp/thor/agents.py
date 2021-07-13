@@ -56,5 +56,10 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
                                                target,
                                                initial_position=position,
                                                initial_rotation=rotation)
-        print(position, rotation)
-        print(path)
+        self.path = path
+
+    def act():
+        pass
+
+    def update(self, action, observation):
+        pass

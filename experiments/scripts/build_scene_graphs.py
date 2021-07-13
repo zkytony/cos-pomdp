@@ -1,3 +1,7 @@
+"""
+Warning: This is very slow. It takes several hours to build a graph for a single scene,
+due to all the Unity processing.
+"""
 import os
 
 from cosp.thor.scene_graph import build_scene_graph
