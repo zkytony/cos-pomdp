@@ -36,7 +36,11 @@ class ActionEdge(Edge):
         super().__init__(self, node1, node2, action)
 
 
-class SceneGraph(Graph):
+class NavTopoMap(Graph):
+    """
+    NavTopoMap: a graph where nodes are poses, and edges are navigation actions.
+    """
+
     def __init__(self, scene, edges):
         """
         Args:
@@ -83,7 +87,7 @@ class SceneGraph(Graph):
                               ThorAction.from_json(eobj["action"]))
 
             edges[edge.id] = edge
-        return SceneGraph(obj["scene"], edges)
+        return NavTopoMap(obj["scene"], edges)
 
 
 def build_scene_graph(controller, actions, outputfile, **dump_params):
@@ -145,3 +149,6 @@ def build_scene_graph(controller, actions, outputfile, **dump_params):
     graph = SceneGraph(controller.scene.split("_")[0], edges)
     graph.save(outputfile, **dump_params)
     return graph
+
+
+def build_graph()

@@ -2,10 +2,11 @@ from sciex import Trial, Event
 from ai2thor.controller import Controller
 
 # Import everything related to thor and its agents
-from .thor import *
+from .task import *
 from .agents import *
-from . import constants
 from .actions import ThorAction
+import thortils.constants as defaults
+import thortils
 
 class ThorTrial(Trial):
 
@@ -19,23 +20,7 @@ class ThorTrial(Trial):
         super().__init__(name, config, verbose=verbose)
 
     def _start_controller(self):
-        thor_config = self.config["thor"]
-        controller = Controller(
-            scene=thor_config["scene"],
-            agentMode=thor_config["AGENT_MODE"],
-            gridSize=thor_config["GRID_SIZE"],
-            visibilityDistance=thor_config["VISIBILITY_DISTANCE"],
-            snapToGrid=thor_config["SNAP_TO_GRID"],
-            renderDepthImage=thor_config["RENDER_DEPTH"],
-            renderInstanceSegmentation=thor_config["RENDER_INSTANCE_SEGMENTATION"],
-            width=thor_config["IMAGE_WIDTH"],
-            height=thor_config["IMAGE_HEIGHT"],
-            fieldOfView=thor_config["FOV"],
-            rotateStepDegrees=thor_config["H_ROTATION"],
-            x_display=thor_config.get("x_display", None),
-            host=thor_config.get("host", "127.0.0.1"),
-            port=thor_config.get("port", 0),
-            headless=thor_config.get("headless", False))
+        controller = thortils.launch_controller(self.config["thor"])
         return controller
 
     def run(self, logging=False):
@@ -70,7 +55,7 @@ class ThorTrial(Trial):
         return self.config["thor"]["scene"]
 
 
-def build_object_search_trial(target, task_type, max_steps=100):
+def build_object_search_trial(target, task_type, max_steps=100, **kwargs):
     """
     Returns a ThorTrial for object search.
     """
@@ -79,7 +64,8 @@ def build_object_search_trial(target, task_type, max_steps=100):
         "target": target,
     }
 
-    thor_config = {**constants.CONFIG, **{"scene": "FloorPlan1"}}
+    thor_config = {**defaults.CONFIG, **{"scene": "FloorPlan1"}}
+    thor_config.update(kwargs)
     config = {
         "thor": thor_config,
         "max_steps": max_steps,
