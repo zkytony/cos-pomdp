@@ -55,7 +55,7 @@ class ThorTrial(Trial):
         return self.config["thor"]["scene"]
 
 
-def build_object_search_trial(target, task_type, max_steps=100, **kwargs):
+def build_object_search_trial(scene, target, task_type, max_steps=100, **kwargs):
     """
     Returns a ThorTrial for object search.
     """
@@ -64,15 +64,17 @@ def build_object_search_trial(target, task_type, max_steps=100, **kwargs):
         "target": target,
     }
 
-    thor_config = {**defaults.CONFIG, **{"scene": "FloorPlan1"}}
+    thor_config = {**defaults.CONFIG, **{"scene": scene}}
     thor_config.update(kwargs)
     config = {
         "thor": thor_config,
         "max_steps": max_steps,
         "task_env": "ThorObjectSearch",
-        "task_env_config": {**task_config, **{"goal_distance": constants.GOAL_DISTANCE}},
+        "task_env_config": {**task_config,
+                            **{"goal_distance": thor_config["GOAL_DISTANCE"]}},
         "agent_class": "ThorObjectSearchOptimalAgent",
-        "agent_config": task_config
+        "agent_config": {**task_config,
+                         **{"movement_params": thor_config["MOVEMENT_PARAMS"]}}
     }
 
     trial = ThorTrial("test_optimal", config, verbose=True)
