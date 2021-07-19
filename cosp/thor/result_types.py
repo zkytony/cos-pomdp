@@ -1,4 +1,5 @@
 from sciex import Result, PklResult, YamlResult
+import ai2thor.util.metrics as metrics
 
 # Note: For PklResult, it is not recommended to save the object directly
 # if it is of a custom class; Use it if you only save generic python objects
@@ -24,9 +25,9 @@ class PathsResult(PklResult):
         actual_path_distance = metrics.path_distance(actual_path)
         super().__init__({
             "shortest_path": self.shortest_path,
-            "shortest_path_distance": self.shortest_path_distance,
+            "shortest_path_distance": shortest_path_distance,
             "actual_path": self.actual_path,
-            "actual_path_distance": self.shortest_path_distance,
+            "actual_path_distance": actual_path_distance,
             "success": self.success
         })
 

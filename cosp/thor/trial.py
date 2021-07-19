@@ -37,7 +37,6 @@ class ThorTrial(Trial):
             action = agent.act()
             observation = task_env.execute(action)
             agent.update(action, observation)
-            planner.update(action, observation)
 
             _step_info = task_env.get_step_info(step=i)
             if logging:

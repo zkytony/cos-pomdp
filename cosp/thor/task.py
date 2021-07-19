@@ -1,34 +1,70 @@
+from collections import namedtuple
+
 import pomdp_py
 import ai2thor
 import ai2thor.util.metrics as metrics
 
+from thortils import (thor_agent_pose,
+                      thor_object_pose,
+                      thor_object_poses,
+                      thor_camera_horizon)
+from thortils.image import thor_img, thor_img_depth, thor_object_bboxes
 from . import utils
+from .result_types import PathsResult, HistoryResult
 from ..framework import TaskEnv
 from ..utils.math import euclidean_dist
-
 
 class ThorEnv(TaskEnv):
     def __init__(self, controller):
         self.controller = controller
-        self._history = []  # stores the (s, a, o, r) tuples so far
+        self._history = []  # stores the (s', a, o, r) tuples so far
+        self._init_state = self.get_state(self.controller)
+        self._history.append((self._init_state, None, None, 0))
 
     @property
     def init_state(self):
-        return self._history[0][0]
+        return self._init_state
+
+    def get_step_info(self, step):
+        raise NotImplementedError
 
     def execute(self, action):
+        state = self.get_state(self.controller)
         event = self.controller.step(action.name, **action.params)
+        next_state = self.get_state(event)
+        observation = self.get_observation(event)
+        reward = self.get_reward(state, action, next_state)
+        self._history.append((next_state, action, observation, reward))
+        return
 
-    def done(self, action):
-        event = self.controller.step(action.name, **action.params)
+    def done(self):
+        raise NotImplementedError
 
+    def get_state(self, event_or_controller):
+        """Returns groundtruth state"""
+        raise NotImplementedError
 
+    def get_observation(self, event):
+        """Returns groundtruth observation (i.e. correct object detections)"""
+        raise NotImplementedError
+
+    def get_reward(self, state, action, next_state):
+        raise NotImplementedError
 
 # ------------- Object Search ------------- #
-class ThorObjectSearch(ThorEnv):
+class TOS(ThorEnv):
     """
+    TOS is short for ThorObjectSearch
     This represents the environment of running a single object search task.
     """
+    # State, Action, Observation used in object search task
+    Action = namedtuple("Action", ['name', 'params'])
+    State = namedtuple("State", ['agent_pose', 'horizon'])
+    Observation = namedtuple("Observation", ["img", "img_depth", "bboxes"])
+    REWARD_HI = 100
+    REWARD_LO = -100
+    REWARD_STEP = -1
+
     def __init__(self, controller, task_config):
         """
         If task_type is "class", then target is an object type.
@@ -42,7 +78,6 @@ class ThorObjectSearch(ThorEnv):
         self.target = target
         self.task_type = task_type
         self.goal_distance = task_config["goal_distance"]
-
 
     def compute_results(self):
         """
@@ -61,37 +96,88 @@ class ThorObjectSearch(ThorEnv):
            Because SPL is a metric over all trials, we will return the
            result for individual trials, namely, the path length, shortest path length,
            and success
+
+        TODO: Consider using the output of ThorObjectSearchOptimalAgent instead
         """
+        import pdb; pdb.set_trace()
+        init_position, init_rotation = self.init_state.agent_pose
         if self.task_type == "class":
             shortest_path = metrics.get_shortest_path_to_object_type(
                 self.controller, self.target,
-                self.init_state.position, init_rotation=self.init_state.rotation)
+                init_position, init_rotation=init_rotation)
         else:
             shortest_path = metrics.get_shortest_path_to_object(
                 self.controller, self.target,
-                self.init_state.position, init_rotation=self.init_state.rotation)
+                init_position, init_rotation=init_rotation)
         actual_path = self.get_current_path()
         success = self.done()
-        return [SingleSPLResult(shortest_path, actual_path, success),
+        return [PathsResult(shortest_path, actual_path, success),
                 HistoryResult(self._history)]
 
-    def get_current_path(self):
-        """Get the path currently in history.  As with ai2thor, the path is a list of
-        dicts where each represents position/rotation at a point.
-        """
-        raise NotImplementedError
+    def get_obseravtion(self, event):
+        img = thor_img(event)
+        img_depth = thor_img(event)
+        bboxes = thor_img(event)
+        return TOS.Observation(img, img_depth, bboxes)
 
-    def done(self):
+    def get_state(self, event):
+        agent_pose = thor_agent_pose(event)
+        horizon = thor_camera_horizon(event)
+        return TOS.State(agent_pose, horizon)
+
+    def get_reward(self, state, action, next_state):
+        """We will use a sparse reward."""
+        if action.name == "Done":
+            if self.done(action):
+                return TOS.REWARD_HI
+            else:
+                return TOS.REWARD_LO
+        else:
+            return TOS.REWARD_STEP
+
+    def done(self, action, agent_pose=None, horizon=None):
+        """Returns true if the task is over"""
+        if action.name != "Done":
+            return False
+
+        event = self.controller.step(action="Pass")
+        backup_state = self.get_state(event)
+
+        if agent_pose is not None:
+            # Teleport to the given agent pose then evaluate
+            position, rotation = agent_pose
+            self.controller.step(action="Teleport",
+                                 position=position,
+                                 rotation=rotation,
+                                 horizon=horizon)
+
         event = self.controller.step(action="Pass")
         visible_objects = utils.thor_visible_objects(event)
         agent_position = utils.thor_agent_position(event)
         for obj in visible_objects:
+            obj_distance = euclidean_dist(obj["position"], agent_position)
             if self.task_type == "class":
                 if obj["objectType"] == self.target:
-                    if euclidean_dist(obj["position"], agent_position) <= self.goal_distance:
-                        return True
+                    if obj_distance <= self.goal_distance:
+                        result = True
+                        break
             else:
                 if obj["objectId"] == self.target:
-                    if euclidean_dist(obj["position"], agent_position) <= self.goal_distance:
-                        return True
-        return False
+                    if obj_distance <= self.goal_distance:
+                        result = True
+                        break
+        result = False
+
+        # Teleport back, if necessary (i.e. if agent_pose is provided)
+        if agent_pose is not None:
+            position, rotation = backup_state.agent_pose
+            horizon = backup_state.horizon
+            self.controller.step(action="Teleport",
+                                 position=position,
+                                 rotation=rotation,
+                                 horizon=horizon)
+        return result
+
+
+# Class naming aliases
+ThorObjectSearch = TOS

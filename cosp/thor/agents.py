@@ -1,3 +1,5 @@
+import random
+from collections import namedtuple
 from ai2thor.util.metrics import (get_shortest_path_to_object,
                                   get_shortest_path_to_object_type)
 
@@ -7,8 +9,8 @@ from thortils import (thor_agent_pose,
                       thor_reachable_positions)
 from thortils.navigation import find_navigation_plan, get_navigation_actions
 from .utils import plot_path, plt
+from .task import Action
 from ..framework import Agent
-
 
 class ThorAgent(Agent):
     def __init__(self, movement_params):
@@ -59,13 +61,23 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
 
         start_pose = thor_agent_pose(self.controller, as_tuple=True)
         goal_pose = (target_position, start_pose[1])
+        reachable_positions = thor_reachable_positions(controller)
         plan = find_navigation_plan(start_pose, goal_pose,
                                     self.navigation_actions,
-                                    thor_reachable_positions(controller),
+                                    reachable_positions,
                                     goal_distance=self.goal_distance)
-        import pdb; pdb.set_trace()
+        self.plan = plan
+        self._index = 0
 
-
+    def act(self):
+        if self._index < len(self.plan):
+            name = self.plan[self._index][0]
+            params = self.movement_params[name]
+            action = Action(name, params)
+            self._index += 1
+        else:
+            action = Action("Done", {})
+        return action
 
     def update(self, action, observation):
         pass
