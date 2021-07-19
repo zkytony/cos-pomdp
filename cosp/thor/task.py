@@ -29,19 +29,19 @@ class ThorObjectSearch(ThorEnv):
     """
     This represents the environment of running a single object search task.
     """
-    def __init__(self, controller,
-                 task_type, target,
-                 goal_distance=1.0):
+    def __init__(self, controller, task_config):
         """
         If task_type is "class", then target is an object type.
         If task_type is "object", then target is an object ID.
         """
+        task_type = task_config["task_type"]
+        target = task_config["target"]
         if task_type not in {"class", "object"}:
             raise ValueError("Invalid target type: {}".format(task_type))
         super().__init__(controller)
         self.target = target
         self.task_type = task_type
-        self.goal_distance = goal_distance
+        self.goal_distance = task_config["goal_distance"]
 
 
     def compute_results(self):

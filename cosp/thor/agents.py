@@ -40,14 +40,15 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
     # access to the controller.
     AGENT_USES_CONTROLLER = True
 
-    def __init__(self, controller, target, task_type,
+    def __init__(self, controller, task_config,
                  movement_params):
         super().__init__(movement_params)
         self.controller = controller
-        self.target = target
-        self.task_type = task_type
+        self.target = task_config["target"]
+        self.task_type = task_config["task_type"]
+        self.goal_distance = task_config["goal_distance"]
 
-        if task_type == "class":
+        if self.task_type == "class":
             obj = thor_closest_object_of_type(controller, self.target)
             target_position = (obj["position"]["x"],
                                obj["position"]["y"],
@@ -60,7 +61,8 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
         goal_pose = (target_position, start_pose[1])
         plan = find_navigation_plan(start_pose, goal_pose,
                                     self.navigation_actions,
-                                    thor_reachable_positions(controller))
+                                    thor_reachable_positions(controller),
+                                    goal_distance=self.goal_distance)
         import pdb; pdb.set_trace()
 
 
