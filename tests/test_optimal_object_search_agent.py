@@ -3,7 +3,9 @@ from cosp.thor.trial import build_object_search_trial
 
 
 def test_out_optimal_agent():
-    trial = build_object_search_trial("FloorPlan3", "PepperShaker", "class")
+    trial = build_object_search_trial("FloorPlan1",
+                                      "PepperShaker",
+                                      "class")
     trial.run(logging=True)
 
 

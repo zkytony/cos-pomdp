@@ -5,10 +5,12 @@ import ai2thor
 import ai2thor.util.metrics as metrics
 
 from thortils import (thor_agent_pose,
-                      thor_object_pose,
-                      thor_object_poses,
-                      thor_camera_horizon)
-from thortils.image import thor_img, thor_img_depth, thor_object_bboxes
+                      thor_camera_horizon,
+                      thor_object_position,
+                      thor_object_in_fov,
+                      thor_object_of_type_in_fov,
+                      thor_closest_object_of_type)
+from thortils.vision import thor_img, thor_img_depth, thor_object_bboxes
 from . import utils
 from .result_types import PathsResult, HistoryResult
 from ..framework import TaskEnv
@@ -30,12 +32,14 @@ class ThorEnv(TaskEnv):
 
     def execute(self, action):
         state = self.get_state(self.controller)
-        event = self.controller.step(action.name, **action.params)
+        event = self.controller.step(action=action.name, **action.params)
+        self.controller.step(action="Pass")
+
         next_state = self.get_state(event)
         observation = self.get_observation(event)
         reward = self.get_reward(state, action, next_state)
         self._history.append((next_state, action, observation, reward))
-        return
+        return (observation, reward)
 
     def done(self):
         raise NotImplementedError
@@ -114,7 +118,7 @@ class TOS(ThorEnv):
         return [PathsResult(shortest_path, actual_path, success),
                 HistoryResult(self._history)]
 
-    def get_obseravtion(self, event):
+    def get_observation(self, event):
         img = thor_img(event)
         img_depth = thor_img(event)
         bboxes = thor_img(event)
@@ -128,7 +132,9 @@ class TOS(ThorEnv):
     def get_reward(self, state, action, next_state):
         """We will use a sparse reward."""
         if action.name == "Done":
-            if self.done(action):
+            if self.done(action,
+                         agent_pose=state.agent_pose,
+                         horizon=state.horizon):
                 return TOS.REWARD_HI
             else:
                 return TOS.REWARD_LO
@@ -151,22 +157,21 @@ class TOS(ThorEnv):
                                  rotation=rotation,
                                  horizon=horizon)
 
+        # Check if the target object is within the field of view
         event = self.controller.step(action="Pass")
-        visible_objects = utils.thor_visible_objects(event)
-        agent_position = utils.thor_agent_position(event)
-        for obj in visible_objects:
-            obj_distance = euclidean_dist(obj["position"], agent_position)
-            if self.task_type == "class":
-                if obj["objectType"] == self.target:
-                    if obj_distance <= self.goal_distance:
-                        result = True
-                        break
-            else:
-                if obj["objectId"] == self.target:
-                    if obj_distance <= self.goal_distance:
-                        result = True
-                        break
-        result = False
+        if self.task_type == "class":
+            object_type = self.target
+            in_fov = thor_object_of_type_in_fov(event, object_type)
+            p = thor_closest_object_of_type(event, object_type)["position"]
+            objpos = (p['x'], p['y'], p['z'])
+        else:
+            object_id = self.target
+            in_fov = thor_object_of_type_in_fov(event, object_id)
+            objpos = thor_object_position(event, object_id, as_tuple=True)
+
+        agent_position = thor_agent_pose(event, as_tuple=True)[0]
+        object_distance = euclidean_dist(objpos, agent_position)
+        success = in_fov and object_distance <= self.goal_distance
 
         # Teleport back, if necessary (i.e. if agent_pose is provided)
         if agent_pose is not None:
@@ -176,7 +181,11 @@ class TOS(ThorEnv):
                                  position=position,
                                  rotation=rotation,
                                  horizon=horizon)
-        return result
+        return success
+
+    def get_step_info(self, step):
+        sp, a, o, r = self._history[step]
+        return "Step {}: Action: {}, Reward: {}".format(step, a.name, r)
 
 
 # Class naming aliases

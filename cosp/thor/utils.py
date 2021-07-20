@@ -4,7 +4,10 @@ from ai2thor.controller import Controller
 import matplotlib
 import matplotlib.pyplot as plt
 import thortils
-
+from thortils.utils import (to_degrees,
+                            to_radians,
+                            closest,
+                            euclidean_dist)
 
 def spl_ratio(li, pi, Si):
     """spl ratio for a single trial.

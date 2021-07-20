@@ -33,7 +33,7 @@ class ThorTrial(Trial):
             agent = agent_class(**self.config["agent_config"])
 
         max_steps = self.config["max_steps"]
-        for i in range(max_steps):
+        for i in range(1, max_steps+1):
             action = agent.act()
             observation = task_env.execute(action)
             agent.update(action, observation)
@@ -44,7 +44,7 @@ class ThorTrial(Trial):
             else:
                 print(_step_info)
 
-            if task_env.done():
+            if task_env.done(action):
                 break
         results = task_env.compute_results()
         return results
@@ -55,7 +55,10 @@ class ThorTrial(Trial):
 
 
 def build_object_search_trial(scene, target, task_type,
-                              max_steps=100, goal_distance=defaults.GOAL_DISTANCE,
+                              max_steps=100,
+                              goal_distance=defaults.GOAL_DISTANCE,
+                              h_angles=defaults.H_ANGLES,
+                              v_angles=defaults.V_ANGLES,
                               **thor_kwargs):
     """
     Returns a ThorTrial for object search.
@@ -63,7 +66,9 @@ def build_object_search_trial(scene, target, task_type,
     task_config = {
         "task_type": task_type,
         "target": target,
-        "goal_distance": goal_distance
+        "goal_distance": goal_distance,
+        "v_angles": v_angles,
+        "h_angles": h_angles,
     }
 
     thor_config = {**defaults.CONFIG, **{"scene": scene}}
