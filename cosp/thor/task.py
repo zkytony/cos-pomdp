@@ -13,6 +13,7 @@ from thortils import (thor_agent_pose,
 from thortils.vision import thor_img, thor_img_depth, thor_object_bboxes
 from . import utils
 from .result_types import PathsResult, HistoryResult
+from .constants import TOS_REWARD_HI, TOS_REWARD_LO, TOS_REWARD_STEP
 from ..framework import TaskEnv
 from ..utils.math import euclidean_dist
 
@@ -65,9 +66,6 @@ class TOS(ThorEnv):
     Action = namedtuple("Action", ['name', 'params'])
     State = namedtuple("State", ['agent_pose', 'horizon'])
     Observation = namedtuple("Observation", ["img", "img_depth", "bboxes"])
-    REWARD_HI = 100
-    REWARD_LO = -100
-    REWARD_STEP = -1
 
     def __init__(self, controller, task_config):
         """
@@ -108,15 +106,26 @@ class TOS(ThorEnv):
         if self.task_type == "class":
             shortest_path = metrics.get_shortest_path_to_object_type(
                 self.controller, self.target,
-                init_position, init_rotation=init_rotation)
+                init_position, initial_rotation=init_rotation)
         else:
             shortest_path = metrics.get_shortest_path_to_object(
                 self.controller, self.target,
-                init_position, init_rotation=init_rotation)
+                init_position, initial_rotation=init_rotation)
         actual_path = self.get_current_path()
-        success = self.done()
+        last_reward = self._history[-1][-1]
+        success = last_reward == TOS_REWARD_HI
         return [PathsResult(shortest_path, actual_path, success),
                 HistoryResult(self._history)]
+
+    def get_current_path(self):
+        """Returns a list of dict(x=,y=,z=) positions,
+        using the history up to now, for computing results"""
+        path = []
+        for tup in self._history:
+            state = tup[0]
+            agent_position = state.agent_pose[0]
+            path.append(agent_position)
+        return path
 
     def get_observation(self, event):
         img = thor_img(event)
@@ -131,18 +140,28 @@ class TOS(ThorEnv):
 
     def get_reward(self, state, action, next_state):
         """We will use a sparse reward."""
-        if action.name == "Done":
-            if self.done(action,
-                         agent_pose=state.agent_pose,
-                         horizon=state.horizon):
-                return TOS.REWARD_HI
+        if self.done(action):
+            if self.success(action,
+                            agent_pose=state.agent_pose,
+                            horizon=state.horizon):
+                return TOS_REWARD_HI
             else:
-                return TOS.REWARD_LO
+                return TOS_REWARD_LO
         else:
-            return TOS.REWARD_STEP
+            return TOS_REWARD_STEP
 
-    def done(self, action, agent_pose=None, horizon=None):
-        """Returns true if the task is over"""
+    def done(self, action):
+        """Returns true if  the task is over. The object search task is over when the
+        agent took the 'Done' action.
+        """
+        return action.name == "Done"
+
+    def success(self, action, agent_pose=None, horizon=None):
+        """Returns True if the task is a success.
+        The task is success if the agent takes 'Done' and
+        (1) the target object is within the field of view.
+        (2) the robot is close enough to the target.
+        Note: uses self.controller to retrieve target object position."""
         if action.name != "Done":
             return False
 

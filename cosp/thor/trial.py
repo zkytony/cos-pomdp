@@ -5,18 +5,18 @@ from ai2thor.controller import Controller
 from .task import *
 from .agents import *
 from .actions import ThorAction
+from .result_types import PathsResult, HistoryResult
 import thortils.constants as defaults
 import thortils
 
 class ThorTrial(Trial):
 
     RESULT_TYPES = []
-    REQUIRED_CONFIGS = [
-        "thor",
-        ("thor", "scene")
-    ]
 
     def __init__(self, name, config, verbose=False):
+        if self.__class__ == ThorTrial:
+            raise ValueError("ThorTrial is generic. Please create the Trial object"\
+                             "for your specific task!")
         super().__init__(name, config, verbose=verbose)
 
     def _start_controller(self):
@@ -54,6 +54,10 @@ class ThorTrial(Trial):
         return self.config["thor"]["scene"]
 
 
+class ThorObjectSearchTrial(ThorTrial):
+    RESULT_TYPES = [PathsResult, HistoryResult]
+
+
 def build_object_search_trial(scene, target, task_type,
                               max_steps=100,
                               goal_distance=defaults.GOAL_DISTANCE,
@@ -83,7 +87,7 @@ def build_object_search_trial(scene, target, task_type,
                          "movement_params": thor_config["MOVEMENT_PARAMS"]}
     }
 
-    trial = ThorTrial("test_optimal", config, verbose=True)
+    trial = ThorObjectSearchTrial("test_optimal", config, verbose=True)
     return trial
 
 
