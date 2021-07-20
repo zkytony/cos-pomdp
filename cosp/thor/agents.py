@@ -79,13 +79,15 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
                                     y=start_position[1],
                                     roll=start_rotation[2])
 
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         plan = find_navigation_plan(start_pose, goal_pose,
                                     self.navigation_actions,
                                     reachable_positions,
-                                    goal_distance=self.goal_distance)
+                                    goal_distance=self.goal_distance,
                                     grid_size=controller.initialization_parameters["gridSize"],
                                     diagonal_ok=self.diagonal_ok)
+        if plan is None:
+            raise ValueError("Plan to {} not found".format(self.target))
         self.plan = plan
         self._index = 0
 
