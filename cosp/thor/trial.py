@@ -63,24 +63,25 @@ def build_object_search_trial(scene, target, task_type,
     """
     Returns a ThorTrial for object search.
     """
+    thor_config = {**constants.CONFIG, **{"scene": scene}}
+
     task_config = {
         "task_type": task_type,
         "target": target,
         "goal_distance": constants.GOAL_DISTANCE,
         "v_angles": constants.V_ANGLES,
         "h_angles": constants.H_ANGLES,
-        "diagonal_ok": constants.DIAG_MOVE
+        "diagonal_ok": constants.DIAG_MOVE,
+        "movement_params": thor_config["MOVEMENT_PARAMS"]
     }
 
-    thor_config = {**constants.CONFIG, **{"scene": scene}}
     config = {
         "thor": thor_config,
         "max_steps": max_steps,
         "task_env": "ThorObjectSearch",
         "task_env_config": {"task_config": task_config},
         "agent_class": "ThorObjectSearchOptimalAgent",
-        "agent_config": {"task_config": task_config,
-                         "movement_params": thor_config["MOVEMENT_PARAMS"]}
+        "agent_config": {"task_config": task_config}
     }
 
     trial = ThorObjectSearchTrial("test_optimal", config, verbose=True)

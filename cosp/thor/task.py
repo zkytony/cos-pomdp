@@ -11,6 +11,9 @@ from thortils import (thor_agent_pose,
                       thor_object_of_type_in_fov,
                       thor_closest_object_of_type)
 from thortils.vision import thor_img, thor_img_depth, thor_object_bboxes
+from thortils.navigation import (get_shortest_path_to_object,
+                                 get_shortest_path_to_object_type)
+
 from . import utils
 from .result_types import PathsResult, HistoryResult
 from .constants import TOS_REWARD_HI, TOS_REWARD_LO, TOS_REWARD_STEP
@@ -80,6 +83,7 @@ class TOS(ThorEnv):
         self.target = target
         self.task_type = task_type
         self.goal_distance = task_config["goal_distance"]
+        self.task_config = task_config
 
     def compute_results(self):
         """
@@ -101,17 +105,21 @@ class TOS(ThorEnv):
 
         Note: it appears that the shortest path from ai2thor isn't snapped to grid,
         or it skips many steps. That makes it slightly shorter than the path found by
-        our optimal agent.
+        our optimal agent. But will still use it per
         """
         init_position, init_rotation = self.init_state.agent_pose
+
         if self.task_type == "class":
-            shortest_path = metrics.get_shortest_path_to_object_type(
-                self.controller, self.target,
-                init_position, initial_rotation=init_rotation)
+            get_path_func = get_shortest_path_to_object_type
         else:
-            shortest_path = metrics.get_shortest_path_to_object(
-                self.controller, self.target,
-                init_position, initial_rotation=init_rotation)
+            get_path_func = get_shortest_path_to_object
+
+        shortest_path = get_path_func(
+            self.controller, self.target,
+            init_position, init_rotation,
+            positions_only=True,
+            **self.task_config)
+
         actual_path = self.get_current_path()
         last_reward = self._history[-1][-1]
         success = last_reward == TOS_REWARD_HI
@@ -124,7 +132,8 @@ class TOS(ThorEnv):
         path = []
         for tup in self._history:
             state = tup[0]
-            agent_position = state.agent_pose[0]
+            x, y, z = state.agent_pose[0]
+            agent_position = dict(x=x, y=y, z=z)
             path.append(agent_position)
         return path
 
@@ -135,7 +144,8 @@ class TOS(ThorEnv):
         return TOS.Observation(img, img_depth, bboxes)
 
     def get_state(self, event):
-        agent_pose = thor_agent_pose(event)
+        # stores agent pose as tuple, for convenience.
+        agent_pose = thor_agent_pose(event, as_tuple=True)
         horizon = thor_camera_horizon(event)
         return TOS.State(agent_pose, horizon)
 
@@ -206,8 +216,8 @@ class TOS(ThorEnv):
             if not in_fov:
                 print("Object not in field of view!")
             if not close_enough:
-                print("Object not close enough!"
-                      "Minimum distance: {}; Actual distance: {}".format(self.goal_distance, object_distance))
+                print("Object not close enough! Minimum distance: {}; Actual distance: {}".\
+                      format(self.goal_distance, object_distance))
         return success
 
     def get_step_info(self, step):

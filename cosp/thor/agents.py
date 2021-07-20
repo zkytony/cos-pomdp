@@ -15,8 +15,8 @@ from .task import TOS
 from ..framework import Agent
 
 class ThorAgent(Agent):
-    def __init__(self, movement_params):
-        self.movement_params = movement_params
+    def __init__(self):
+        pass
 
     def act(self):
         pass
@@ -42,35 +42,32 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
 
     def __init__(self,
                  controller,
-                 task_config,
-                 movement_params):
+                 task_config):
         """Builds the agent and computes a plan"""
-        super().__init__(movement_params)
+        super().__init__()
         self.controller = controller
         self.target = task_config["target"]
         self.task_type = task_config["task_type"]
+        self.movement_params = task_config["movement_params"]
 
         start_pose = thor_agent_pose(self.controller, as_tuple=True)
         start_position, start_rotation = start_pose
+
         if self.task_type == "class":
             get_path_func = get_shortest_path_to_object_type
         else:
             get_path_func = get_shortest_path_to_object
+
         poses, plan = get_path_func(
             controller, self.target,
             start_position, start_rotation,
-            # The valid rotation angles horizontally and vertically
-            # https://github.com/allenai/ai2thor/blob/68edec39b5f94bbc6532aaac5ed4ee50f4b09bb1/ai2thor/controller.py#L1282
-            h_angles=task_config["h_angles"],
-            v_angles=task_config["v_angles"],
-            goal_distance=task_config["goal_distance"],
-            movement_params=self.movement_params,
-            diagonal_ok=task_config["diagonal_ok"],
-            return_plan=True)
+            return_plan=True,
+            **task_config)
 
         if plan is None:
             raise ValueError("Plan to {} not found".format(self.target))
         self.plan = plan
+        self._poses = poses
         self._index = 0
 
     def act(self):
