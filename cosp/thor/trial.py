@@ -6,7 +6,7 @@ from .task import *
 from .agents import *
 from .actions import ThorAction
 from .result_types import PathsResult, HistoryResult
-import thortils.constants as defaults
+from . import constants
 import thortils
 
 class ThorTrial(Trial):
@@ -59,24 +59,20 @@ class ThorObjectSearchTrial(ThorTrial):
 
 
 def build_object_search_trial(scene, target, task_type,
-                              max_steps=100,
-                              goal_distance=defaults.GOAL_DISTANCE,
-                              h_angles=defaults.H_ANGLES,
-                              v_angles=defaults.V_ANGLES,
-                              **thor_kwargs):
+                              max_steps=100):
     """
     Returns a ThorTrial for object search.
     """
     task_config = {
         "task_type": task_type,
         "target": target,
-        "goal_distance": goal_distance,
-        "v_angles": v_angles,
-        "h_angles": h_angles,
+        "goal_distance": constants.GOAL_DISTANCE,
+        "v_angles": constants.H_ANGLES,
+        "h_angles": constants.V_ANGLES,
+        "diagonal_ok": constants.DIAG_MOVE,
     }
 
-    thor_config = {**defaults.CONFIG, **{"scene": scene}}
-    thor_config.update(thor_kwargs)
+    thor_config = {**constants.CONFIG, **{"scene": scene}}
     config = {
         "thor": thor_config,
         "max_steps": max_steps,

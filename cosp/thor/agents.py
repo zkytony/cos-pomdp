@@ -45,8 +45,11 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
     # access to the controller.
     AGENT_USES_CONTROLLER = True
 
-    def __init__(self, controller, task_config,
+    def __init__(self,
+                 controller,
+                 task_config,
                  movement_params):
+        """Builds the agent and computes a plan"""
         super().__init__(movement_params)
         self.controller = controller
         self.target = task_config["target"]
@@ -56,6 +59,7 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
         # https://github.com/allenai/ai2thor/blob/68edec39b5f94bbc6532aaac5ed4ee50f4b09bb1/ai2thor/controller.py#L1282
         self.v_angles = task_config["v_angles"]
         self.h_angles = task_config["h_angles"]
+        self.diagonal_ok = task_config["diagonal_ok"]
 
         if self.task_type == "class":
             obj = thor_closest_object_of_type(controller, self.target)
@@ -75,10 +79,13 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
                                     y=start_position[1],
                                     roll=start_rotation[2])
 
+        import pdb; pdb.set_trace()
         plan = find_navigation_plan(start_pose, goal_pose,
                                     self.navigation_actions,
                                     reachable_positions,
                                     goal_distance=self.goal_distance)
+                                    grid_size=controller.initialization_parameters["gridSize"],
+                                    diagonal_ok=self.diagonal_ok)
         self.plan = plan
         self._index = 0
 
