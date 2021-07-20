@@ -222,7 +222,7 @@ class TOS(ThorEnv):
 
     def get_step_info(self, step):
         sp, a, o, r = self._history[step]
-        return "Step {}: Action: {}, Reward: {}".format(step, a.name, r)
+        return "Step {}: State: {}, Action: {}, Reward: {}".format(sp, step, a.name, r)
 
 
 # Class naming aliases

@@ -3,8 +3,8 @@ from cosp.thor.trial import build_object_search_trial
 
 
 def test_out_optimal_agent():
-    trial = build_object_search_trial("FloorPlan2",
-                                      "Pot",
+    trial = build_object_search_trial("FloorPlan1",
+                                      "Bread",
                                       "class")
     trial.run(logging=True)
 
