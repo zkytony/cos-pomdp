@@ -8,4 +8,6 @@ TOS_REWARD_LO = -100
 TOS_REWARD_STEP = -1
 
 # Moves diagonally
-DIAG_MOVE = True
+DIAG_MOVE = False
+
+GOAL_DISTANCE = 1.0

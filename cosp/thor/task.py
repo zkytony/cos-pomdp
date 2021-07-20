@@ -99,9 +99,10 @@ class TOS(ThorEnv):
            result for individual trials, namely, the path length, shortest path length,
            and success
 
-        TODO: Consider using the output of ThorObjectSearchOptimalAgent instead
+        Note: it appears that the shortest path from ai2thor isn't snapped to grid,
+        or it skips many steps. That makes it slightly shorter than the path found by
+        our optimal agent.
         """
-        import pdb; pdb.set_trace()
         init_position, init_rotation = self.init_state.agent_pose
         if self.task_type == "class":
             shortest_path = metrics.get_shortest_path_to_object_type(
@@ -190,7 +191,8 @@ class TOS(ThorEnv):
 
         agent_position = thor_agent_pose(event, as_tuple=True)[0]
         object_distance = euclidean_dist(objpos, agent_position)
-        success = in_fov and object_distance <= self.goal_distance
+        close_enough = object_distance <= self.goal_distance
+        success = in_fov and close_enough
 
         # Teleport back, if necessary (i.e. if agent_pose is provided)
         if agent_pose is not None:
@@ -200,6 +202,12 @@ class TOS(ThorEnv):
                                  position=position,
                                  rotation=rotation,
                                  horizon=horizon)
+        if not success:
+            if not in_fov:
+                print("Object not in field of view!")
+            if not close_enough:
+                print("Object not close enough!"
+                      "Minimum distance: {}; Actual distance: {}".format(self.goal_distance, object_distance))
         return success
 
     def get_step_info(self, step):
