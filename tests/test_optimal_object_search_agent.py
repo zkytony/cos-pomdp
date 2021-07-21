@@ -4,11 +4,11 @@ from cosp.thor.utils import compute_spl
 from pprint import pprint
 
 TARGETS = {
-    # "FloorPlan1": ["Vase", "Bread", "Book", "Lettuce"],
-    "FloorPlan2": ["Bowl", "Pan", "Ladle"]
-    # "FloorPlan3": ["Cup", "Toaster", "SoapBottle"],
-    # "FloorPlan4": ["GarbageCan", "SinkBasin", "Pan"],
-    # "FloorPlan5": ["Mug", "CoffeeMachine", "Faucet"],
+    "FloorPlan1": ["Vase", "Bread", "Book", "Lettuce"],
+    "FloorPlan2": ["Bowl", "Pan", "Ladle"],
+    "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
+    "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
+    "FloorPlan5": ["Pot", "CoffeeMachine", "Faucet"],
 }
 
 def test_many(targets):
