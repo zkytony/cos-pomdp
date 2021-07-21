@@ -23,13 +23,14 @@ def compute_spl(episode_results):
 
     Args:
         episode_results (list) List of tuples
-            (shortest_path_length, actual_path_length, success),
-             as required by the formula. `actual_path_length` and
-            `shortest_path_length` are floats; success is boolean.
+            (shortest_path_distance, actual_path_distance, success),
+             as required by the formula. `actual_path_distance` and
+            `shortest_path_distance` are floats; success is boolean.
     Return:
         float: the SPL metric
     """
-    # li, pi, Si stands for shortest_path_length, actual_path_length, success for trial i
+    # li, pi, Si stands for
+    # shortest_path_distance, actual_path_distance, success for trial i.
     return sum(spl_ratio(li, pi, Si)
                for li, pi, Si in episode_results) / len(episode_results)
 

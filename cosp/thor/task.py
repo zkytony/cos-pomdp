@@ -15,7 +15,7 @@ from thortils.navigation import (get_shortest_path_to_object,
                                  get_shortest_path_to_object_type)
 
 from . import utils
-from .result_types import PathsResult, HistoryResult
+from .result_types import PathResult, HistoryResult
 from .constants import TOS_REWARD_HI, TOS_REWARD_LO, TOS_REWARD_STEP
 from ..framework import TaskEnv
 from ..utils.math import euclidean_dist
@@ -123,7 +123,7 @@ class TOS(ThorEnv):
         actual_path = self.get_current_path()
         last_reward = self._history[-1][-1]
         success = last_reward == TOS_REWARD_HI
-        return [PathsResult(shortest_path, actual_path, success),
+        return [PathResult(shortest_path, actual_path, success),
                 HistoryResult(self._history)]
 
     def get_current_path(self):

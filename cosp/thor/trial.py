@@ -5,7 +5,7 @@ from ai2thor.controller import Controller
 from .task import *
 from .agents import *
 from .actions import ThorAction
-from .result_types import PathsResult, HistoryResult
+from .result_types import PathResult, HistoryResult
 from . import constants
 import thortils
 
@@ -47,6 +47,7 @@ class ThorTrial(Trial):
             if task_env.done(action):
                 break
         results = task_env.compute_results()
+        controller.stop()
         return results
 
     @property
@@ -55,7 +56,7 @@ class ThorTrial(Trial):
 
 
 class ThorObjectSearchTrial(ThorTrial):
-    RESULT_TYPES = [PathsResult, HistoryResult]
+    RESULT_TYPES = [PathResult, HistoryResult]
 
 
 def build_object_search_trial(scene, target, task_type,

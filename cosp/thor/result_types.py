@@ -5,7 +5,7 @@ import ai2thor.util.metrics as metrics
 # if it is of a custom class; Use it if you only save generic python objects
 # or popular objects like numpy arrays.
 
-class PathsResult(PklResult):
+class PathResult(PklResult):
     """
     Paths, includes actual path and shortest path,
     where each is a sequence robot poses tuples.
@@ -21,19 +21,25 @@ class PathsResult(PklResult):
         self.shortest_path = shortest_path
         self.actual_path = actual_path
         self.success = success
-        shortest_path_distance = metrics.path_distance(shortest_path)
-        actual_path_distance = metrics.path_distance(actual_path)
+        self.shortest_path_distance = metrics.path_distance(shortest_path)
+        self.actual_path_distance = metrics.path_distance(actual_path)
         super().__init__({
             "shortest_path": self.shortest_path,
-            "shortest_path_distance": shortest_path_distance,
+            "shortest_path_distance": self.shortest_path_distance,
             "actual_path": self.actual_path,
-            "actual_path_distance": actual_path_distance,
+            "actual_path_distance": self.actual_path_distance,
             "success": self.success
         })
 
     @classmethod
     def FILENAME(cls):
         return "paths.yaml"
+
+    def to_tuple(self):
+        """Returns (shortest_path_distance, actual_path_distance, success) tuples"""
+        return (self.shortest_path_distance,
+                self.actual_path_distance,
+                self.success)
 
 
 class HistoryResult(YamlResult):
