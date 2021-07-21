@@ -4,11 +4,11 @@ from cosp.thor.utils import compute_spl
 from pprint import pprint
 
 TARGETS = {
-    "FloorPlan1": ["Vase", "Bread", "Book", "Lettuce"],
-    "FloorPlan2": ["Bowl", "Pan", "Ladle"],
-    "FloorPlan3": ["Cup", "Toaster", "SoapBottle"],
-    "FloorPlan4": ["GarbageCan", "SinkBasin", "Pan"],
-    "FloorPlan5": ["Mug", "CoffeeMachine", "Faucet"],
+    # "FloorPlan1": ["Vase", "Bread", "Book", "Lettuce"],
+    "FloorPlan2": ["Bowl", "Pan", "Ladle"]
+    # "FloorPlan3": ["Cup", "Toaster", "SoapBottle"],
+    # "FloorPlan4": ["GarbageCan", "SinkBasin", "Pan"],
+    # "FloorPlan5": ["Mug", "CoffeeMachine", "Faucet"],
 }
 
 def test_many(targets):
@@ -17,7 +17,7 @@ def test_many(targets):
         for target in targets[floorplan]:
             all_results.append(collect(test_singe(floorplan, target)))
             print(floorplan, target, all_results[-1].to_tuple())
-    spl, sr = collect(all_results)
+    spl, sr = gather(all_results)
     print("SPL: {:.3f}".format(spl))
     print("SR: {:.4f}".format(sr))
 
