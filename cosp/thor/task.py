@@ -201,7 +201,8 @@ class TOS(ThorEnv):
 
         agent_position = thor_agent_pose(event, as_tuple=True)[0]
         object_distance = euclidean_dist(objpos, agent_position)
-        close_enough = object_distance <= self.goal_distance
+        # allows 0.1 to account for small difference due to floating point instability
+        close_enough = (object_distance - self.goal_distance) <= 1e-1
         success = in_fov and close_enough
 
         # Teleport back, if necessary (i.e. if agent_pose is provided)
@@ -222,7 +223,7 @@ class TOS(ThorEnv):
 
     def get_step_info(self, step):
         sp, a, o, r = self._history[step]
-        return "Step {}: Action: {}, Reward: {}".format(step, a.name, r)
+        return "Step {}: {}, Action: {}, Reward: {}".format(sp.agent_pose[0], step, a.name, r)
 
 
 # Class naming aliases
