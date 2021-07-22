@@ -24,7 +24,7 @@ from thortils.utils import (to_degrees, closest,
                             normalize_angles, euclidean_dist)
 
 from .result_types import PathResult, HistoryResult
-from .utils import plot_path, plt, as_tuple
+from .utils import plot_path, plt, as_tuple, as_dict
 from .task import ThorEnv, ThorAgent
 from . import constants
 
@@ -50,6 +50,7 @@ class TOS(ThorEnv):
         if task_type not in {"class", "object"}:
             raise ValueError("Invalid target type: {}".format(task_type))
         super().__init__(controller)
+        self.scene = controller.scene.split("_")[0]
         self.target = target
         self.task_type = task_type
         self.goal_distance = task_config["nav_config"]["goal_distance"]
@@ -87,7 +88,7 @@ class TOS(ThorEnv):
         actual_path = self.get_current_path()
         last_reward = self._history[-1][-1]
         success = last_reward == constants.TOS_REWARD_HI
-        return [PathResult(shortest_path, actual_path, success),
+        return [PathResult(self.scene, self.target, shortest_path, actual_path, success),
                 HistoryResult(self._history)]
 
     def get_current_path(self):
@@ -231,12 +232,12 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
     def act(self):
         """Returns action in plan"""
         if self._index < len(self.plan):
-            name, params = self.plan[self._index]
-            if name.startswith("Open"):
-                action = TOS.Action(name, {"objectId": params[0]})
+            action_name, action_params = self.plan[self._index]
+            if action_name not in self.movement_params:
+                action = TOS.Action(action_name, action_params)
             else:
                 # TODO: should use the params in the action tuple.
-                action = TOS.Action(name, self.movement_params[name])
+                action = TOS.Action(action_name, self.movement_params[action_name])
             self._index += 1
         else:
             action = TOS.Action("Done", {})
@@ -285,7 +286,7 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
         openable_receptors = thor_object_receptors(controller,
                                                    target_object["objectId"],
                                                    openable_only=True)
-        openable_receptor_ids = set(r for r in openable_receptors if r["openable"])
+        openable_receptor_ids = set(r["objectId"] for r in openable_receptors if r["openable"])
 
         goal_objects = openable_receptors + [target_object]
         overall_poses, overall_plan = [], []
@@ -298,19 +299,30 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
                 return_plan=True,
                 **nav_config
             )
-            if len(plan) > 0:
+            if plan is not None:
                 print("plan found in {:.3f}s".format(time.time() - _start_time))
             else:
                 raise ValueError("Plan not found to {}".format(obj["objectId"]))
 
+            if len(poses) == 0:
+                # No action needed. The robot is at where it should be already.
+                assert len(plan) == 0
+                pose_to_extend = as_dict((position, rotation))
+            else:
+                pose_to_extend = poses[-1]
+                # in case navigation is needed between containers (should be rare),
+                # update the position and rotation for the next search.
+                position, rotation = as_tuple(poses[-1])
+
+            # Check if we need an open action
             if obj["objectId"] in openable_receptor_ids:
-                open_action = ("OpenObject", object_id)
+                open_action = ("OpenObject", dict(objectId=obj["objectId"]))
                 plan.append(open_action)
-                poses.append(poses[-1])  # just so that both lists have same length
+                poses.append(pose_to_extend)  # just so that both lists have same length
 
             overall_poses.extend(poses)
             overall_plan.extend(plan)
-            position, rotation = as_tuple(poses[-1])  # in case navigation is needed between containers (should be rare)
+
 
         if plan is None:
             raise ValueError("Plan to {} not found".format(target))

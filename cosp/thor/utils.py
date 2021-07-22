@@ -62,3 +62,13 @@ def as_tuple(pose_or_component):
         return (pose_or_component["x"],
                 pose_or_component["y"],
                 pose_or_component["z"])
+
+def as_dict(pose_or_component):
+    if type(pose_or_component) == tuple:
+        position, rotation = pose_or_component
+        x,y,z = position
+        pitch,yaw,roll = rotation
+        return dict(x=x, y=y, z=z), dict(x=pitch, y=yaw, z=roll)
+    else:
+        x,y,z = pose_or_component # works both for positation and rotation
+        return dict(x=x,y=y,z=z)

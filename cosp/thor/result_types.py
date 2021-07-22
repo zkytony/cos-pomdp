@@ -11,9 +11,11 @@ class PathResult(PklResult):
     where each is a sequence robot poses tuples.
     Includes success.
     """
-    def __init__(self, shortest_path, actual_path, success):
+    def __init__(self, scene, target, shortest_path, actual_path, success):
         """
         Args:
+            scene (str): Scene of the seach trial (floor plan)
+            target (str): target (object ID or class)
             shortest_path (list): List of robot pose tuples (the best)
             actual_path (list): List of robot pose tuples (the actual)
             success (bool): Success/fail of the task
@@ -23,7 +25,11 @@ class PathResult(PklResult):
         self.success = success
         self.shortest_path_distance = metrics.path_distance(shortest_path)
         self.actual_path_distance = metrics.path_distance(actual_path)
+        self.scene = scene
+        self.target = target
         super().__init__({
+            "scene": self.scene,
+            "target": self.target,
             "shortest_path": self.shortest_path,
             "shortest_path_distance": self.shortest_path_distance,
             "actual_path": self.actual_path,
