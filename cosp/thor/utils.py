@@ -64,7 +64,7 @@ def as_tuple(pose_or_component):
                 pose_or_component["z"])
 
 def as_dict(pose_or_component):
-    if type(pose_or_component) == tuple:
+    if len(pose_or_component) == 2:
         position, rotation = pose_or_component
         x,y,z = position
         pitch,yaw,roll = rotation

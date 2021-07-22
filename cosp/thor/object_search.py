@@ -2,6 +2,7 @@ import random
 import math
 import time
 from collections import namedtuple
+from pprint import pprint
 
 import pomdp_py
 import ai2thor
@@ -83,7 +84,9 @@ class TOS(ThorEnv):
             self.controller, self.init_state.agent_pose,
             self.target, self.task_type,
             **self.task_config["nav_config"])
-        shortest_path = [p[0] for p in poses]  # get positions only
+        # Need to prepend starting pose. Get position only
+        shortest_path = [as_dict(self.init_state.agent_pose[0])]\
+                        + [p[0] for p in poses]
 
         actual_path = self.get_current_path()
         last_reward = self._history[-1][-1]
