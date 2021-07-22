@@ -1,13 +1,11 @@
+# Generic class for experiment trial in thor
 from sciex import Trial, Event
 from ai2thor.controller import Controller
+import thortils
 
-# Import everything related to thor and its agents
-from .task import *
-from .agents import *
-from .actions import ThorAction
+from .object_search import ThorObjectSearch, ThorObjectSearchOptimalAgent
 from .result_types import PathResult, HistoryResult
 from . import constants
-import thortils
 
 class ThorTrial(Trial):
 
@@ -55,6 +53,7 @@ class ThorTrial(Trial):
         return self.config["thor"]["scene"]
 
 
+# ------------- Object search trial ------------- #
 class ThorObjectSearchTrial(ThorTrial):
     RESULT_TYPES = [PathResult, HistoryResult]
 
