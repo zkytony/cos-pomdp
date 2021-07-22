@@ -11,6 +11,7 @@ import ai2thor.util.metrics as metrics
 from thortils import (thor_camera_horizon,
                       thor_closest_object_of_type,
                       thor_object_in_fov,
+                      thor_object_with_id,
                       thor_object_of_type_in_fov,
                       thor_object_pose,
                       thor_object_position,
@@ -164,7 +165,7 @@ class TOS(ThorEnv):
             objpos = (p['x'], p['y'], p['z'])
         else:
             object_id = self.target
-            in_fov = thor_object_of_type_in_fov(event, object_id)
+            in_fov = thor_object_in_fov(event, object_id)
             objpos = thor_object_position(event, object_id, as_tuple=True)
 
         agent_position = thor_agent_pose(event, as_tuple=True)[0]
@@ -192,8 +193,9 @@ class TOS(ThorEnv):
     def get_step_info(self, step):
         sp, a, o, r = self._history[step]
         x, z, pitch, yaw = sp.agent_pose[0][0], sp.agent_pose[0][2], sp.agent_pose[1][0], sp.agent_pose[1][1]
+        action = a.name if not a.name.startswith("Open") else "{}({})".format(a.name, a.params)
         return "Step {}: Action: {}, (x={}, z={}, pitch={}, yaw={}), Reward: {}"\
-            .format(a.name, x, z, pitch, yaw, step, r)
+            .format(step, action, x, z, pitch, yaw, r)
 
 # Class naming aliases
 ThorObjectSearch = TOS
@@ -297,6 +299,7 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
         overall_poses, overall_plan = [], []
         position, rotation = start_position, start_rotation
         for obj in goal_objects:
+            print(obj["objectId"])
             _start_time = time.time()
             poses, plan = get_shortest_path_to_object(
                 controller, obj["objectId"],

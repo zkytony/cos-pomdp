@@ -1,28 +1,30 @@
 # Note:
 import random
 from pprint import pprint
+import thortils
 from cosp.thor.trial import build_object_search_trial
 from cosp.thor.utils import compute_spl
 from cosp.utils.math import mean_ci_normal
 
 
-####### KITCHEN ##########
-# Notes:
-# Fork in FloorPlan2 doesn't work because it'll be blocked by wall
-TARGETS_EXPOSED = {
-    "FloorPlan1": ["Vase", "Book", "Lettuce"],
-    "FloorPlan2": ["Mug", "Pan", "Ladle"],
-    "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
-    "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
-    "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
-}
+# ####### KITCHEN ##########
+# # Notes:
+# # Fork in FloorPlan2 doesn't work because it'll be blocked by wall
+# TARGETS_EXPOSED = {
+#     "FloorPlan1": ["Vase", "Book", "Lettuce"],
+#     "FloorPlan2": ["Mug", "Pan", "Ladle"],
+#     "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
+#     "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
+#     "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
+# }
 
 TARGETS_CONTAINED = {
-    "FloorPlan1": ["Knife", "Egg", "Cup"],
-    "FloorPlan2": ["Plate", "Apple", "Butterknife"],
-    "FloorPlan3": ["Pan", "Tomato"],
-    "FloorPlan4": ["Egg", "Lettuce"],
-    "FloorPlan5": ["Apple"]
+    "FloorPlan1": ["Cup"],
+    # "FloorPlan1": ["Knife", "Egg", "WineBottle"],
+    # "FloorPlan2": ["Plate", "Apple", "Butterknife"],
+    # "FloorPlan3": ["Pan", "Tomato"],
+    # "FloorPlan4": ["Egg", "Lettuce"],
+    # "FloorPlan5": ["Apple"]
 }
 
 # ####### BATHROOM ##########
@@ -57,6 +59,11 @@ def test_many(targets):
     pprint(failed_objects)
 
 
+def test_singe_by_id(floorplan, object_id):
+    print("Searching for {} in {}".format(object_id, floorplan))
+    trial = build_object_search_trial(floorplan, object_id, "object")
+    return trial.run(logging=True)
+
 def test_singe(floorplan, object_type):
     print("Searching for {} in {}".format(object_type, floorplan))
     trial = build_object_search_trial(floorplan, object_type, "class")
@@ -79,6 +86,11 @@ def gather(all_results):
     mean, ci = mean_ci_normal(discounted_returns)
     return spl, success_rate, failed_objects, (mean, ci)
 
+def _debug_pitch():
+    test_singe_by_id("FloorPlan1", "Cabinet|+00.68|+02.02|-02.46")
+    test_singe_by_id("FloorPlan1", "Cabinet|+00.68|+00.50|-02.20")
+
+
 if __name__ == "__main__":
     # test_out_optimal_agent()
-    test_many(TARGETS_EXPOSED)
+    test_many(TARGETS_CONTAINED)
