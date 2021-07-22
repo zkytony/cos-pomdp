@@ -10,11 +10,11 @@ from cosp.utils.math import mean_ci_normal
 # Notes:
 # Fork in FloorPlan2 doesn't work because it'll be blocked by wall
 TARGETS_EXPOSED = {
-    "FloorPlan1": ["Vase"]#, "Book", "Lettuce"],
-    # "FloorPlan2": ["Mug", "Pan", "Ladle"],
-    # "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
-    # "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
-    # "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
+    "FloorPlan1": ["Vase", "Book", "Lettuce"],
+    "FloorPlan2": ["Mug", "Pan", "Ladle"],
+    "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
+    "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
+    "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
 }
 
 TARGETS_CONTAINED = {
