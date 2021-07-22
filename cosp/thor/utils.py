@@ -13,8 +13,11 @@ def spl_ratio(li, pi, Si):
     """spl ratio for a single trial.
     li, pi, Si stands for shortest_path_length, actual_path_length, success for trial i.
     """
-    pl_ratio = max(pi, li) if max(pi, li) > 0 else 1.0
-    return float(Si) * li / pl_ratio
+    if max(pi, li) > 0:
+        pl_ratio = li / max(pi, li)
+    else:
+        pl_ratio = 1.0
+    return float(Si) * pl_ratio
 
 
 def compute_spl(episode_results):
