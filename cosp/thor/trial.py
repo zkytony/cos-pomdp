@@ -69,11 +69,13 @@ def build_object_search_trial(scene, target, task_type,
     task_config = {
         "task_type": task_type,
         "target": target,
-        "goal_distance": constants.GOAL_DISTANCE,
-        "v_angles": constants.V_ANGLES,
-        "h_angles": constants.H_ANGLES,
-        "diagonal_ok": constants.DIAG_MOVE,
-        "movement_params": thor_config["MOVEMENT_PARAMS"]
+        "nav_config": {
+            "goal_distance": constants.GOAL_DISTANCE,
+            "v_angles": constants.V_ANGLES,
+            "h_angles": constants.H_ANGLES,
+            "diagonal_ok": constants.DIAG_MOVE,
+            "movement_params": thor_config["MOVEMENT_PARAMS"]
+        }
     }
 
     config = {

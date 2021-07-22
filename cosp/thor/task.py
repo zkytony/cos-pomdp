@@ -19,6 +19,7 @@ from .result_types import PathResult, HistoryResult
 from .constants import TOS_REWARD_HI, TOS_REWARD_LO, TOS_REWARD_STEP
 from ..framework import TaskEnv
 from ..utils.math import euclidean_dist
+import agents
 
 class ThorEnv(TaskEnv):
     def __init__(self, controller):
@@ -82,7 +83,7 @@ class TOS(ThorEnv):
         super().__init__(controller)
         self.target = target
         self.task_type = task_type
-        self.goal_distance = task_config["goal_distance"]
+        self.goal_distance = task_config["nav_config"]["goal_distance"]
         self.task_config = task_config
 
     def compute_results(self):
@@ -108,18 +109,11 @@ class TOS(ThorEnv):
         our optimal agent. But will still use it per
         """
         # Uses the ThorObjectSearchOptimalagent to compute the path as shortest path.
-        init_position, init_rotation = self.init_state.agent_pose
-
-        if self.task_type == "class":
-            get_path_func = get_shortest_path_to_object_type
-        else:
-            get_path_func = get_shortest_path_to_object
-
-        shortest_path = get_path_func(
-            self.controller, self.target,
-            init_position, init_rotation,
+        shortest_path = ThorObjectSearchOptimalAgent.plan(
+            self.controller, self.init_state.agent_pose,
+            self.target, self.task_type,
             positions_only=True,
-            **self.task_config)
+            **self.task_config["nav_config"])
 
         actual_path = self.get_current_path()
         last_reward = self._history[-1][-1]
