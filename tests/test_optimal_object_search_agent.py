@@ -61,7 +61,7 @@ def test_singe(floorplan, object_type):
     return trial.run(logging=True)
 
 def collect(trial_result):
-    path_result = trial_result["path"]  # pathresult
+    path_result = trial_result[0]  # pathresult
     history_result = trial_result[1]
     return dict(path=path_result, history=history_result)
 
