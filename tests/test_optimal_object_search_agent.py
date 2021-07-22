@@ -45,7 +45,7 @@ def test_many(targets):
     for floorplan in targets:
         for target in targets[floorplan]:
             all_results.append(collect(test_singe(floorplan, target)))
-            print(floorplan, target, all_results[-1][0].to_tuple())
+            print(floorplan, target, all_results[-1]["path"].to_tuple())
     spl, sr, failed_objects, disc_return = gather(all_results)
     print("********* RESULTS ***********")
     print("SPL: {:.3f}".format(spl))
@@ -61,19 +61,19 @@ def test_singe(floorplan, object_type):
     return trial.run(logging=True)
 
 def collect(trial_result):
-    path_result = trial_result[0]  # pathresult
+    path_result = trial_result["path"]  # pathresult
     history_result = trial_result[1]
-    return path_result, history_result
+    return dict(path=path_result, history=history_result)
 
 def gather(all_results):
-    episode_results = [r[0].to_tuple() for r in all_results]
+    episode_results = [r["path"].to_tuple() for r in all_results]
     spl = compute_spl(episode_results)
     success_count = sum(1 for r in all_results
-                        if r.success is True)
+                        if r["path"].success is True)
     success_rate = success_count / len(all_results)
-    failed_objects = [(r.scene, r.target) for r in all_results
+    failed_objects = [(r["path"].scene, r["path"].target) for r in all_results
                       if r.success is False]
-    discounted_returns = [r[1].discounted_return() for r in all_results]
+    discounted_returns = [r["history"].discounted_return() for r in all_results]
     mean, ci = mean_ci_normal(discounted_returns)
     return spl, success_rate, failed_objects, (mean, ci)
 
