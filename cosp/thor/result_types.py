@@ -63,7 +63,7 @@ class HistoryResult(YamlResult):
         discount = 1.0
         ret = 0.0
         for step in self.history:
-            sp, a, o, r = 0
+            sp, a, o, r = step
             ret += r*discount
             discount *= self.discount_factor
         return ret

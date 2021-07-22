@@ -7,12 +7,14 @@ from cosp.utils.math import mean_ci_normal
 
 
 ####### KITCHEN ##########
+# Notes:
+# Fork in FloorPlan2 doesn't work because it'll be blocked by wall
 TARGETS_EXPOSED = {
-    "FloorPlan1": ["Vase", "Bread", "Book", "Lettuce"],
-    "FloorPlan2": ["Fork", "Pan", "Ladle"],
-    "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
-    "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
-    "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
+    "FloorPlan1": ["Vase"]#, "Book", "Lettuce"],
+    # "FloorPlan2": ["Mug", "Pan", "Ladle"],
+    # "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
+    # "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
+    # "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
 }
 
 TARGETS_CONTAINED = {
@@ -50,7 +52,7 @@ def test_many(targets):
     print("********* RESULTS ***********")
     print("SPL: {:.3f}".format(spl))
     print("SR: {:.4f}".format(sr))
-    print("Discounted Return: {} ({})" % (disc_return[0], disc_return[1]))
+    print("Discounted Return: {} ({})".format(disc_return[0], disc_return[1]))
     print("Failed objects:")
     pprint(failed_objects)
 
@@ -72,7 +74,7 @@ def gather(all_results):
                         if r["path"].success is True)
     success_rate = success_count / len(all_results)
     failed_objects = [(r["path"].scene, r["path"].target) for r in all_results
-                      if r.success is False]
+                      if r["path"].success is False]
     discounted_returns = [r["history"].discounted_return() for r in all_results]
     mean, ci = mean_ci_normal(discounted_returns)
     return spl, success_rate, failed_objects, (mean, ci)
