@@ -48,3 +48,17 @@ def plot_path(path, controller, ax=None):
     xpath = [pos["x"] for pos in path]
     zpath = [pos["z"] for pos in path]
     plt.plot(xpath, zpath, "o-", linewidth=3)
+
+def as_tuple(pose_or_component):
+    """
+    Returns tuple representation of given pose
+    or pose component (position or rotation).
+    """
+    if type(pose_or_component) == tuple:
+        position, rotation = pose_or_component
+        return (position["x"], position["y"], position["z"]),\
+            (rotation["x"], rotation["y"], rotation["z"])
+    else:
+        return (pose_or_component["x"],
+                pose_or_component["y"],
+                pose_or_component["z"])

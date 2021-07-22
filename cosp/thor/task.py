@@ -107,6 +107,7 @@ class TOS(ThorEnv):
         or it skips many steps. That makes it slightly shorter than the path found by
         our optimal agent. But will still use it per
         """
+        # Uses the ThorObjectSearchOptimalagent to compute the path as shortest path.
         init_position, init_rotation = self.init_state.agent_pose
 
         if self.task_type == "class":
