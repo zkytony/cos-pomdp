@@ -49,10 +49,21 @@ class PathResult(PklResult):
 
 
 class HistoryResult(YamlResult):
-    def __init__(self, history):
+    def __init__(self, history, discount_factor):
         """history is a list of {s, a, o, r} dictionaries
         Assume that each value has been formatted for readability and parsing."""
-        super().__init__(history)
+        self.discount_factor = discount_factor
+        self.history = history
+        super().__init__({"history": history, "discount_factor": discount_factor})
     @classmethod
     def FILENAME(cls):
         return "history.pkl"
+
+    def discounted_return(self):
+        discount = 1.0
+        ret = 0.0
+        for step in self.history:
+            sp, a, o, r = 0
+            ret += r*discount
+            discount *= self.discount_factor
+        return ret

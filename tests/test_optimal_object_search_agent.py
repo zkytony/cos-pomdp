@@ -1,8 +1,10 @@
 # Note:
 import random
+from pprint import pprint
 from cosp.thor.trial import build_object_search_trial
 from cosp.thor.utils import compute_spl
-from pprint import pprint
+from cosp.utils.math import mean_ci_normal
+
 
 ####### KITCHEN ##########
 TARGETS_EXPOSED = {
@@ -21,34 +23,37 @@ TARGETS_CONTAINED = {
     "FloorPlan5": ["Apple"]
 }
 
-####### BATHROOM ##########
-TARGETS_EXPOSED = {
-    "FloorPlan402": ["Candle", "Plunger", "SoapBar"],
-    "FloorPlan403": ["Glass", "Faucet", "Towel"],
-    "FloorPlan405": ["LightSwitch", "ScrubBrush", "HandTowelHolder"],
-    "FloorPlan407": ["Cloth", "SinkBasin", "Toilet"],
-    "FloorPlan409": ["ShowerHead", "TowelHolder", "Mirror"],
-}
+# ####### BATHROOM ##########
+# TARGETS_EXPOSED = {
+#     "FloorPlan402": ["Candle", "Plunger", "SoapBar"],
+#     "FloorPlan403": ["Glass", "Faucet", "Towel"],
+#     "FloorPlan405": ["LightSwitch", "ScrubBrush", "HandTowelHolder"],
+#     "FloorPlan407": ["Cloth", "SinkBasin", "Toilet"],
+#     "FloorPlan409": ["ShowerHead", "TowelHolder", "Mirror"],
+# }
 
-TARGETS_CONTAINED = {
-    "FloorPlan402": ["TissueBox", "ToiletPaper"],
-    "FloorPlan403": ["PaperTowelRoll", "DishSponge"],
-    "FloorPlan405": ["Candle"],
-    "FloorPlan407": ["SprayBottle"],
-    "FloorPlan409": ["ToiletPaper"]
-}
+# TARGETS_CONTAINED = {
+#     "FloorPlan402": ["TissueBox", "ToiletPaper"],
+#     "FloorPlan403": ["PaperTowelRoll", "DishSponge"],
+#     "FloorPlan405": ["Candle"],
+#     "FloorPlan407": ["SprayBottle"],
+#     "FloorPlan409": ["ToiletPaper"]
+# }
 
 def test_many(targets):
     all_results = []
     for floorplan in targets:
         for target in targets[floorplan]:
             all_results.append(collect(test_singe(floorplan, target)))
-            print(floorplan, target, all_results[-1].to_tuple())
-    spl, sr, failed_objects = gather(all_results)
+            print(floorplan, target, all_results[-1][0].to_tuple())
+    spl, sr, failed_objects, disc_return = gather(all_results)
+    print("********* RESULTS ***********")
     print("SPL: {:.3f}".format(spl))
     print("SR: {:.4f}".format(sr))
+    print("Discounted Return: {} ({})" % (disc_return[0], disc_return[1]))
     print("Failed objects:")
     pprint(failed_objects)
+
 
 def test_singe(floorplan, object_type):
     print("Searching for {} in {}".format(object_type, floorplan))
@@ -56,20 +61,22 @@ def test_singe(floorplan, object_type):
     return trial.run(logging=True)
 
 def collect(trial_result):
-    return trial_result[0]  # pathresult
+    path_result = trial_result[0]  # pathresult
+    history_result = trial_result[1]
+    return path_result, history_result
 
 def gather(all_results):
-    episode_results = [r.to_tuple()
-                       for r in all_results]
+    episode_results = [r[0].to_tuple() for r in all_results]
     spl = compute_spl(episode_results)
-
     success_count = sum(1 for r in all_results
                         if r.success is True)
     success_rate = success_count / len(all_results)
     failed_objects = [(r.scene, r.target) for r in all_results
                       if r.success is False]
-    return spl, success_rate, failed_objects
+    discounted_returns = [r[1].discounted_return() for r in all_results]
+    mean, ci = mean_ci_normal(discounted_returns)
+    return spl, success_rate, failed_objects, (mean, ci)
 
 if __name__ == "__main__":
     # test_out_optimal_agent()
-    test_many(TARGETS)
+    test_many(TARGETS_EXPOSED)

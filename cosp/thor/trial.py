@@ -74,7 +74,8 @@ def build_object_search_trial(scene, target, task_type,
             "h_angles": constants.H_ANGLES,
             "diagonal_ok": constants.DIAG_MOVE,
             "movement_params": thor_config["MOVEMENT_PARAMS"]
-        }
+        },
+        "discount_factor": 0.99
     }
 
     config = {

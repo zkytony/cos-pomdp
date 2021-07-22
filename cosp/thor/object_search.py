@@ -89,7 +89,7 @@ class TOS(ThorEnv):
         last_reward = self._history[-1][-1]
         success = last_reward == constants.TOS_REWARD_HI
         return [PathResult(self.scene, self.target, shortest_path, actual_path, success),
-                HistoryResult(self._history)]
+                HistoryResult(self._history, self.task_config["discount_factor"])]
 
     def get_current_path(self):
         """Returns a list of dict(x=,y=,z=) positions,
@@ -188,7 +188,9 @@ class TOS(ThorEnv):
 
     def get_step_info(self, step):
         sp, a, o, r = self._history[step]
-        return "Step {}: {}, Action: {}, Reward: {}".format(sp.agent_pose[0], step, a.name, r)
+        x, z, pitch, yaw = sp.agent_pose[0][0], sp.agent_pose[0][2], sp.agent_pose[1][0], sp.agent_pose[1][1]
+        return "Step {}: Action: {}, (x={}, z={}, pitch={}, yaw={}), Reward: {}"\
+            .format(a.name, x, z, pitch, yaw, step, r)
 
 # Class naming aliases
 ThorObjectSearch = TOS
