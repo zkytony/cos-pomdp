@@ -10,21 +10,20 @@ from cosp.utils.math import mean_ci_normal
 # ####### KITCHEN ##########
 # # Notes:
 # # Fork in FloorPlan2 doesn't work because it'll be blocked by wall
-# TARGETS_EXPOSED = {
-#     "FloorPlan1": ["Vase", "Book", "Lettuce"],
-#     "FloorPlan2": ["Mug", "Pan", "Ladle"],
-#     "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
-#     "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
-#     "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
-# }
+TARGETS_EXPOSED = {
+    "FloorPlan1": ["Vase", "Book", "Lettuce"],  # Book pitch wrong (due to height)
+    "FloorPlan2": ["Mug", "Pan", "Ladle"],      # Ladle pitch wrong (due to height)
+    "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
+    "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
+    "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
+}
 
 TARGETS_CONTAINED = {
-    "FloorPlan1": ["Cup"],
-    # "FloorPlan1": ["Knife", "Egg", "WineBottle"],
-    # "FloorPlan2": ["Plate", "Apple", "Butterknife"],
-    # "FloorPlan3": ["Pan", "Tomato"],
-    # "FloorPlan4": ["Egg", "Lettuce"],
-    # "FloorPlan5": ["Apple"]
+    # "FloorPlan1": ["Knife", "Egg", "WineBottle"],  # All works
+    # "FloorPlan2": ["Plate", "Apple", "ButterKnife"],  # Plate works, Apple: Blocked by door.
+    "FloorPlan3": ["Pan", "Tomato"],   # Pan: view blocked by table; Tomato: Fridge open blocked
+    "FloorPlan4": ["Egg", "Lettuce"],  # Fridge and Lettuce: fridge open blocked
+    "FloorPlan5": ["Apple"]  # Fridge open blocked
 }
 
 # ####### BATHROOM ##########
@@ -60,12 +59,12 @@ def test_many(targets):
 
 
 def test_singe_by_id(floorplan, object_id):
-    print("Searching for {} in {}".format(object_id, floorplan))
+    print("** Searching for {} in {}".format(object_id, floorplan))
     trial = build_object_search_trial(floorplan, object_id, "object")
     return trial.run(logging=True)
 
 def test_singe(floorplan, object_type):
-    print("Searching for {} in {}".format(object_type, floorplan))
+    print("** Searching for {} in {}".format(object_type, floorplan))
     trial = build_object_search_trial(floorplan, object_type, "class")
     return trial.run(logging=True)
 

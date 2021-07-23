@@ -171,7 +171,7 @@ class TOS(ThorEnv):
         agent_position = thor_agent_pose(event, as_tuple=True)[0]
         object_distance = euclidean_dist(objpos, agent_position)
         # allows 0.1 to account for small difference due to floating point instability
-        close_enough = (object_distance - self.goal_distance) <= 1e-1
+        close_enough = (object_distance - self.goal_distance) <= 2e-1
         success = in_fov and close_enough
 
         # Teleport back, if necessary (i.e. if agent_pose is provided)
@@ -290,6 +290,18 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
         # Check if the target object is within openable receptacle. If so,
         # need to navigate to the receptacle, open it.
         # so receptors are also targets we want to navigate to
+        ### NOTE: This method is hacky. It works for some objects, but has the following issues:
+        ### 1. The robot doesn't know if it can successfully open the container
+        ###    door (especially fridge).
+        ### 2. An object, if placed very low, may be blocked by e.g. tabletop
+        ###    and right now the robot cannot adjust its height to detect those
+        ###    objects
+        ### 3. (This is unrelated to this method, but it's an issue) For some
+        ###    objects, their height seems wrong with respect to robot's height,
+        ###    which causes the wrong pitch rotation to be computed
+        ### THEREFORE, this optimal agent isn't complete; It returns a plan,
+        ### which is approximately optimal (shortest), but it won't be able to
+        ### execute it successfully 100% of the time because of the above issues.
         openable_receptors = thor_object_receptors(controller,
                                                    target_object["objectId"],
                                                    openable_only=True)
@@ -299,8 +311,8 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
         overall_poses, overall_plan = [], []
         position, rotation = start_position, start_rotation
         for obj in goal_objects:
-            print(obj["objectId"])
             _start_time = time.time()
+            _nav_config = dict(nav_config)
             poses, plan = get_shortest_path_to_object(
                 controller, obj["objectId"],
                 position, rotation,
