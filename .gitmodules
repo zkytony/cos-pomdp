@@ -1,6 +1,3 @@
 [submodule "cosp/methods/savn"]
 	path = cosp/methods/savn
 	url = git@github.com:zkytony/savn.git
-[submodule "cosp/methods/mjolnir/MJOLNIR"]
-	path = cosp/methods/mjolnir/MJOLNIR
-	url = git@github.com:zkytony/MJOLNIR.git
