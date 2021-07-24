@@ -4,3 +4,6 @@
 [submodule "cosp/methods/MJOLNIR"]
 	path = cosp/methods/mjolnir
 	url = git@github.com:zkytony/MJOLNIR.git
+[submodule "cosp/methods/interaction-exploration"]
+	path = cosp/methods/interex
+	url = git@github.com:zkytony/interaction-exploration.git
