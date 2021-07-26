@@ -130,3 +130,6 @@ Thumbs.db
 
 ############################################3
 experiments/tmp-test/
+
+_results
+_images
