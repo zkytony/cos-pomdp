@@ -7,3 +7,6 @@
 [submodule "cosp/methods/interex"]
 	path = cosp/methods/interex
 	url = git@github.com:zkytony/dinterex.git
+[submodule "cosp/vision/yolov5"]
+	path = cosp/vision/yolov5
+	url = git@github.com:zkytony/yolov5.git
