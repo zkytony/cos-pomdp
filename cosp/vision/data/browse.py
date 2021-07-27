@@ -121,6 +121,7 @@ def kb_browse(model="yolo", **kwargs):
 
 
 if __name__ == "__main__":
+    # make sure you are under data/ and run python -m cosp.vision.data.browse
     import sys
     model = "yolo"
     for i, arg in enumerate(sys.argv[1:]):

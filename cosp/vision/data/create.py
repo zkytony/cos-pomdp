@@ -11,7 +11,6 @@ from thortils import (launch_controller,
 from cosp.thor import constants
 from .utils import xyxy_to_normalized_xywh, saveimg, make_colors
 
-
 YOLO_DATA_PATH = "./yolov5"
 
 def yolo_create_dataset_yaml(datadir, classes):
