@@ -2,8 +2,12 @@
 import os
 import yaml
 import random
-import tqdm
-from thortils import *
+from tqdm import tqdm
+from thortils import (launch_controller,
+                      thor_reachable_positions,
+                      thor_agent_pose,
+                      thor_teleport,
+                      thor_object_type)
 from .utils import xyxy_to_xywh, saveimg
 from ..thor import constants
 
@@ -28,7 +32,7 @@ def generate_yolo_dataset(datadir, scenes, objclasses, for_train,
         print("Generating YOLO data for", scene)
         generate_yolo_dataset_for_scene(
             datadir, scene, objclasses, for_train,
-            num_samples=100,
+            num_samples=num_samples,
             v_angles=v_angles,
             h_angles=h_angles)
 
@@ -65,9 +69,9 @@ def generate_yolo_dataset_for_scene(datadir,
         v_angles (list): List of acceptable pitch angles
         h_angles (list): List of acceptable yaw angles
     """
-    objclasses = {objclasses[i] : i for i in range(len(objclasses))}  # convert the list to dict
+    objclasses = {objclasses[i]: i for i in range(len(objclasses))}  # convert the list to dict
     thor_config = {**constants.CONFIG, **{"scene": scene}}
-    controller = launch_controller(config)
+    controller = launch_controller(thor_config)
     reachable_positions = thor_reachable_positions(controller)
     agent_pose = thor_agent_pose(controller.last_event)
     examples = []  # list of (img, annotations)
@@ -76,8 +80,8 @@ def generate_yolo_dataset_for_scene(datadir,
     _body_pitch = agent_pose[1]['x']
     _count = 0
     _chosen = set()
-    _pbar = tqdm(total=num_sampls)
-    while count < num_samples:
+    _pbar = tqdm(total=num_samples)
+    while _count < num_samples:
         x, z = random.sample(reachable_positions, 1)[0]
         if (x, z) in _chosen:
             continue
@@ -89,7 +93,6 @@ def generate_yolo_dataset_for_scene(datadir,
                                       rotation=dict(x=_body_pitch, y=yaw, z=roll),
                                       horizon=pitch)  # camera pitch
                 img = event.frame
-                img_width, img_height = img.shape[:1]
                 annotations = []
                 for objid in event.instance_detections2D:
                     object_class = thor_object_type(objid)
@@ -97,24 +100,28 @@ def generate_yolo_dataset_for_scene(datadir,
                         class_int = objclasses[object_class]
                         bbox2D = event.instance_detections2D[objid]
                         x_center, y_center, w, h =\
-                            xyxy_to_xywh(bbox2D, img.shape[:1],
+                            xyxy_to_xywh(bbox2D, img.shape[:2],
                                          center=True, normalize=True)
-                        annotations.append([class_int, x_center, y_center, width_norm, height_norm])
-                examples.append((img, annotations))
-                _count += 1
-                _pbar.update(1)
+                        annotations.append([class_int, x_center, y_center, w, h])
+                if len(annotations) > 0:
+                    examples.append((img, annotations))
+                    _count += 1
+                    _pbar.update(1)
+    _pbar.close()
     # Output the data
     typedir = "train" if for_train else "val"
     os.makedirs(os.path.join(datadir, typedir), exist_ok=True)
     for i, (img, annotations) in enumerate(examples):
-        img_path = os.path.join(datadir, typedir, "{}-img{}.jpg".format(scene, i))
+        file_path = os.path.join(datadir, typedir, "{}-img{}".format(scene, i))
+        img_path = file_path + ".jpg"
         saveimg(img, img_path)
-        with open(os.path.join(datadir, typedir, "{}-img{}.txt".format(scene, i))) as f:
+        with open(file_path + ".txt", "w") as f:
             for row in annotations:
-                f.write(" ".join(row) + "\n")
+                f.write(" ".join(map(str, row)) + "\n")
 
 
 if __name__ == "__main__":
+    # python -m cosp.vision.create_datasets
     generate_yolo_dataset(YOLO_DATA_PATH,
                           ["FloorPlan1", "FloorPlan2"],
                           constants.KITCHEN_OBJECT_CLASSES,

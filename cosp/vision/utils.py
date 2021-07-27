@@ -1,3 +1,4 @@
+import os
 from PIL import Image
 
 def xyxy_to_xywh(box, size, center=False, normalize=False):
@@ -42,5 +43,5 @@ def saveimg(img, path):
     """
     img: numpy array of image. RGB.
     """
-    im = Image.fromarray(results.imgs[0])
+    im = Image.fromarray(img)
     im.save(os.path.join(path))
