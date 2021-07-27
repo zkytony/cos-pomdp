@@ -8,35 +8,45 @@ from thortils import (launch_controller,
                       thor_agent_pose,
                       thor_teleport,
                       thor_object_type)
-from .utils import xyxy_to_xywh, saveimg
-from ..thor import constants
+from cosp.thor import constants
+from .utils import xyxy_to_normalized_xywh, saveimg, make_colors
 
-YOLO_DATA_PATH = "data/yolov5"
 
-def create_yolo_dataset_yaml(datadir):
+YOLO_DATA_PATH = "./yolov5"
+
+def yolo_create_dataset_yaml(datadir, classes):
+    """
+    create the yaml file as specified in
+    https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data#1-create-datasetyaml
+
+    Args:
+        datadir: Dataset root directory
+        classes (list): List of class names
+    """
     content = dict(
         path=datadir,
-        train="train",  # training images relative to 'path'
-        val="val",      # validation images relative to path
-        nc=len(constants.ALL_OBJECT_CLASSES),# number of classes
-        names=constants.ALL_OBJECT_CLASSES
+        train="train",    # training images relative to 'path'
+        val="val",        # validation images relative to path
+        nc=len(classes),  # number of classes
+        names=classes,
+        colors=make_colors(len(classes), seed=1)
     )
-    with open(os.path.join(datadir, "dataset.yaml")) as f:
+    with open(os.path.join(datadir, "dataset.yaml"), "w") as f:
         yaml.dump(content, f)
 
-def generate_yolo_dataset(datadir, scenes, objclasses, for_train,
+def yolo_generate_dataset(datadir, scenes, objclasses, for_train,
                           num_samples=100,
                           v_angles=constants.V_ANGLES,
                           h_angles=constants.H_ANGLES):
     for scene in scenes:
         print("Generating YOLO data for", scene)
-        generate_yolo_dataset_for_scene(
+        yolo_generate_dataset_for_scene(
             datadir, scene, objclasses, for_train,
             num_samples=num_samples,
             v_angles=v_angles,
             h_angles=h_angles)
 
-def generate_yolo_dataset_for_scene(datadir,
+def yolo_generate_dataset_for_scene(datadir,
                                     scene,
                                     objclasses,
                                     for_train,
@@ -100,8 +110,8 @@ def generate_yolo_dataset_for_scene(datadir,
                         class_int = objclasses[object_class]
                         bbox2D = event.instance_detections2D[objid]
                         x_center, y_center, w, h =\
-                            xyxy_to_xywh(bbox2D, img.shape[:2],
-                                         center=True, normalize=True)
+                            xyxy_to_normalized_xywh(bbox2D, img.shape[:2],
+                                                    center=True, normalize=True)
                         annotations.append([class_int, x_center, y_center, w, h])
                 if len(annotations) > 0:
                     examples.append((img, annotations))
@@ -121,8 +131,9 @@ def generate_yolo_dataset_for_scene(datadir,
 
 
 if __name__ == "__main__":
-    # python -m cosp.vision.create_datasets
-    generate_yolo_dataset(YOLO_DATA_PATH,
-                          ["FloorPlan1", "FloorPlan2"],
-                          constants.KITCHEN_OBJECT_CLASSES,
-                          True, num_samples=20)
+    # python -m cosp.vision.data.create
+    yolo_create_dataset_yaml(YOLO_DATA_PATH, constants.KITCHEN_OBJECT_CLASSES)
+    # yolo_generate_dataset(YOLO_DATA_PATH,
+    #                       ["FloorPlan1", "FloorPlan2"],
+    #                       constants.KITCHEN_OBJECT_CLASSES,
+    #                       True, num_samples=20)
