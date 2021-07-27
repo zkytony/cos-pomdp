@@ -7,7 +7,8 @@ from thortils import (launch_controller,
                       thor_reachable_positions,
                       thor_agent_pose,
                       thor_teleport,
-                      thor_object_type)
+                      thor_object_type,
+                      ithor_scene_names)
 from cosp.thor import constants
 from .utils import xyxy_to_normalized_xywh, saveimg, make_colors
 
@@ -109,14 +110,14 @@ def yolo_generate_dataset_for_scene(datadir,
                         class_int = objclasses[object_class]
                         bbox2D = event.instance_detections2D[objid]
                         x_center, y_center, w, h =\
-                            xyxy_to_normalized_xywh(bbox2D, img.shape[:2],
-                                                    center=True, normalize=True)
+                            xyxy_to_normalized_xywh(bbox2D, img.shape[:2], center=True)
                         annotations.append([class_int, x_center, y_center, w, h])
                 if len(annotations) > 0:
                     examples.append((img, annotations))
                     _count += 1
                     _pbar.update(1)
     _pbar.close()
+    controller.stop()
     # Output the data
     typedir = "train" if for_train else "val"
     os.makedirs(os.path.join(datadir, typedir), exist_ok=True)
@@ -130,9 +131,12 @@ def yolo_generate_dataset_for_scene(datadir,
 
 
 if __name__ == "__main__":
-    # python -m cosp.vision.data.create
-    yolo_create_dataset_yaml(YOLO_DATA_PATH, constants.KITCHEN_OBJECT_CLASSES)
-    # yolo_generate_dataset(YOLO_DATA_PATH,
-    #                       ["FloorPlan1", "FloorPlan2"],
-    #                       constants.KITCHEN_OBJECT_CLASSES,
-    #                       True, num_samples=20)
+    # Run this under cosp/vision/data
+    # python -m cosp.vision.data.create.
+    # Let's do kitchen first.
+    yolo_create_dataset_yaml(YOLO_DATA_PATH,
+                             constants.KITCHEN_OBJECT_CLASSES)
+    yolo_generate_dataset(YOLO_DATA_PATH,
+                          ithor_scene_names("kitchen"),
+                          constants.KITCHEN_OBJECT_CLASSES,
+                          True, num_samples=100)

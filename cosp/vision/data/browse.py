@@ -21,7 +21,7 @@ def yolo_load(dataset_yaml_path, for_train=True):
     files = set(map(lambda fname: os.path.splitext(fname)[0],
                     os.listdir(dirpath)))
     samples = []
-    for fname in files:
+    for fname in sorted(files):
         with open(os.path.join(dirpath, fname + ".txt")) as fa:
             annotations = []
             for line in fa.readlines():
@@ -117,8 +117,6 @@ def kb_browse(model="yolo", **kwargs):
             print("quit")
             return
         time.sleep(0.1)
-
-
 
 if __name__ == "__main__":
     # make sure you are under data/ and run python -m cosp.vision.data.browse
