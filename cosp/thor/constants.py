@@ -11,3 +11,42 @@ TOS_REWARD_STEP = -1
 DIAG_MOVE = False
 
 GOAL_DISTANCE = 1.0
+
+
+KITCHEN_OBJECT_CLASSES = [
+    "Toaster",
+    "Microwave",
+    "Fridge",
+    "CoffeeMaker",
+    "GarbageCan",
+    "Box",
+    "Bowl",
+]
+
+LIVING_ROOM_OBJECT_CLASSES = [
+    "Pillow",
+    "Laptop",
+    "Television",
+    "GarbageCan",
+    "Box",
+    "Bowl",
+]
+
+BATHROOM_OBJECT_CLASSES = [
+    "HousePlant",
+    "Lamp",
+    "Book",
+    "AlarmClock"
+]
+
+BEDROOM_OBJECT_CLASSES = [
+    "Sink",
+    "ToiletPaper",
+    "SoapBottle",
+    "LightSwitch"
+]
+
+ALL_OBJECT_CLASSES = KITCHEN_OBJECT_CLASSES +\
+                     LIVING_ROOM_OBJECT_CLASSES +\
+                     BATHROOM_OBJECT_CLASSES +\
+                     BEDROOM_OBJECT_CLASSES
