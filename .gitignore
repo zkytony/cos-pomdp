@@ -131,6 +131,8 @@ Thumbs.db
 ############################################3
 experiments/tmp-test/
 
+runs*
+data/
 _results
 _images
 cosp/vision/data/yolov5*
