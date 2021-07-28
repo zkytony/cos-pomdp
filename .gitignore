@@ -132,12 +132,14 @@ Thumbs.db
 experiments/tmp-test/
 
 runs*
+results/
 data/
+models/
 _results
 _images
 cosp/vision/data/yolov5*
 *.pt
 
 cosp/vision/runs
-cosp/vision/wandb
+*wandb*
 cosp/vision/runs*
