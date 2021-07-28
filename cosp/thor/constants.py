@@ -34,7 +34,6 @@ KITCHEN_OBJECT_CLASSES = [
     "Book",
     "Bowl",
     "Toaster",
-    "Vase",
     "Statue",
     "Pan",
     "CoffeeMachine",

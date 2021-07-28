@@ -173,8 +173,8 @@ if __name__ == "__main__":
     scenes = {"train": [], "val": []}
     if "kitchen" in args.scene_types:
         object_classes.extend(constants.KITCHEN_OBJECT_CLASSES)
-        scenes["train"].extend(constants.KITCHEN_TRAIN_SCENES[:3])
-        scenes["val"].extend(constants.KITCHEN_VAL_SCENES[:3])
+        scenes["train"].extend(constants.KITCHEN_TRAIN_SCENES)
+        scenes["val"].extend(constants.KITCHEN_VAL_SCENES)
     if "living_room" in args.scene_types or "living-room" in args.scene_types:
         object_classes.extend(constants.LIVING_ROOM_OBJECT_CLASSES)
         scenes["train"].extend(constants.LIVING_ROOM_TRAIN_SCENES)

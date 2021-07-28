@@ -18,6 +18,5 @@ python -m cosp.vision.data.create data/yolov5 --num-train-samples 3 --num-val-sa
 
 # Browse generated data
 ```
-cd cosp/vision
 python -m cosp.vision.data.browse -m yolo -p path/to/dataset/yaml
 ```
