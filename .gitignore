@@ -133,7 +133,8 @@ experiments/tmp-test/
 
 _results
 _images
-cosp/vision/data/yolov5
+cosp/vision/data/yolov5*
 *.pt
 
 cosp/vision/runs
+cosp/vision/runs*

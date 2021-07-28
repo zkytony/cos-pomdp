@@ -20,15 +20,71 @@ colors:
 - - 125
   - 205
   - 48
+- - 128
+  - 182
+  - 204
+- - 151
+  - 171
+  - 170
+- - 116
+  - 219
+  - 127
+- - 95
+  - 36
+  - 16
+- - 80
+  - 71
+  - 219
+- - 130
+  - 182
+  - 90
+- - 71
+  - 229
+  - 39
+- - 118
+  - 41
+  - 133
+- - 123
+  - 169
+  - 45
+- - 146
+  - 4
+  - 203
+- - 68
+  - 137
+  - 70
+- - 125
+  - 70
+  - 182
+- - 102
+  - 91
+  - 98
+- - 97
+  - 140
+  - 88
 names:
-- Toaster
-- Microwave
-- Fridge
-- CoffeeMaker
-- GarbageCan
-- Box
+- PepperShaker
+- ButterKnife
+- Cup
+- Fork
+- Ladle
+- SaltShaker
+- ScrubBrush
+- SpatulaBread
+- Book
 - Bowl
-nc: 7
-path: ./data/yolov5
+- Toaster
+- Vase
+- StatueCoffeeMachine
+- Cabinet
+- Drawer
+- DiningTable
+- CoffeeTable
+- Fridge
+- Shelf
+- CounterTop
+- Oven
+nc: 21
+path: data/yolov5
 train: train
 val: val

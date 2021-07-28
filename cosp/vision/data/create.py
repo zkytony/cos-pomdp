@@ -146,7 +146,7 @@ if __name__ == "__main__":
         # Read arguments
         YOLO_DATA_PATH = sys.argv[1]
         name = "yolov5"
-        for i, arg in sys.argv:
+        for i, arg in enumerate(sys.argv):
             if i <= 1:
                 continue
             if sys.argv[i] == "-n":
