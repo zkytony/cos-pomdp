@@ -53,8 +53,7 @@ def yolo_generate_dataset_for_scene(datadir,
                                     num_samples=100,
                                     v_angles=constants.V_ANGLES,
                                     h_angles=constants.H_ANGLES):
-    """
-    Places the agent at random position within the scene.
+    """Places the agent at random position within the scene.
     Then, make the agent look around, for all possible
     horizontal and vertical angles. Then grab the frame and object
     bounding boxes within it, until reaching `num_samples`.
@@ -65,11 +64,13 @@ def yolo_generate_dataset_for_scene(datadir,
 
     The data will be stored in:
 
-        {datadir}/{type}/{scene}-img{#}.jpg
-        {datadir}/{type}/{scene}-img{#}.txt
+        {datadir}/{type}/images/{scene}-img{#}.jpg
+        {datadir}/{type}/labels/{scene}-img{#}.txt
 
-    type is train if `for_train` is True otherwise val.
-    scene is the given `scene`. The number # is an integer starting form 0.
+    type is train if `for_train` is True otherwise val.  scene is the given
+    `scene`. The number # is an integer starting form 0. YOLOv5's documentation
+    says: YOLOv5 locates labels automatically for each image by replacing the
+    last instance of /images/ in each image path with /labels/
 
     Args:
         for_train (bool): True if use intending to use this dataset for training.
@@ -78,6 +79,7 @@ def yolo_generate_dataset_for_scene(datadir,
             will be used as the integer class in the YOLO file format.
         v_angles (list): List of acceptable pitch angles
         h_angles (list): List of acceptable yaw angles
+
     """
     objclasses = {objclasses[i]: i for i in range(len(objclasses))}  # convert the list to dict
     thor_config = {**constants.CONFIG, **{"scene": scene}}

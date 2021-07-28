@@ -4,37 +4,52 @@ import cv2
 import os
 import yaml
 import numpy as np
+from tqdm import tqdm
 from .utils import normalized_xywh_to_xyxy
 from .create import YOLO_DATA_PATH
 from PIL import Image
 import cosp.utils.keys as keys
 import time
 
-def yolo_load(dataset_yaml_path, for_train=True):
+def yolo_load_info(dataset_yaml_path, for_train=True):
+    """
+    Loads the config & filenames but doesn't
+    open the data files.
+    Returns: datadir, filenames, classes, colors
+    """
     with open(dataset_yaml_path) as f:
         config = yaml.safe_load(f)
 
     if for_train:
-        dirpath = os.path.join(config["path"], "train")
+        datadir = os.path.join(config["path"], "train")
     else:
-        dirpath = os.path.join(config["path"], "val")
-    files = set(map(lambda fname: os.path.splitext(fname)[0],
-                    os.listdir(dirpath)))
-    samples = []
-    for fname in sorted(files):
-        with open(os.path.join(dirpath, fname + ".txt")) as fa:
-            annotations = []
-            for line in fa.readlines():
-                annot = list(line.strip().split())
-                annot[0] = int(annot[0])
-                annot[1:] = map(float, annot[1:])
-                annotations.append(annot)
-            im = Image.open(os.path.join(dirpath, fname + ".jpg"))
-            samples.append((im, annotations))
+        datadir = os.path.join(config["path"], "val")
+    fnames = map(lambda fname: os.path.splitext(fname)[0],
+                 os.listdir(os.path.join(datadir, "images")))
     classes = config["names"]
     colors = config["colors"]
-    return samples, classes, colors
+    return (datadir,
+            list(sorted(fnames)),
+            classes,
+            colors)
 
+def yolo_load_one(datadir, fname):
+    """
+    Loads one sample. The sample is located at
+
+    {datadir}/images/{fname}.jpg
+    {datadir}/labels/{fname}.txt
+    """
+    with open(os.path.join(datadir, "labels", fname + ".txt")) as fa:
+        annotations = []
+        for line in fa.readlines():
+            annot = list(line.strip().split())
+            annot[0] = int(annot[0])
+            annot[1:] = map(float, annot[1:])
+            annotations.append(annot)
+            with open(os.path.join(datadir, "images", fname + ".jpg"), 'rb') as i:
+                im = Image.open(i)
+                return np.array(im), annotations
 
 def yolo_plot_one(img, annotations, classes, colors, line_thickness=2,
                   center=True, show_label=True):
@@ -84,13 +99,14 @@ def kb_browse(model="yolo", **kwargs):
     """
     import cv2
     # Load samples
+    print("Loading samples...")
     if model == "yolo":
         dataset_yaml_path =\
             kwargs.get("dataset_yaml_path",
                        os.path.join(YOLO_DATA_PATH, "dataset.yaml"))
         for_train = kwargs.get("for_train", True)
-        samples, classes, colors =\
-            yolo_load(dataset_yaml_path, for_train=for_train)
+        datadir, files, classes, colors =\
+            yolo_load_info(dataset_yaml_path, for_train=for_train)
 
     # Start simple keyboard listener
     controls = {
@@ -102,9 +118,9 @@ def kb_browse(model="yolo", **kwargs):
 
     idx = 0
     while True:
-        img, annotations = samples[idx]
         if model == "yolo":
-            img = yolo_plot_one(np.array(img), annotations, classes, colors)
+            img, annotations = yolo_load_one(datadir, files[idx])
+            img = yolo_plot_one(img, annotations, classes, colors)
             img_rgb = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         else:
             raise ValueError("Cannot handle {}".format(model))
