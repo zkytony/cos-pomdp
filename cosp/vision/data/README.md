@@ -12,3 +12,13 @@ cosp/vision/data
 ```
 
 # Create data
+```
+cd cosp/vision
+python -m cosp.vision.data.create path/to/output/dataset. -n name
+```
+
+# Browse generated data
+```
+cd cosp/vision
+python -m cosp.vision.data.browse -m yolo -p path/to/dataset/yaml
+```
