@@ -1,0 +1,34 @@
+colors:
+- - 85
+  - 119
+  - 28
+- - 141
+  - 31
+  - 240
+- - 76
+  - 88
+  - 38
+- - 100
+  - 234
+  - 94
+- - 83
+  - 92
+  - 57
+- - 131
+  - 174
+  - 174
+- - 125
+  - 205
+  - 48
+names:
+- Toaster
+- Microwave
+- Fridge
+- CoffeeMaker
+- GarbageCan
+- Box
+- Bowl
+nc: 7
+path: ./data/yolov5
+train: train
+val: val

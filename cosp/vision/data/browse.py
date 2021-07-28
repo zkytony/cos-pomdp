@@ -103,7 +103,7 @@ def kb_browse(model="yolo", **kwargs):
     if model == "yolo":
         dataset_yaml_path =\
             kwargs.get("dataset_yaml_path",
-                       os.path.join(YOLO_DATA_PATH, "dataset.yaml"))
+                       os.path.join("yolov5-dataset.yaml"))
         for_train = kwargs.get("for_train", True)
         datadir, files, classes, colors =\
             yolo_load_info(dataset_yaml_path, for_train=for_train)
@@ -138,7 +138,12 @@ if __name__ == "__main__":
     # make sure you are under data/ and run python -m cosp.vision.data.browse
     import sys
     model = "yolo"
-    for i, arg in enumerate(sys.argv[1:]):
+    dataset_yaml_path = "yolov5-dataset.yaml"
+    for i, arg in enumerate(sys.argv):
+        if i == 0:
+            continue
         if arg == "-m":
             model = sys.argv[i+1]
-    kb_browse(model)
+        if arg == "-p":
+            dataset_yaml_path = sys.argv[i+1]
+    kb_browse(model, dataset_yaml_path=dataset_yaml_path)
