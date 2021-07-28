@@ -1,5 +1,30 @@
 # cos-pomdp
 
+## Organization
+```
+  cos-pomdp/
+     tests/
+         # code for tests
+     experiments/  # Right now there is nothing here
+         # code for experiments
+     results
+         # experiment / test results
+     data/
+         # actual data
+     external/
+         # external repositories (e.g. yolov5, savn, etc.)
+     models/
+         # actual models
+     cosp/
+         # core code of COS-POMDP & our algorithm.
+         thor/
+             code related to thor object search
+         vision/
+             code related to vision
+         utils/
+             utilities
+```
+
 ## AI2-Thor Setup
 
 Compare with:

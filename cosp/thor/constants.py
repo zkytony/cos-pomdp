@@ -22,14 +22,14 @@ KITCHEN_OBJECT_CLASSES = [
     "Ladle",
     "SaltShaker",
     "ScrubBrush",
-    "Spatula"
+    "Spatula",
     # Medium objects
     "Bread",
     "Book",
     "Bowl",
     "Toaster",
     "Vase",
-    "Statue"
+    "Statue",
     "CoffeeMachine",
     # Large objects
     "Cabinet",
