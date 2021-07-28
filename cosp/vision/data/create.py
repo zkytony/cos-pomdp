@@ -136,9 +136,18 @@ if __name__ == "__main__":
     # Run this under cosp/vision/data
     # python -m cosp.vision.data.create.
     # Let's do kitchen first.
+    print("Building training dataset")
     yolo_create_dataset_yaml(YOLO_DATA_PATH,
                              constants.KITCHEN_OBJECT_CLASSES)
     yolo_generate_dataset(YOLO_DATA_PATH,
-                          ithor_scene_names("kitchen"),
+                          ithor_scene_names("kitchen", levels=range(1, 21)),
                           constants.KITCHEN_OBJECT_CLASSES,
-                          True, num_samples=100)
+                          True, num_samples=120)
+    print("--------------------------------------------------------")
+    print("Building val dataset")
+    yolo_create_dataset_yaml(YOLO_DATA_PATH,
+                             constants.KITCHEN_OBJECT_CLASSES)
+    yolo_generate_dataset(YOLO_DATA_PATH,
+                          ithor_scene_names("kitchen", levels=range(21, 31)),
+                          constants.KITCHEN_OBJECT_CLASSES,
+                          False, num_samples=40)
