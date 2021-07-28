@@ -12,12 +12,14 @@ from thortils import (launch_controller,
 from cosp.thor import constants
 from .utils import xyxy_to_normalized_xywh, saveimg, make_colors
 
-YOLO_DATA_PATH = "./yolov5"
-
-def yolo_create_dataset_yaml(datadir, classes):
+def yolo_create_dataset_yaml(datadir, classes, name="yolov5"):
     """
     create the yaml file as specified in
     https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data#1-create-datasetyaml
+
+    This yaml file will be created at the directory
+    where this script is run. The `datadir` should point to the
+    directory relative to the current working directory as well.
 
     Args:
         datadir: Dataset root directory
@@ -31,7 +33,7 @@ def yolo_create_dataset_yaml(datadir, classes):
         names=classes,
         colors=make_colors(len(classes), seed=1)
     )
-    with open(os.path.join(datadir, "dataset.yaml"), "w") as f:
+    with open(os.path.join("{}-dataset.yaml".format(name)), "w") as f:
         yaml.dump(content, f)
 
 def yolo_generate_dataset(datadir, scenes, objclasses, for_train,
@@ -134,20 +136,34 @@ def yolo_generate_dataset_for_scene(datadir,
 
 if __name__ == "__main__":
     # Run this under cosp/vision/data
-    # python -m cosp.vision.data.create.
+    # python -m cosp.vision.data.create path/to/output/dataset. -n yolov5
+    # The -n flag supplies name which will be used in {name}-dataset.yaml
     # Let's do kitchen first.
-    print("Building training dataset")
-    yolo_create_dataset_yaml(YOLO_DATA_PATH,
-                             constants.KITCHEN_OBJECT_CLASSES)
-    yolo_generate_dataset(YOLO_DATA_PATH,
-                          ithor_scene_names("kitchen", levels=range(1, 21)),
-                          constants.KITCHEN_OBJECT_CLASSES,
-                          True, num_samples=120)
-    print("--------------------------------------------------------")
-    print("Building val dataset")
-    yolo_create_dataset_yaml(YOLO_DATA_PATH,
-                             constants.KITCHEN_OBJECT_CLASSES)
-    yolo_generate_dataset(YOLO_DATA_PATH,
-                          ithor_scene_names("kitchen", levels=range(21, 31)),
-                          constants.KITCHEN_OBJECT_CLASSES,
-                          False, num_samples=40)
+    import sys
+    if len(sys.argv) < 1:
+        print("Required: path to root directory of output dataset")
+    else:
+        # Read arguments
+        YOLO_DATA_PATH = sys.argv[1]
+        name = "yolov5"
+        for i, arg in sys.argv:
+            if i <= 1:
+                continue
+            if sys.argv[i] == "-n":
+                name = sys.argv[i+1]
+
+        print("Building training dataset")
+        yolo_create_dataset_yaml(YOLO_DATA_PATH,
+                                 constants.KITCHEN_OBJECT_CLASSES)
+        yolo_generate_dataset(YOLO_DATA_PATH,
+                              ithor_scene_names("kitchen", levels=range(1, 21)),
+                              constants.KITCHEN_OBJECT_CLASSES,
+                              True, num_samples=120)
+        print("--------------------------------------------------------")
+        print("Building val dataset")
+        yolo_create_dataset_yaml(YOLO_DATA_PATH,
+                                 constants.KITCHEN_OBJECT_CLASSES)
+        yolo_generate_dataset(YOLO_DATA_PATH,
+                              ithor_scene_names("kitchen", levels=range(21, 31)),
+                              constants.KITCHEN_OBJECT_CLASSES,
+                              False, num_samples=40)

@@ -10,3 +10,5 @@ cosp/vision/data
                 FloorPlan10-img0.txt
                 ...
 ```
+
+# Create data

@@ -6,7 +6,6 @@ import yaml
 import numpy as np
 from tqdm import tqdm
 from .utils import normalized_xywh_to_xyxy
-from .create import YOLO_DATA_PATH
 from PIL import Image
 import cosp.utils.keys as keys
 import time
