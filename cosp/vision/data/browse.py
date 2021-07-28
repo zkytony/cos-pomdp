@@ -44,9 +44,9 @@ def yolo_load_one(datadir, fname):
             annot[0] = int(annot[0])
             annot[1:] = map(float, annot[1:])
             annotations.append(annot)
-            with open(os.path.join(datadir, "images", fname + ".jpg"), 'rb') as i:
-                im = Image.open(i)
-                return np.array(im), annotations
+    with open(os.path.join(datadir, "images", fname + ".jpg"), 'rb') as i:
+        im = Image.open(i)
+        return np.array(im), annotations
 
 def yolo_plot_one(img, annotations, classes, colors, line_thickness=2,
                   center=True, show_label=True):
@@ -133,14 +133,13 @@ def kb_browse(model="yolo", **kwargs):
 
 if __name__ == "__main__":
     # make sure you are under data/ and run python -m cosp.vision.data.browse
-    import sys
-    model = "yolo"
-    dataset_yaml_path = "yolov5-dataset.yaml"
-    for i, arg in enumerate(sys.argv):
-        if i == 0:
-            continue
-        if arg == "-m":
-            model = sys.argv[i+1]
-        if arg == "-p":
-            dataset_yaml_path = sys.argv[i+1]
-    kb_browse(model, dataset_yaml_path=dataset_yaml_path)
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Browse object detection data samples")
+    parser.add_argument("dataset_yaml_path", type=str, help="Path to the yaml."
+                        "file of the dataset")
+    parser.add_argument("--model", "-m", type=str, help="Model. Default yolo",
+                        default="yolo")
+    args = parser.parse_args()
+    kb_browse(args.model, dataset_yaml_path=args.dataset_yaml_path)

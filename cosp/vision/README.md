@@ -13,8 +13,7 @@ cosp/vision/data
 
 # Create data
 ```
-cd cosp/vision
-python -m cosp.vision.data.create path/to/output/dataset. -n name
+python -m cosp.vision.data.create data/yolov5 --num-train-samples 3 --num-val-samples 1
 ```
 
 # Browse generated data
