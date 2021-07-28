@@ -14,13 +14,32 @@ GOAL_DISTANCE = 1.0
 
 
 KITCHEN_OBJECT_CLASSES = [
-    "Toaster",
-    "Microwave",
-    "Fridge",
-    "CoffeeMaker",
-    "GarbageCan",
-    "Box",
+    # Small objects
+    "PepperShaker",
+    "ButterKnife",
+    "Cup",
+    "Fork",
+    "Ladle",
+    "SaltShaker",
+    "ScrubBrush",
+    "Spatula"
+    # Medium objects
+    "Bread",
+    "Book",
     "Bowl",
+    "Toaster",
+    "Vase",
+    "Statue"
+    "CoffeeMachine",
+    # Large objects
+    "Cabinet",
+    "Drawer",
+    "DiningTable",
+    "CoffeeTable",
+    "Fridge",
+    "Shelf",
+    "CounterTop",
+    "Oven"
 ]
 
 LIVING_ROOM_OBJECT_CLASSES = [
