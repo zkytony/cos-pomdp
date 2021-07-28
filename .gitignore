@@ -143,3 +143,6 @@ cosp/vision/data/yolov5*
 cosp/vision/runs
 *wandb*
 cosp/vision/runs*
+
+val_yolov5.sh
+train_yolov5.sh
