@@ -4,11 +4,9 @@ import cv2
 import os
 import yaml
 import numpy as np
-from tqdm import tqdm
-from .utils import normalized_xywh_to_xyxy
 from PIL import Image
-import cosp.utils.keys as keys
 import time
+from ..utils import normalized_xywh_to_xyxy
 
 def yolo_load_info(dataset_yaml_path, for_train=True):
     """
