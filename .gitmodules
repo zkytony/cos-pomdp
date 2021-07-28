@@ -1,12 +1,12 @@
 [submodule "cosp/methods/savn"]
-	path = cosp/methods/savn
+	path = external/savn
 	url = git@github.com:zkytony/savn.git
 [submodule "cosp/methods/mjolnir"]
-	path = cosp/methods/mjolnir
+	path = external/mjolnir
 	url = git@github.com:zkytony/dmjolnir.git
 [submodule "cosp/methods/interex"]
-	path = cosp/methods/interex
+	path = external/interex
 	url = git@github.com:zkytony/dinterex.git
 [submodule "cosp/vision/yolov5"]
-	path = cosp/vision/yolov5
+	path = external/yolov5
 	url = git@github.com:zkytony/yolov5.git
