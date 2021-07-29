@@ -12,15 +12,15 @@ from cosp.utils.math import mean_ci_normal
 # # Fork in FloorPlan2 doesn't work because it'll be blocked by wall
 TARGETS_EXPOSED = {
     "FloorPlan1": ["Vase", "Book", "Lettuce"],  # Book pitch wrong (due to height)
-    "FloorPlan2": ["Mug", "Pan", "Ladle"],      # Ladle pitch wrong (due to height)
+    "FloorPlan2": ["Bowl", "Pan", "Ladle"],      # Ladle pitch wrong (due to height)
     "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
     "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
     "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
 }
 
 TARGETS_CONTAINED = {
-    # "FloorPlan1": ["Knife", "Egg", "WineBottle"],  # All works
-    # "FloorPlan2": ["Plate", "Apple", "ButterKnife"],  # Plate works, Apple: Blocked by door.
+    "FloorPlan1": ["Knife", "Egg", "WineBottle"],  # All works
+    "FloorPlan2": ["Plate", "Apple", "ButterKnife"],  # Plate works, Apple: Blocked by door.
     "FloorPlan3": ["Pan", "Tomato"],   # Pan: view blocked by table; Tomato: Fridge open blocked
     "FloorPlan4": ["Egg", "Lettuce"],  # Fridge and Lettuce: fridge open blocked
     "FloorPlan5": ["Apple"]  # Fridge open blocked
@@ -28,7 +28,7 @@ TARGETS_CONTAINED = {
 
 # ####### BATHROOM ##########
 # TARGETS_EXPOSED = {
-#     "FloorPlan402": ["Candle", "Plunger", "SoapBar"],
+#     "FloorPlan402": ["Candle", "Plunger"],#, "SoapBar"],  # SoapBar fails
 #     "FloorPlan403": ["Glass", "Faucet", "Towel"],
 #     "FloorPlan405": ["LightSwitch", "ScrubBrush", "HandTowelHolder"],
 #     "FloorPlan407": ["Cloth", "SinkBasin", "Toilet"],
@@ -92,4 +92,4 @@ def _debug_pitch():
 
 if __name__ == "__main__":
     # test_out_optimal_agent()
-    test_many(TARGETS_CONTAINED)
+    test_many(TARGETS_EXPOSED)
