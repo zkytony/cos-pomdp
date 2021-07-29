@@ -10,7 +10,9 @@ setup(name='cos-pomdp',
       python_requires='>3.6',
       install_requires=[
           'ai2thor==3.3.4',
-          'pomdp_py'
+          'pomdp_py',
+          'tqdm',
+          'torch>=1.8.0'
       ],
       author='Kaiyu Zheng',
       author_email='kaiyutony@gmail.com')
