@@ -91,19 +91,19 @@ def plot():
     plt.subplots_adjust(bottom=0.125, top=0.9, left=0.17, right=0.95)
 
     # distance plot
-    ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
-    ax.set_ylabel("Distance to Agent (m)")
     order = df.groupby(["class"]).median()["agent_dist"].sort_values().index
     sns.boxplot(x="agent_dist", y="class", data=df,
                 orient="h", order=order, palette="light:#5A9")
+    ax.set_xlabel("Distance to Agent (m)")
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
+    ax.grid(axis='y')
 
     # # TP/FP plot
     ax2 = ax.twiny()
-    ax2.set_xlabel("Count")
-    ax2.xaxis.set_major_locator(ticker.MultipleLocator(25))
     # stripplot is the same as scatterplot except for categorical values.
     sns.stripplot(x="count", y="class", hue="outcome", order=order,
                   data=scounts, ax=ax2, linewidth=1, size=5)
+    ax2.xaxis.set_major_locator(ticker.MultipleLocator(25))
     plt.savefig("_detection_distances.png")
 
 if __name__ == "__main__":
