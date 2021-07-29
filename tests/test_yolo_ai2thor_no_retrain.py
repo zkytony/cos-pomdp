@@ -8,7 +8,8 @@ from thortils import launch_controller, thor_place_agent_randomly
 from PIL import Image
 
 
-OUT_DIR = "_results/"
+OUT_DIR = "../results/simple-test-yolov5-ai2thor-no-train"
+os.makedirs(OUT_DIR, exist_ok=True)
 model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
 controller = launch_controller({"scene": "FloorPlan1"})
 for i in tqdm(range(100)):
