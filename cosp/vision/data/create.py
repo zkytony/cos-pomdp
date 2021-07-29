@@ -10,7 +10,7 @@ from thortils import (launch_controller,
                       thor_object_type,
                       ithor_scene_names)
 from cosp.thor import constants
-from ..utils import xyxy_to_normalized_xywh, saveimg, make_colors
+from ..utils.general import xyxy_to_normalized_xywh, saveimg, make_colors
 
 def yolo_create_dataset_yaml(datadir, classes, name="yolov5"):
     """

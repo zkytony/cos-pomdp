@@ -157,3 +157,11 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
             texts.append(text)
 
     return texts
+
+
+import pandas as pd
+def boxplot_sorted(df, by, column, ax=None):
+    #https://stackoverflow.com/a/37871635/2893053
+    df2 = pd.DataFrame({col:vals[column] for col, vals in df.groupby(by)})
+    meds = df2.median().sort_values()
+    df2[meds.index].boxplot(rot=90, ax=ax)

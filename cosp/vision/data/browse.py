@@ -6,7 +6,8 @@ import yaml
 import numpy as np
 from PIL import Image
 import time
-from ..utils import normalized_xywh_to_xyxy
+from ..utils.general import normalized_xywh_to_xyxy
+from ..utils.plots import plot_one_box
 
 def yolo_load_info(dataset_yaml_path, for_train=True):
     """
@@ -66,22 +67,10 @@ def yolo_plot_one(img, annotations, classes, colors, line_thickness=2,
     for annot in annotations:
         class_int = annot[0]
         xywh = annot[1:]
-        x1, y1, x2, y2 = normalized_xywh_to_xyxy(xywh, _img.shape[:2], center=center)
-        cv2.rectangle(_img, (x1, y1), (x2, y2), colors[class_int],
-                      thickness=tl, lineType=cv2.LINE_AA)
-        if show_label:
-            tf = max(tl - 1, 1)  # font thickness
-            t_size = cv2.getTextSize(classes[class_int], 0,
-                                     fontScale=tl/3,
-                                     thickness=tf)[0]
-            # the background color of the class label
-            cv2.rectangle(_img,
-                          (x1, y1),
-                          (x1 + t_size[0], y1 - t_size[1] - 3),
-                          colors[class_int], -1, cv2.LINE_AA)  # filled
-            cv2.putText(_img, classes[class_int],
-                        (x1, y1 - 2), 0, tl / 3, [255, 255, 255],
-                        thickness=tf, lineType=cv2.LINE_AA)
+        xyxy = normalized_xywh_to_xyxy(xywh, _img.shape[:2], center=center)
+        plot_one_box(_img, xyxy, classes[class_int], colors[class_int],
+                     line_thickness=line_thickness, show_label=show_label)
+
     if isinstance(img, Image.Image):
         # Returns PIL image if input is PIL image
         _img = Image.fromarray(_img)

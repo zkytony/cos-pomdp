@@ -1,7 +1,7 @@
 cd external/
 DATASET_NAME="yolov5"
 DATASET_YAML_FILE="../data/yolov5/$DATASET_NAME-dataset.yaml"
-VALIDATION_MODEL_WEIGHTS="../results/$DATASET_NAME/runs/train/weights/best.pt"
+VALIDATION_MODEL_WEIGHTS="../results/$DATASET_NAME/runs/train/exp2/weights/best.pt"
 IMG_SIZE=600
 python yolov5/val.py\
        --data $DATASET_YAML_FILE\
