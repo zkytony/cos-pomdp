@@ -17,7 +17,7 @@ from cosp.utils.plotting import boxplot_sorted
 
 # Some constant configs
 IOU_THRES = 0.5
-NUM_SAMPLES_PER_SCENE = 10
+NUM_SAMPLES_PER_SCENE = 30
 
 
 # Load detector
@@ -28,7 +28,7 @@ detector = Detector(MODEL_PATH, DATA_CONFIG)
 # Each row is [cls, xyxy, conf, outcome, agent_distance]
 results = []
 
-for scene in KITCHEN_VAL_SCENES[:2]:
+for scene in KITCHEN_VAL_SCENES:
     controller = launch_controller(dict(scene=scene))
     for i in tqdm(range(NUM_SAMPLES_PER_SCENE)):
         event = thor_place_agent_randomly(controller)
