@@ -13,5 +13,4 @@ setup(name='cos-pomdp',
           'pomdp_py'
       ],
       author='Kaiyu Zheng',
-      author_email='kaiyutony@gmail.com'
-)
+      author_email='kaiyutony@gmail.com')
