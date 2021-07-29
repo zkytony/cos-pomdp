@@ -1,9 +1,12 @@
 # Detector using YOLO model
 import torch
 import numpy as np
+import cv2
 import os
 from PIL import Image
 import yaml
+from .utils.plots import plot_one_box
+from .utils.general import saveimg
 
 VISION_MODULE_PATH = os.path.dirname(__file__)
 PATH_TO_YOLOV5 = os.path.abspath(os.path.join(VISION_MODULE_PATH, "../../external/yolov5"))
@@ -24,6 +27,7 @@ class Detector:
         else:
             self.config = data_config
         self.classes = self.config["names"]
+        self.colors = self.config["colors"]
         self.model_path = model_path
         self.model = torch.hub.load(PATH_TO_YOLOV5, 'custom',
                                     path=self.model_path,
@@ -42,3 +46,19 @@ class Detector:
                  float(preds[i][4]),
                  self.classes[int(preds[i][5])])
                 for i in range(len(preds))]
+
+    def save(self, savepath, frame, detections, include=None, conf=True):
+        """Given a frame and detections (same format as returned
+        by the detect() function), save an image with boxes plotted"""
+        img = frame.copy()
+        for xyxy, conf, cls in detections:
+            if include is not None and cls not in include:
+                continue
+            if conf:
+                label = "{} {:.2f}".format(cls, conf)
+            else:
+                label = cls
+            class_int = self.classes.index(cls)
+            plot_one_box(img, xyxy, label, self.colors[class_int],
+                         line_thickness=2)
+        saveimg(img, savepath)

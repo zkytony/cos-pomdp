@@ -1,3 +1,4 @@
+import os
 import torch
 import pandas as pd
 import seaborn as sns
@@ -23,6 +24,8 @@ NUM_SAMPLES_PER_SCENE = 30
 # Load detector
 MODEL_PATH = "../models/yolov5-25epoch.pt"
 DATA_CONFIG = "../data/yolov5/yolov5-dataset.yaml"
+
+OUTDIR = "../results/test_vision_detector_in_action"
 
 def run():
     # Randomly place the agent in each environment for N times.
@@ -64,10 +67,10 @@ def run():
     # Saves results as DataFrame. Use
     df = pd.DataFrame(results,
                       columns=["class", "box", "conf", "outcome", "agent_dist"])
-    df.to_pickle("_desired_results.pkl")
+    df.to_pickle(os.path.join(OUTDIR, "_desired_results.pkl"))
 
 def plot():
-    df = pd.read_pickle("_desired_results.pkl")
+    df = pd.read_pickle(os.path.join(OUTDIR, "_desired_results.pkl"))
     scounts = df.groupby(["class", "outcome"]).count()["box"]
     scounts = flatten_index(scounts).rename(columns={"box": "count"})
 
@@ -104,8 +107,9 @@ def plot():
     sns.stripplot(x="count", y="class", hue="outcome", order=order,
                   data=scounts, ax=ax2, linewidth=1, size=5)
     ax2.xaxis.set_major_locator(ticker.MultipleLocator(25))
-    plt.savefig("_detection_distances.png")
+    plt.savefig(os.path.join(OUTDIR, "_detection_distances.png"))
 
 if __name__ == "__main__":
+    os.makedirs(OUTDIR, exist_ok=True)
     # run()
     plot()
