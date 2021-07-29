@@ -69,3 +69,6 @@ plt.subplots_adjust(bottom=0.3, left=0.2)
 boxplot_sorted(df, by=["class"], column="agent_dist", ax=ax)
 plt.xticks(rotation=90)
 plt.savefig("detection_distances.png")
+
+# print FP and TP counts per class
+print(df.groupby(["class", "outcome"]).count()["box"])
