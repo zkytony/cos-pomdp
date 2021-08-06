@@ -134,7 +134,7 @@ experiments/tmp-test/
 runs*
 results/
 data/
-models/
+./models/
 _results
 _images
 cosp/vision/data/yolov5*

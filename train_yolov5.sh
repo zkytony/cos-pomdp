@@ -2,7 +2,7 @@ cd external/
 DATASET_NAME="yolov5"
 DATASET_YAML_FILE="../data/yolov5/$DATASET_NAME-dataset.yaml"
 IMG_SIZE=600
-EPOCS=25
+EPOCS=1
 BATCH_SIZE=16
 PRETRAINED_MODEL_WEIGHTS="yolov5/yolov5s.pt"
 
