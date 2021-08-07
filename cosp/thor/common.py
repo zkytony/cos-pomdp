@@ -1,7 +1,12 @@
-# Generic classes for task and agent in Thor environments.
-
+from collections import namedtuple
 from ..framework import TaskEnv, Agent
 
+# State, Action, Observation used in object search task
+TOS_Action = namedtuple("Action", ['name', 'params'])
+TOS_State = namedtuple("State", ['agent_pose', 'horizon'])
+TOS_Observation = namedtuple("Observation", ["img", "img_depth", "bboxes"])
+
+# Generic classes for task and agent in Thor environments.
 class ThorEnv(TaskEnv):
     def __init__(self, controller):
         self.controller = controller

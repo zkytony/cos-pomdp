@@ -44,3 +44,17 @@ class Decision(Action):
     which has a different interpretation than an option."""
     def __init__(self, name):
         super().__init__(name)
+
+    def form_pomdp(self):
+        raise NotImplementedError
+
+class POMDP(pomdp_py.Agent):
+    """For ease and clarity of interfacing in planning, we are
+    wrapping the pomdp_py.Agent class with a POMDP - because that
+    Agent is essentially a POMDP."""
+
+    def plan_step(self):
+        raise NotImplementedError
+
+    def update_belief(self):
+        raise NotImplementedError
