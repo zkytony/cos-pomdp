@@ -1,5 +1,6 @@
 # COS-POMDP: Correlation Object Search POMDP
 import pomdp_py
+from ..framework import Agent, Decision
 
 class SearchRegion:
     # DOMAIN-SPECIFIC
@@ -15,12 +16,6 @@ class SearchRegion:
 
     def __iter__(self):
         raise NotImplementedError
-
-
-class TransitionModel(pomdp_py.TransitionModel):
-    # DOMAIN-SPECIFIC
-    """Domain specific transition model"""
-    pass
 
 
 class DetectionModel:
@@ -89,13 +84,11 @@ class ObjectState(pomdp_py.SimpleState):
         self.location = location
         super().__init__((cls, location))
 
-class Action(pomdp_py.SimpleAction):
-    def __init__(self, name):
-        super().__init__(name)
 
-class Done(Action):
+class Done(Decision):
     def __init__(self):
         super().__init__("done")
+
 
 class Observation(pomdp_py.Observation):
     def __init__(self, object_observations):
