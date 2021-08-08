@@ -105,6 +105,10 @@ class ObjectObservation(pomdp_py.SimpleObservation):
         self.location = location
         super().__init__((cls, location))
 
+    @property
+    def objclass(self):
+        return self.cls
+
 
 class ObjectObservationModel(pomdp_py.ObservationModel):
     """This is the model for Pr( zi | starget, srobot' ),
@@ -146,6 +150,9 @@ class ObjectObservationModel(pomdp_py.ObservationModel):
             # Obtain Pr(Si | S_target = starget)
             self._cond_dists[starget] =\
                 corr_dist.marginal([self.cls], observation={self.target_cls: starget})
+
+    def corr_cond_dist(self, starget):
+        return self._cond_dists[starget]
 
     def probability(self, object_observation, next_state, action):
         """

@@ -1,4 +1,5 @@
 import random
+import math
 from thortils import (thor_closest_object_of_type,
                       thor_agent_pose,
                       thor_object_with_id,
@@ -256,38 +257,41 @@ class HighLevelTransitionModel(pomdp_py.TransitionModel):
 
 class HighLevelDetectionModel(cospomdp.DetectionModel):
     """High level detection model."""
-    def __init__(self, detecting_class, true_pos, rand=random):
+    def __init__(self, detecting_class, true_pos_rate, rand=random):
         """
         Detector for detecting class.
         `true_pos` is the true positive rate of detection.
         """
         self.detecting_class = detecting_class
-        self._true_pos = true_pos
+        self._true_pos_rate = true_pos_rate
         self._rand = rand
 
     def probability(self, object_observation, object_state, robot_state):
         if object_observation.objclass != self.detecting_class\
            or object_state.objclass != self.detecting_class:
-            return 0.0
+            return 1e-12
 
         if object_observation.location is None:
             # negative; didn't observe the object
             if object_state["pos"] == robot_state["pos"]:
-                # robot expects to see the object, but did. False negative
-                return 1.0 - self._true_pos
+                # robot expects to see the object, but did not. False negative
+                return 1.0 - self._true_pos_rate
             else:
                 # robot isn't expecting to see the object and it didn't.
                 # because we are not considering false positives so it's 100%
                 return 1.0
         else:
-            # positive, observed the object
-            if object_state["pos"] == robot_state["pos"]:
-                # robot expects to see the object, and did. True positive
-                return self._true_pos
+            confidence = 1.0
+            if hasattr(object_observation, "confidence"):
+                confidence = object_observation.confidence
+
+            if object_observation.location == object_state["pos"]\
+               and object_state["pos"] == robot_state["pos"]:
+                return self._true_pos_rate * confidence
             else:
                 # robot isn't expecting to see the object and it did.
                 # because we are not considering false positives so it's 0%
-                return 0.0
+                return 1e-12  # TODO: I am not sure about this.
 
     def sample(self, object_state, robot_state):
         if object_state["pos"] == robot_state["pos"]:
@@ -313,14 +317,27 @@ class HighLevelDetectionModel(cospomdp.DetectionModel):
 
 
 class HighLevelObservationModel(pomdp_py.ObservationModel):
-    def __init__(self, detectable_classes):
-        self.detectable_classes = detectable_objects
-        self.object_observation_models =
+    def __init__(self, target_cls, detection_config, corr_dists, rand=random):
+        """
+        Args:
+            detection_config (dict):  {"<object class>" : <true positive rate>}
+            corr_dists (dict):  {"object class" for Si : Pr(Si | Starget) JointDist}
+        """
+        self._oms = {}
+        for cls in detection_config:
+            true_pos_rate = detection_config[cls]
+            detection_model = HighLevelDetectionModel(cls, true_pos_rate, rand=rand)
+            self._oms[cls] = cospomdp.ObjectObservationModel(cls, target_cls,
+                                                             detection_model,
+                                                             corr_dists[cls])
 
     def sample(self, next_state, action):
-        if next_state.robot_state["pos"] == next_state.target_state["pos"]:
-            # Robot is at where it should be to detect the target.
+        return cospomdp.Observation(tuple(self._oms[cls].sample(next_state, action)
+                                          for cls in self._oms))
 
+    def probability(self, observation, next_state, action):
+        return math.prod([self._oms[zi.cls].probability(zi, next_state, action)
+                          for zi in observation.object_observations])
 
 
 class COSPOMDP(POMDP):
