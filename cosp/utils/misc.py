@@ -3,6 +3,35 @@ import time
 import pytz
 from pytz import reference as pytz_reference
 
+# COS-POMDP specific
+def resolve_robot_target_args(robot_id, target_id, *args):
+    """
+    args can be {robot_id: robotthing, target_id: targetthing}
+    or (robotthing, targetthing) or robotthing, targetthing.
+    Returns robothting, targetthing
+    """
+    if len(args) == 1:
+        things = args[0]
+        if type(things) == dict:
+            assert len(things) == 2\
+                and (robot_id in things and target_id in things)
+            return things[robot_id], things[target_id]
+
+        elif hasattr(things, "__len__") and type(things) != str:
+            assert len(things) == 2
+            return things
+
+        else:
+            raise ValueError("cannot handle argument {}".format(args[0]))
+
+    elif len(args) == 2:
+        return args
+
+    else:
+        raise ValueError("cannot handle argument(s) {}".format(args))
+
+
+
 # Printing
 def json_safe(obj):
     if isinstance(obj, bool):

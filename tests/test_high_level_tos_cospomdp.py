@@ -1,3 +1,4 @@
+import time
 import thortils
 from cosp.utils.math import euclidean_dist
 from cosp.thor.agent import (ThorObjectSearchCOSPOMDP,
@@ -68,13 +69,17 @@ def test_create():
         "exploration_const": constants.TOS_REWARD_HI - constants.TOS_REWARD_LO
     }
 
+    print("Creating High Level POMDP...")
     high_level_pomdp = ThorObjectSearchCOSPOMDP(task_config,
                                                 search_region,
                                                 init_robot_pos,
                                                 detection_config,
                                                 corr_dists,
                                                 planning_config)
-
+    print("Planning one step...")
+    _start_time = time.time()
+    print(high_level_pomdp.plan_step())
+    print("Took {:3f}s".format(time.time() - _start_time))
 
 if __name__ == "__main__":
     test_create()

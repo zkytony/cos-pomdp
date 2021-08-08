@@ -1,6 +1,7 @@
 # COS-POMDP: Correlation Object Search POMDP
 import pomdp_py
 from ..framework import Agent, Decision
+from ..utils.misc import resolve_robot_target_args
 
 class SearchRegion:
     # DOMAIN-SPECIFIC
@@ -40,13 +41,12 @@ class DetectionModel:
 class ReducedState(pomdp_py.OOState):
     """Reduced state that only contains robot and target states.
     Both robot_state and target_state are pomdp_py.ObjectState"""
-    def __init__(self, robot_id, target_id, robot_state, target_state):
+    def __init__(self, robot_id, target_id, *args):
         self.robot_id = robot_id
         self.target_id = target_id
-        self.robot_state = robot_state
-        self.target_state = target_state
-        super().__init__({robot_id: self.robot_state,
-                          target_id: self.target_state})
+        robot_state, target_state = resolve_robot_target_args(robot_id, target_id, *args)
+        super().__init__({self.robot_id: robot_state,
+                          self.target_id: target_state})
 
     def __str__(self):
         return\
@@ -57,13 +57,22 @@ class ReducedState(pomdp_py.OOState):
     def __repr__(self):
         return str(self)
 
+    @property
+    def robot_state(self):
+        return self.object_states[self.robot_id]
+
+    @property
+    def target_state(self):
+        return self.object_states[self.target_id]
+
+
 class Observation(pomdp_py.Observation):
     def __init__(self, object_observations):
         """
         object_observations (tuple): vector of observations of each object
         """
         self.object_observations = object_observations
-        self._hash = self.object_observations
+        self._hash = hash(self.object_observations)
 
     def __eq__(self, other):
         if isinstance(other, Observation):
@@ -101,10 +110,6 @@ class ObjectObservation(pomdp_py.SimpleObservation):
         self.objclass = objclass
         self.location = location
         super().__init__((objclass, location))
-
-    @property
-    def objclass(self):
-        return self.objclass
 
 
 class ObjectObservationModel(pomdp_py.ObservationModel):
@@ -151,7 +156,8 @@ class ObjectObservationModel(pomdp_py.ObservationModel):
     def corr_cond_dist(self, starget):
         return self._cond_dists[starget]
 
-    def probability(self, object_observation, next_state, action):
+    def probability(self, object_observation, next_state, *args):
+        # action doesn't matter here
         """
         Args:
             object_observation (ObjectObservation): observation of an object
@@ -164,22 +170,23 @@ class ObjectObservationModel(pomdp_py.ObservationModel):
         dist_si = self._cond_dists[starget]  # Pr(Si | S_target = starget)
         if self.objclass == self.target_class:
             # Only the detection model matters, if both classes are the same
-            return self.detection_model.probability(zi, starget, srobot, action)
+            return self.detection_model.probability(zi, starget, srobot)
 
         pr_total = 0.0
         for si in dist_si.valrange(self.objclass):
-            pr_detection = self.detection_model.probability(zi, si, srobot, action)
+            pr_detection = self.detection_model.probability(zi, si, srobot)
             pr_corr = dist_si.prob({self.objclass: si})  # compute Pr(Si = si | S_target = starget)
             pr_total += pr_detection * pr_corr
         return pr_total
 
-    def sample(self, next_state, action):
+    def sample(self, next_state, *args):
+        # action doesn't matter here
         starget = next_state.target_state
         srobot = next_state.robot_state
         if self.objclass == self.target_class:
-            zi = self.detection_model.sample(starget, srobot, action)
+            zi = self.detection_model.sample(starget, srobot)
         else:
             dist_si = self._cond_dists[starget]  # Pr(Si | S_target = starget)
             si = dist_si.sample()[self.objclass]
-            zi = self.detection_model.sample(si, srobot, action)
+            zi = self.detection_model.sample(si, srobot)
         return zi

@@ -3,7 +3,8 @@ import math
 from thortils import (thor_closest_object_of_type,
                       thor_agent_pose,
                       thor_object_with_id,
-                      thor_object_receptors)
+                      thor_object_receptors,
+                      thor_object_type)
 
 from .utils import plt, as_tuple, as_dict
 from .common import TOS_Action, ThorAgent
@@ -167,6 +168,7 @@ import pomdp_py
 from .decisions import MoveDecision, SearchDecision, DoneDecision
 from ..models import cospomdp
 from ..utils.math import indicator, normalize, euclidean_dist
+from ..utils.misc import resolve_robot_target_args
 
 class HighLevelStatus:
     MOVING = "moving"
@@ -183,6 +185,24 @@ class HighLevelObjectState(pomdp_py.ObjectState):
     if it wants to detect the object."""
     def __init__(self, object_class, pos):
         super().__init__(object_class, dict(pos=pos))
+
+class HighLevelOOBelief(pomdp_py.OOBelief):
+    def __init__(self, robot_id, target_id, *args):
+        self.robot_id = robot_id
+        self.target_id = target_id
+        robot_belief, target_belief =\
+            resolve_robot_target_args(robot_id,
+                                      target_id,
+                                      *args)
+        super().__init__({self.robot_id: robot_belief,
+                          self.target_id: target_belief})
+
+    def random(self, rnd=random):
+        return cospomdp.ReducedState(self.robot_id, self.target_id,
+                                     super().random(rnd=random, return_oostate=False))
+    def mpe(self, **kwargs):
+        return cospomdp.ReducedState(self.robot_id, self.target_id,
+                                     super().mpe(rnd=random, return_oostate=False))
 
 class HighLevelSearchRegion(cospomdp.SearchRegion):
     """This is where the high-level belief will be defined over.
@@ -230,11 +250,11 @@ class HighLevelTransitionModel(pomdp_py.TransitionModel):
         next_robot_status = state.robot_state["status"]
         if isinstance(action, MoveDecision):
             next_robot_pos = action.dest
-            next_robot_status = Status.MOVING
+            next_robot_status = HighLevelStatus.MOVING
         elif isinstance(action, SearchDecision):
-            next_robot_status = Status.SEARCHING
+            next_robot_status = HighLevelStatus.SEARCHING
         elif isinstance(action, DoneDecision):
-            next_robot_status = Status.DONE
+            next_robot_status = HighLevelStatus.DONE
         next_robot_state = HighLevelRobotState(next_robot_pos,
                                                next_robot_status)
         target_state = HighLevelObjectState(state.target_state.objclass,
@@ -290,7 +310,7 @@ class HighLevelDetectionModel(cospomdp.DetectionModel):
         if object_state["pos"] == robot_state["pos"]:
             # We expect the robot to be able to detect the object,
             # subject to class-specific uncertainty
-            if self._true_pos >= self._rand.uniform(0, 1):
+            if self._true_pos_rate >= self._rand.uniform(0, 1):
                 # True positive
                 return cospomdp.ObjectObservation(object_state.objclass,
                                                   object_state["pos"])
@@ -397,46 +417,48 @@ class HighLevelCorrelationDist(JointDist):
 
 class HighLevelPolicyModel(pomdp_py.RolloutPolicy):
     def __init__(self, search_region, num_visits_init=10, val_init=constants.TOS_REWARD_HI):
-        self.action_prior = HighLevelPolicyModel.ActionPrior(num_visits_init, val_init)
+        self.search_region = search_region
+        self.action_prior = HighLevelPolicyModel.ActionPrior(num_visits_init, val_init, self)
 
     def sample(self, state):
-        return random.sample(self._get_all_actions(state=state), 1)[0]
+        return random.sample(self.get_all_actions(state=state), 1)[0]
 
-    def get_all_actions(self, state):
+    def get_all_actions(self, state, history=None):
         return self._get_all_moves(state) + [SearchDecision(), DoneDecision()]
 
     def _get_all_moves(self, state):
         return [MoveDecision(dest)
-                for dest in search_region.neighbor(state.robot_state["pos"])]
+                for dest in self.search_region.neighbor(state.robot_state["pos"])]
 
     def rollout(self, state, history=None):
         preferences = self.action_prior.get_preferred_actions(state, history)
         if len(preferences) > 0:
-            return random.sample(preferences, 1)[0]
+            return random.sample(preferences, 1)[0][0]
         else:
-            return random.sample(self._get_all_actions(state=state), 1)[0]
+            return random.sample(self.get_all_actions(state=state), 1)[0]
 
     class ActionPrior(pomdp_py.ActionPrior):
-        def __init__(self, num_visits_init, val_init):
+        def __init__(self, num_visits_init, val_init, policy_model):
             self.num_visits_init = num_visits_init
             self.val_init = val_init
+            self.policy_model = policy_model
 
         def get_preferred_actions(self, state, history):
             preferences = set()
-            moves = self._get_all_moves(state)
-            target_pos = state.target_object["pos"]
-            current_dist = euclidean_dist(state.robot_object["pos"], target_pos)
+            moves = self.policy_model._get_all_moves(state)
+            target_pos = state.target_state["pos"]
+            current_dist = euclidean_dist(state.robot_state["pos"], target_pos)
             for move in moves:
                 if euclidean_dist(move.dest, target_pos) < current_dist:
                     preferences.add((move, self.num_visits_init, self.val_init))
             if state.robot_state["pos"] == target_pos:
-                preferences.add((SearchDecision, self.num_visits_init, self.val_init))
+                preferences.add((SearchDecision(), self.num_visits_init, self.val_init))
             return preferences
 
 class HighLevelRewardModel(pomdp_py.RewardModel):
     def sample(self, state, action, next_state):
         if isinstance(action, DoneDecision):
-            if next_state.robot_state["status"] == Status.DONE:
+            if next_state.robot_state["status"] == HighLevelStatus.DONE:
                 return constants.TOS_REWARD_HI*2
             else:
                 return constants.TOS_REWARD_LO*2
@@ -499,8 +521,9 @@ class ThorObjectSearchCOSPOMDP(pomdp_py.Agent):
                 normalize({HighLevelObjectState(target_class, pos): 1.0
                            for pos in search_region}))
 
-        init_belief = pomdp_py.OOBelief({self.robot_id: init_robot_belief,
-                                         self.target_id: init_target_belief})
+        init_belief = HighLevelOOBelief(
+            self.robot_id, self.target_id,
+            init_robot_belief, init_target_belief)
         transition_model = HighLevelTransitionModel(self.robot_id, self.target_id)
         observation_model = HighLevelObservationModel(target_class, detection_config, corr_dists)
         policy_model = HighLevelPolicyModel(search_region,
@@ -538,10 +561,11 @@ class ThorObjectSearchCOSPOMDP(pomdp_py.Agent):
         next_target_belief = {}
         for pos in self.search_region:
             target_state = HighLevelObjectState(self.target_class, pos)
-            next_state = pomdp_py.OOState({self.robot_id: next_robot_state,
-                                           self.target_id: target_state})
+            next_state = cospomdp.ReducedState(self.robot_id, self.target_id,
+                                               next_robot_state, target_state)
             pr_o = self.observation_model.probability(observation, next_state, action)
             next_target_belief[target_state] = pr_o * self.belief[next_state]
-        next_belief = pomdp_py.OOBelief({self.robot_id: pomdp_py.Histogram({next_robot_state : 1.0}),
-                                         self.target_id: normalize(next_target_belief)})
+        next_belief = HighLevelOOBelief(self.robot_id, self.target_id,
+                                        pomdp_py.Histogram({next_robot_state : 1.0}),
+                                        normalize(next_target_belief))
         self.set_belief(next_belief)
