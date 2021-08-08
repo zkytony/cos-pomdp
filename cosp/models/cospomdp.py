@@ -121,7 +121,7 @@ class ObjectObservationModel(pomdp_py.ObservationModel):
     correlation.
     """
     def __init__(self, objclass, target_class,
-                 detection_model, corr_dist, search_region):
+                 detection_model, corr_dist):
         """
         Args:
             objclass (str): Class for object i
@@ -129,24 +129,24 @@ class ObjectObservationModel(pomdp_py.ObservationModel):
             corr_dist (JointDist): Distribution of Pr(Si | Starget); The interface
                 of JointDist allows for this to be either Pr(Si, Starget) or Pr(Si | Starget)
                 underneath the hood.
+
+                If objclass = target_class, then corr_dist is optional.
+
                 TODO: maybe we need to be more creative here for the joint distribution,
                 because feeding in absolute coordinates won't generalize
-            search_region (SearchRegion): Returns a location when iterating over it,
-                represents where the object could possibly be.
             detection_model (DetectionModel): model for Pr(zi | si, srobot')
         """
         self.objclass = objclass
         self.target_class = target_class
         self.detection_model = detection_model
-        self.search_region = search_region
 
         # Compute the conditional distribution for every value of Starget
-        self._cond_dists = {}
-        for loc in self.search_region:
-            starget = ObjectState(self.target_class, loc)
-            # Obtain Pr(Si | S_target = starget)
-            self._cond_dists[starget] =\
-                corr_dist.marginal([self.objclass], observation={self.target_class: starget})
+        if self.objclass != self.target_class:
+            self._cond_dists = {}
+            for starget in corr_dist.valrange(target_class):
+                # Obtain Pr(Si | S_target = starget)
+                self._cond_dists[starget] =\
+                    corr_dist.marginal([self.objclass], evidence={self.target_class: starget})
 
     def corr_cond_dist(self, starget):
         return self._cond_dists[starget]
@@ -159,24 +159,23 @@ class ObjectObservationModel(pomdp_py.ObservationModel):
             action (Action): action that led to the next state
         """
         zi = object_observation
-        starget = s_next.target_state
-        srobot = s_next.robot_state
+        starget = next_state.target_state
+        srobot = next_state.robot_state
         dist_si = self._cond_dists[starget]  # Pr(Si | S_target = starget)
         if self.objclass == self.target_class:
             # Only the detection model matters, if both classes are the same
             return self.detection_model.probability(zi, starget, srobot, action)
 
         pr_total = 0.0
-        for loc in self.search_region:
-            si = ObjectState(self.objclass, loc)
+        for si in dist_si.valrange(self.objclass):
             pr_detection = self.detection_model.probability(zi, si, srobot, action)
             pr_corr = dist_si.prob({self.objclass: si})  # compute Pr(Si = si | S_target = starget)
             pr_total += pr_detection * pr_corr
         return pr_total
 
     def sample(self, next_state, action):
-        starget = s_next.target_state
-        srobot = s_next.robot_state
+        starget = next_state.target_state
+        srobot = next_state.robot_state
         if self.objclass == self.target_class:
             zi = self.detection_model.sample(starget, srobot, action)
         else:

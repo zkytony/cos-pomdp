@@ -61,7 +61,19 @@ def test_create():
         for objclass in detection_config
         if objclass != target_class}
 
+    planning_config = {
+        "max_depth": 10,
+        "discount_factor": 0.95,
+        "num_sims": 100,
+        "exploration_const": constants.TOS_REWARD_HI - constants.TOS_REWARD_LO
+    }
 
+    high_level_pomdp = ThorObjectSearchCOSPOMDP(task_config,
+                                                search_region,
+                                                init_robot_pos,
+                                                detection_config,
+                                                corr_dists,
+                                                planning_config)
 
 
 if __name__ == "__main__":

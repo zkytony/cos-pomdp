@@ -320,9 +320,12 @@ class HighLevelObservationModel(pomdp_py.ObservationModel):
         for objclass in detection_config:
             true_pos_rate = detection_config[objclass]
             detection_model = HighLevelDetectionModel(objclass, true_pos_rate, rand=rand)
-            self._oms[objclass] = cospomdp.ObjectObservationModel(objclass, target_class,
-                                                             detection_model,
-                                                             corr_dists[objclass])
+            if objclass == target_class:
+                corr_dist = None
+            else:
+                corr_dist = corr_dists[objclass]
+            self._oms[objclass] = cospomdp.ObjectObservationModel(
+                objclass, target_class, detection_model, corr_dist)
 
     def sample(self, next_state, action):
         return cospomdp.Observation(tuple(self._oms[objclass].sample(next_state, action)
@@ -345,6 +348,7 @@ class HighLevelCorrelationDist(JointDist):
         """
         self.objclass = objclass
         self.target_class = target_class
+        self.search_region = search_region
         super().__init__([objclass, target_class])
 
         # calculate weights
@@ -373,14 +377,22 @@ class HighLevelCorrelationDist(JointDist):
         assert variables == [self.objclass],\
             "CorrelationDist can only be used to infer distribution"\
             "over the correlated object's state"
-        assert isinstance(evidence, HighLevelObjectState)\
-            and evidence.objclass == self.target_class,\
+        assert self.target_class in evidence\
+            and evidence[self.target_class].objclass == self.target_class,\
             "When inferring Pr(Si | Starget), you must provide a value for Starget"\
             "i.e. set evidence = <some target state>"
         target_state = evidence[self.target_class]
-        if target_state not in self.weights:
+        if target_state not in self.dists:
             raise ValueError("Unexpected value for target state in evidence: {}".format(target_state))
         return self.dists[target_state]
+
+    def valrange(self, var):
+        if var != self.target_class and var != self.objclass:
+            raise ValueError("Unable to return value range for {} because it is not modeled"\
+                             .format(var))
+        # For either object, the value range is the search region.
+        return [HighLevelObjectState(var, pos)
+                for pos in self.search_region]
 
 
 class HighLevelPolicyModel(pomdp_py.RolloutPolicy):
