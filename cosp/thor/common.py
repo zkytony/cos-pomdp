@@ -4,7 +4,7 @@ from ..framework import TaskEnv, Agent
 # State, Action, Observation used in object search task
 TOS_Action = namedtuple("Action", ['name', 'params'])
 TOS_State = namedtuple("State", ['agent_pose', 'horizon'])
-TOS_Observation = namedtuple("Observation", ["img", "img_depth", "bboxes"])
+TOS_Observation = namedtuple("Observation", ["img", "img_depth", "detections"])
 
 # Generic classes for task and agent in Thor environments.
 class ThorEnv(TaskEnv):
@@ -21,13 +21,13 @@ class ThorEnv(TaskEnv):
     def get_step_info(self, step):
         raise NotImplementedError
 
-    def execute(self, action):
+    def execute(self, agent, action):
         state = self.get_state(self.controller)
         event = self.controller.step(action=action.name, **action.params)
         self.controller.step(action="Pass")
 
         next_state = self.get_state(event)
-        observation = self.get_observation(event)
+        observation = self.get_observation(event, detector=agent.detector)
         reward = self.get_reward(state, action, next_state)
         self._history.append((next_state, action, observation, reward))
         return (observation, reward)
@@ -56,3 +56,7 @@ class ThorAgent(Agent):
 
     def update(self, observation, reward):
         pass
+
+    @property
+    def detector(self):
+        return None

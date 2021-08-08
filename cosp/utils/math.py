@@ -21,6 +21,20 @@ def normalize_log_prob(likelihoods):
                         (np.log(np.sum(np.exp(likelihoods - np.max(likelihoods)))) + np.max(likelihoods)))
     return normalized
 
+def normalize(ss):
+    """
+    ss (dict or array-like):
+        If dict, maps from key to float; If array-like, all floats.
+    Returns:
+        a new object (of the same kind as input) with normalized entries
+    """
+    if type(ss) == dict:
+        total = sum(ss.values())
+        return {k:ss[k]/total for k in ss}
+    else:
+        total = sum(ss)
+        return type(ss)(ss[i]/total for i in range(len(ss)))
+
 def uniform(size, ranges):
     return tuple(random.randrange(ranges[i][0], ranges[i][1])
                  for i in range(size))

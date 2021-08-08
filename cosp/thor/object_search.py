@@ -9,6 +9,7 @@ import ai2thor.util.metrics as metrics
 
 from thortils import (thor_agent_pose,
                       thor_camera_horizon,
+                      thor_object_type,
                       thor_object_of_type_in_fov,
                       thor_object_position,
                       thor_closest_object_of_type)
@@ -94,11 +95,32 @@ class TOS(ThorEnv):
             path.append(agent_position)
         return path
 
-    def get_observation(self, event):
+    def get_observation(self, event, detector=None):
+        """
+        detector (cosp.vision.Detector or None): vision detector;
+            If None, then groundtruth detection will be used
+
+        Returns:
+            TOS_Observation:
+                img: RGB image
+                img_depth: Depth image
+                detections: list of (xyxy, conf, cls) tuples. `cls` is
+                    the detected class, `conf` is confidence, `xyxy` is bounding box.
+        """
         img = thor_img(event)
-        img_depth = thor_img(event)
-        bboxes = thor_img(event)
-        return TOS_Observation(img, img_depth, bboxes)
+        img_depth = thor_img_depth(event)
+        if detector is None:
+            # use groundtruth detection
+            detections = []
+            bboxes = thor_object_bboxes(event)  # xyxy
+            for objectId in bboxes:
+                cls = thor_object_type(objectId)
+                conf = 1.0
+                xyxy = bboxes[objectId]
+            detections.append((xyxy, conf, cls))
+        else:
+            detections = detector.detect(img)
+        return TOS_Observation(img, img_depth, detections)
 
     def get_state(self, event):
         # stores agent pose as tuple, for convenience.

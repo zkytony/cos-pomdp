@@ -7,6 +7,7 @@ from thortils import (thor_closest_object_of_type,
 
 from .utils import plt, as_tuple, as_dict
 from .common import TOS_Action, ThorAgent
+from . import constants
 
 class ThorObjectSearchAgent(ThorAgent):
     AGENT_USES_CONTROLLER = False
@@ -163,27 +164,16 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
 
 ########################### COS-POMDP agent #################################
 import pomdp_py
-from ..framework import POMDP, Decision
+from .decisions import MoveDecision, SearchDecision, DoneDecision
+from ..framework import POMDP
 from ..models import cospomdp
+from ..utils.math import indicator, normalize, euclidean_dist
 
 class HighLevelStatus:
     MOVING = "moving"
     SEARCHING = "searching"
     INITIAL = "initial"
     DONE = "done"
-
-class MoveDecision(Decision):
-    def __init__(self, dest):
-        super().__init__("move")
-        self.dest = dest
-
-class SearchDecision(Decision):
-    def __init__(self):
-        super().__init__("search")
-
-class DoneDecision(Decision):
-    def __init__(self):
-        super().__init__("done")
 
 class HighLevelRobotState(pomdp_py.ObjectState):
     def __init__(self, pos, status):
@@ -199,7 +189,8 @@ class HighLevelSearchRegion(cospomdp.SearchRegion):
     """This is where the high-level belief will be defined over.
     Instead of meaning 'the location of the target', it means
     'the location that the robot should be in if it wants to
-    detect the target'."""
+    detect the target'. This means the robot and the target
+    occupy on the same search region."""
     def __init__(self, reachable_positions):
         """reachable_positions: (initial) set of 2D locations the robot can reach."""
         self.reachable_positions = set(reachable_positions)
@@ -218,7 +209,6 @@ class HighLevelSearchRegion(cospomdp.SearchRegion):
 
     def __contains__(self, item):
         return item in self.reachable_positions
-
 
 class HighLevelTransitionModel(pomdp_py.TransitionModel):
     """Transition model for high-level planner.
@@ -253,6 +243,10 @@ class HighLevelTransitionModel(pomdp_py.TransitionModel):
         return cospomdp.ReducedState(
             self.robot_id, self.target_id,
             next_robot_state, target_state)
+
+    def probability(self, next_state, state, action):
+        expected_next_state = self.sample(state, action)
+        return indicator(expected_next_state == next_state, epsilon=1e-12)
 
 
 class HighLevelDetectionModel(cospomdp.DetectionModel):
@@ -317,32 +311,85 @@ class HighLevelDetectionModel(cospomdp.DetectionModel):
 
 
 class HighLevelObservationModel(pomdp_py.ObservationModel):
-    def __init__(self, target_cls, detection_config, corr_dists, rand=random):
+    def __init__(self, target_class, detection_config, corr_dists, rand=random):
         """
         Args:
             detection_config (dict):  {"<object class>" : <true positive rate>}
             corr_dists (dict):  {"object class" for Si : Pr(Si | Starget) JointDist}
         """
         self._oms = {}
-        for cls in detection_config:
-            true_pos_rate = detection_config[cls]
-            detection_model = HighLevelDetectionModel(cls, true_pos_rate, rand=rand)
-            self._oms[cls] = cospomdp.ObjectObservationModel(cls, target_cls,
+        for objclass in detection_config:
+            true_pos_rate = detection_config[objclass]
+            detection_model = HighLevelDetectionModel(objclass, true_pos_rate, rand=rand)
+            self._oms[objclass] = cospomdp.ObjectObservationModel(objclass, target_class,
                                                              detection_model,
-                                                             corr_dists[cls])
+                                                             corr_dists[objclass])
 
     def sample(self, next_state, action):
-        return cospomdp.Observation(tuple(self._oms[cls].sample(next_state, action)
-                                          for cls in self._oms))
+        return cospomdp.Observation(tuple(self._oms[objclass].sample(next_state, action)
+                                          for objclass in self._oms))
 
     def probability(self, observation, next_state, action):
-        return math.prod([self._oms[zi.cls].probability(zi, next_state, action)
+        return math.prod([self._oms[zi.objclass].probability(zi, next_state, action)
                           for zi in observation.object_observations])
 
 
-class COSPOMDP(POMDP):
+class HighLevelPolicyModel(pomdp_py.RolloutPolicy):
+    def __init__(self, search_region, num_visits_init=10, val_init=constants.TOS_REWARD_HI):
+        self.action_prior = HighLevelPolicyModel.ActionPrior(num_visits_init, val_init)
+
+    def sample(self, state):
+        return random.sample(self._get_all_actions(state=state), 1)[0]
+
+    def get_all_actions(self, state):
+        return self._get_all_moves(state) + [SearchDecision(), DoneDecision()]
+
+    def _get_all_moves(self, state):
+        return [MoveDecision(dest)
+                for dest in search_region.neighbor(state.robot_state["pos"])]
+
+    def rollout(self, state, history=None):
+        preferences = self.action_prior.get_preferred_actions(state, history)
+        if len(preferences) > 0:
+            return random.sample(preferences, 1)[0]
+        else:
+            return random.sample(self._get_all_actions(state=state), 1)[0]
+
+    class ActionPrior(pomdp_py.ActionPrior):
+        def __init__(self, num_visits_init, val_init):
+            self.num_visits_init = num_visits_init
+            self.val_init = val_init
+
+        def get_preferred_actions(self, state, history):
+            preferences = set()
+            moves = self._get_all_moves(state)
+            target_pos = state.target_object["pos"]
+            current_dist = euclidean_dist(state.robot_object["pos"], target_pos)
+            for move in moves:
+                if euclidean_dist(move.dest, target_pos) < current_dist:
+                    preferences.add((move, self.num_visits_init, self.val_init))
+            if state.robot_state["pos"] == target_pos:
+                preferences.add((SearchDecision, self.num_visits_init, self.val_init))
+            return preferences
+
+class HighLevelRewardModel(pomdp_py.RewardModel):
+    def sample(self, state, action, next_state):
+        if isinstance(action, DoneDecision):
+            if next_state.robot_state["status"] == Status.DONE:
+                return constants.TOS_REWARD_HI*2
+            else:
+                return constants.TOS_REWARD_LO*2
+        elif isinstance(action, SearchDecision):
+            if next_state.robot_state["pos"] == next_state.target_state["pos"]:
+                return constants.TOS_REWARD_HI
+            else:
+                return constants.TOS_REWARD_LO
+        else:
+            return constants.TOS_REWARD_STEP
+
+class ThorObjectSearchCOSPOMDP(pomdp_py.Agent):
     """The COSPOMDP for Thor Object Search;
-    Remember that it is a high-level planning framework.
+    It is a high-level planning framework.
 
     State:
         robot state: 2D reachable position
@@ -355,5 +402,84 @@ class COSPOMDP(POMDP):
         search: decides to search within a local region (i.e. where the robot is)
         done: declares victory.
     """
-    def __init__(self, target_class, search_region):
-        pass
+    def __init__(self,
+                 task_config,
+                 search_region,
+                 init_robot_pos,
+                 detection_config,
+                 corr_dists,
+                 planning_config,
+                 init_target_belief="uniform"):
+        """
+        Args:
+            task_config (dict): Common task configuration in thor
+            detection_config (dict): See HighLevelObservationModel
+            corr_dists (dict): Maps from object class to JointDist,
+                that is, it includes all Pr(Si | Starget) distributions for all Si{1<=i<=N).
+            init_robot_pos (tuple): initial robot position.
+        """
+        self.search_region = search_region
+        init_robot_state = HighLevelRobotState(init_robot_pos, HighLevelStatus.INITIAL)
+        init_robot_belief = pomdp_py.Histogram({init_robot_state : 1.0})
+
+        self.robot_id = "robot0"
+        if task_config["task_type"] == "class":
+            target_class = task_config["target"]
+            target_id = target_class
+        else:
+            target_id = task_config["target"]
+            target_class = thor_object_type(target_id)
+        self.target_class = target_class
+        self.target_id = target_id
+
+        if init_target_belief == "uniform":
+            init_target_belief = pomdp_py.Histogram(
+                normalize({HighLevelObjectState(target_class, pos): 1.0
+                           for pos in search_region}))
+
+        init_belief = pomdp_py.OOBelief({self.robot_id: init_robot_belief,
+                                         self.target_id: init_target_belief})
+        transition_model = HighLevelTransitionModel(self.robot_id, self.target_id)
+        observation_model = HighLevelObservationModel(target_class, detection_config, corr_dists)
+        policy_model = HighLevelPolicyModel(search_region,
+                                            **planning_config.get("action_prior_params", {}))
+        reward_model = HighLevelRewardModel()
+        super().__init__(init_belief, policy_model,
+                         transition_model, observation_model, reward_model)
+        self._planner = pomdp_py.POUCT(max_depth=planning_config["max_depth"],
+                                       discount_factor=planning_config["discount_factor"],
+                                       num_sims=planning_config["num_sims"],
+                                       exploration_const=planning_config["exploration_const"],
+                                       rollout_policy=policy_model,
+                                       action_prior=policy_model.action_prior)
+
+    def plan_step(self):
+        return self._planner.plan(self)
+
+    def update(self, action, tos_observation):
+        """
+        Args:
+            action (Decision): decision made by high level planner
+            tos_observation (TOS_Observation): image, depth image, detections.
+        """
+        next_robot_state = self.transition_model.sample(self.belief.mpe(), action).robot_state
+        zobjs = []
+        for xyxy, conf, cls in tos_observation.detections:
+            zi = cospomdp.ObjectObservation(cls, next_robot_state["pos"])
+            zobjs.append(zi)
+        observation = cospomdp.Observation(tuple(zobjs))
+
+        # update planner
+        self._planner.update(self, action, observation)
+
+        # update belief
+        next_target_belief = {}
+        for pos in self.search_region:
+            target_state = HighLevelObjectState(self.target_class, pos)
+            next_state = pomdp_py.OOState({self.robot_id: next_robot_state,
+                                           self.target_id: target_state})
+            pr_o = self.observation_model.probability(observation, next_state, action)
+            next_target_belief[target_state] = pr_o * self.belief[next_state]
+        next_belief = pomdp_py.OOBelief({self.robot_id: pomdp_py.Histogram({next_robot_state : 1.0}),
+                                         self.target_id: normalize(next_target_belief)})
+        self.set_belief(next_belief)

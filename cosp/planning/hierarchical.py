@@ -34,5 +34,5 @@ class HierarchicalPlanningAgent(Agent):
         are updated given the same observation and action;
         Indeed, the action is part of the decision.
         """
-        self.high_level_pomdp.update_belief(observation, self._last_decision)
-        self.low_level_pomdp.update_belief(observation, action)
+        self.high_level_pomdp.update(self._last_decision, observation)
+        self.low_level_pomdp.update(action, observation)
