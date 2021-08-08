@@ -27,12 +27,6 @@ class Agent:
         pass
 
 
-class Method:
-    """Decision Making Method that produces actions."""
-    def act(self, agent):
-        pass
-
-
 class Action(pomdp_py.SimpleAction):
     def __init__(self, name):
         super().__init__(name)

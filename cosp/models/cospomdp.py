@@ -17,6 +17,9 @@ class SearchRegion:
     def __iter__(self):
         raise NotImplementedError
 
+    def __contains__(self):
+        pass
+
 
 class DetectionModel:
     # DOMAIN-SPECIFIC
@@ -37,22 +40,16 @@ class DetectionModel:
         raise NotImplementedError
 
 
-class State(pomdp_py.State):
-    """State is assumed to be immutable.
-    Do not attempt to modify robot_state and target_state directly."""
-    def __init__(self, robot_state, target_state):
+class ReducedState(pomdp_py.OOState):
+    """Reduced state that only contains robot and target states.
+    Both robot_state and target_state are pomdp_py.ObjectState"""
+    def __init__(self, robot_id, target_id, robot_state, target_state):
+        self.robot_id = robot_id
+        self.target_id = target_id
         self.robot_state = robot_state
         self.target_state = target_state
-        self._hash = hash(self.robot_state, self.target_state)
-
-    def __eq__(self, other):
-        if isinstance(other, State):
-            return self.robot_state == other.robot_state\
-                and self.target_state == other.target_state
-        return False
-
-    def __hash__(self):
-        return self._hash
+        super().__init__({robot_id: self.robot_state,
+                          target_id: self.target_state})
 
     def __str__(self):
         return\
@@ -62,33 +59,6 @@ class State(pomdp_py.State):
 
     def __repr__(self):
         return str(self)
-
-class RobotState(pomdp_py.SimpleState):
-    def __init__(self, pose):
-        """
-        Args:
-            pose (object): hashable
-        """
-        self.pose = pose
-        super().__init__(self.pose)
-
-class ObjectState(pomdp_py.SimpleState):
-    """Keep it simple for now"""
-    def __init__(self, cls, location):
-        """
-        Args:
-            cls (str): Object class
-            location (object): Object location,  hashable
-        """
-        self.cls = cls
-        self.location = location
-        super().__init__((cls, location))
-
-
-class Done(Decision):
-    def __init__(self):
-        super().__init__("done")
-
 
 class Observation(pomdp_py.Observation):
     def __init__(self, object_observations):
