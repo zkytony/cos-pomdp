@@ -7,9 +7,9 @@ of the variables.
 
 from pomdp_py import Histogram
 import pandas as pd
-from corrsearch.probability.dist import JointDist
 import random
 from prettytable import PrettyTable
+from .dist import JointDist
 
 class Event:
     """An event is not mutable."""
@@ -271,10 +271,10 @@ class TabularDistribution(Histogram, JointDist):
                        for ev in new_event_to_probs}
         return TabularDistribution(remain_vars, new_weights, normalize=True)
 
-    def marginal(self, outvars, observation=None):
+    def marginal(self, outvars, evidence=None):
         dist = self
-        if observation is not None:
-            dist = self.condition(observation)
+        if evidence is not None:
+            dist = self.condition(evidence)
         elim_vars = [var for var in self.variables
                      if var not in outvars]
         return dist.sum_out(elim_vars)

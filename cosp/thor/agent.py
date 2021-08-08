@@ -165,7 +165,6 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
 ########################### COS-POMDP agent #################################
 import pomdp_py
 from .decisions import MoveDecision, SearchDecision, DoneDecision
-from ..framework import POMDP
 from ..models import cospomdp
 from ..utils.math import indicator, normalize, euclidean_dist
 
@@ -183,7 +182,7 @@ class HighLevelObjectState(pomdp_py.ObjectState):
     """The `pos` means the location that the robot should be in
     if it wants to detect the object."""
     def __init__(self, object_class, pos):
-        super().__init__(object_class, dict(pos=pos, status=status))
+        super().__init__(object_class, dict(pos=pos))
 
 class HighLevelSearchRegion(cospomdp.SearchRegion):
     """This is where the high-level belief will be defined over.
@@ -196,19 +195,19 @@ class HighLevelSearchRegion(cospomdp.SearchRegion):
         self.reachable_positions = set(reachable_positions)
         self._current = 0
 
-    def __next__(self):
-        if self._current < len(self.reachable_positions):
-            retval = self.reachable_positions[self._current]
-            self._current += 1
-            return retval
-        else:
-            raise StopIteration
-
     def __iter__(self):
-        return self
+        return iter(self.reachable_positions)
 
     def __contains__(self, item):
         return item in self.reachable_positions
+
+    def neighbor(self, pos):
+        x, z = pos
+        return filter(lambda p: p in self.reachable_positions,
+                      [(x + constants.GRID_SIZE, z),
+                       (x - constants.GRID_SIZE, z),
+                       (x, z + constants.GRID_SIZE),
+                       (x, z - constants.GRID_SIZE)])
 
 class HighLevelTransitionModel(pomdp_py.TransitionModel):
     """Transition model for high-level planner.
@@ -254,7 +253,7 @@ class HighLevelDetectionModel(cospomdp.DetectionModel):
     def __init__(self, detecting_class, true_pos_rate, rand=random):
         """
         Detector for detecting class.
-        `true_pos` is the true positive rate of detection.
+        `true_pos_rate` is the true positive rate of detection.
         """
         self.detecting_class = detecting_class
         self._true_pos_rate = true_pos_rate
@@ -333,6 +332,56 @@ class HighLevelObservationModel(pomdp_py.ObservationModel):
         return math.prod([self._oms[zi.objclass].probability(zi, next_state, action)
                           for zi in observation.object_observations])
 
+from ..probability import JointDist, Event, TabularDistribution
+class HighLevelCorrelationDist(JointDist):
+    def __init__(self, objclass, target_class, search_region, corr_func):
+        """
+        Models Pr(Si | Starget) = Pr(objclass | target_class)
+        Args:
+            objclass (str): class corresponding to the state variable Si
+            target_class (str): target object class
+            corr_func: can take in a target location, and an object location,
+                and return a value, the greater, the more correlated.
+        """
+        self.objclass = objclass
+        self.target_class = target_class
+        super().__init__([objclass, target_class])
+
+        # calculate weights
+        self.dists = {}  # maps from target state to
+        for target_pos in search_region:
+            target_state = HighLevelObjectState(target_class, target_pos)
+            weights = {}
+            for object_pos in search_region:
+                object_state = HighLevelObjectState(objclass, object_pos)
+                prob = corr_func(target_pos, object_pos,
+                                 target_class, objclass)
+                weights[Event({self.objclass: object_state})] = prob
+            self.dists[target_state] =\
+                TabularDistribution([self.objclass], weights, normalize=True)
+
+    def marginal(self, variables, evidence):
+        """Performs marignal inference,
+        produce a joint distribution over `variables`,
+        given evidence, i.e. evidence (if supplied);
+
+        NOTE: Only supports variables = [objclass]
+        with evidence being a specific target state
+
+        variables (array-like);
+        evidence (dict) mapping from variable name to value"""
+        assert variables == [self.objclass],\
+            "CorrelationDist can only be used to infer distribution"\
+            "over the correlated object's state"
+        assert isinstance(evidence, HighLevelObjectState)\
+            and evidence.objclass == self.target_class,\
+            "When inferring Pr(Si | Starget), you must provide a value for Starget"\
+            "i.e. set evidence = <some target state>"
+        target_state = evidence[self.target_class]
+        if target_state not in self.weights:
+            raise ValueError("Unexpected value for target state in evidence: {}".format(target_state))
+        return self.dists[target_state]
+
 
 class HighLevelPolicyModel(pomdp_py.RolloutPolicy):
     def __init__(self, search_region, num_visits_init=10, val_init=constants.TOS_REWARD_HI):
@@ -386,6 +435,7 @@ class HighLevelRewardModel(pomdp_py.RewardModel):
                 return constants.TOS_REWARD_LO
         else:
             return constants.TOS_REWARD_STEP
+
 
 class ThorObjectSearchCOSPOMDP(pomdp_py.Agent):
     """The COSPOMDP for Thor Object Search;

@@ -12,7 +12,8 @@ setup(name='cos-pomdp',
           'ai2thor==3.3.4',
           'pomdp_py',
           'tqdm',
-          'torch>=1.8.0'
+          'torch>=1.8.0',
+          'prettytable'
       ],
       author='Kaiyu Zheng',
       author_email='kaiyutony@gmail.com')

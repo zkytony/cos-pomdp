@@ -46,13 +46,13 @@ class JointDist:
         """
         raise NotImplementedError
 
-    def marginal(self, variables, observation=None):
+    def marginal(self, variables, evidence=None):
         """Performs marignal inference,
         produce a joint distribution over `variables`,
         given evidence, i.e. observation (if supplied);
 
         variables (array-like);
-        observation (dict) mapping from variable name to value"""
+        evidence (dict) mapping from variable name to value"""
         raise NotImplementedError
 
     def valrange(self, var):

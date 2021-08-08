@@ -11,9 +11,6 @@ class SearchRegion:
     def __init__(self):
         pass
 
-    def __next__(self):
-        raise NotImplementedError
-
     def __iter__(self):
         raise NotImplementedError
 
