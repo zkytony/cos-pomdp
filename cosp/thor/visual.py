@@ -8,6 +8,7 @@ from thortils import convert_scene_to_grid_map
 
 from ..utils.images import overlay
 from ..framework import Visualizer
+from ..planning import HierarchicalPlanningAgent
 from . import constants
 
 class ThorObjectSearchViz(Visualizer):
@@ -16,6 +17,7 @@ class ThorObjectSearchViz(Visualizer):
         self._grid_map = None
         self._linewidth = config.get("linewidth", 1)
         self._bg_path = config.get("bg_path", None)
+        self._colors = config.get("colors", {})
 
     def on_init(self):
         """pygame init"""
@@ -68,6 +70,22 @@ class ThorObjectSearchViz(Visualizer):
             self.on_init()
 
         img = self._make_gridworld_image(self._res)
+
+        robot_pose = task_env.get_state().agent_pose
+        thor_x, _, thor_z = robot_pose[0]
+
+        # Draw belief about robot
+        if isinstance(agent, HierarchicalPlanningAgent):
+            mpe_state = agent.high_level_belief.mpe()
+            robot_state = mpe_state.robot_state
+            robot_grid_pos = self._grid_map.to_grid_pos(*robot_state["pos"])
+            print("robot state: true position {}\t believed position {}\t believed grid pos {}"\
+                  .format((thor_x, thor_z), robot_state["pos"], robot_grid_pos))
+            x, y = robot_grid_pos
+            robot_color = self.get_color(mpe_state.robot_id)
+            img = self.draw_robot(img, x, y, None, color=robot_color, thickness=5)
+
+        # Draw belief about target
         self.show_img(img)
 
     def show_img(self, img):
@@ -81,3 +99,28 @@ class ThorObjectSearchViz(Visualizer):
         img = cv2.flip(img, 1)  # flip horizontally
         pygame.surfarray.blit_array(self._display_surf, img)
         pygame.display.flip()
+
+    def get_color(self, objid, default=(220, 150, 10, 255), alpha=1.0):
+        color = self._colors.get(objid, default)
+        if len(color) == 3:
+            color = color + [int(round(alpha*255))]
+        color = tuple(color)
+        return color
+
+    ### Functions to draw
+    def draw_robot(self, img, x, y, th, color=(255, 150, 0), thickness=2):
+        """Note: agent by default (0 angle) looks in the +z direction in Unity,
+        which corresponds to +y here. That's why I'm multiplying y with cos."""
+        size = self._res
+        x *= self._res
+        y *= self._res
+
+        radius = int(round(size / 2))
+        shift = int(round(self._res / 2))
+        cv2.circle(img, (y+shift, x+shift), radius, color, thickness=thickness)
+
+        if th is not None:
+            endpoint = (y+shift + int(round(shift*math.cos(th))),
+                        x+shift + int(round(shift*math.sin(th))))
+            cv2.line(img, (y+shift,x+shift), endpoint, color, 2)
+        return img

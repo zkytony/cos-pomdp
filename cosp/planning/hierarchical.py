@@ -36,3 +36,11 @@ class HierarchicalPlanningAgent(Agent):
         """
         self.high_level_pomdp.update(self._last_decision, observation)
         self.low_level_pomdp.update(action, observation)
+
+    @property
+    def high_level_belief(self):
+        return self.high_level_pomdp.belief
+
+    @property
+    def low_level_belief(self):
+        return self.low_level_pomdp.belief

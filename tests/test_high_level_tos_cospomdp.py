@@ -32,6 +32,7 @@ def corr_func(target_pos, object_pos,
         return (1.0 - abs(corr)) / (-distance - 7.5)
 
 def test_create():
+    robot_id = "robot0"
     scene = "FloorPlan1"
     target_class = "Apple"
     thor_config = {**constants.CONFIG, **{"scene": scene}}
@@ -48,7 +49,11 @@ def test_create():
         "discount_factor": 0.99,
         "visualize": True,
         "viz_config": {
-            "res": 30
+            "res": 30,
+            "colors": {
+                robot_id: [255, 100, 255],
+                target_class: [100, 100, 255]
+            }
         }
     }
 
@@ -90,11 +95,12 @@ def test_create():
     print("Planning one step...")
     _start_time = time.time()
     print(high_level_pomdp.plan_step())
+    print("Took {:3f}s".format(time.time() - _start_time))
 
     viz = task_env.visualizer(**task_config["viz_config"])
     viz.visualize(task_env, agent)
+    time.sleep(5)
 
-    print("Took {:3f}s".format(time.time() - _start_time))
 
 if __name__ == "__main__":
     test_create()
