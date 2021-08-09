@@ -573,3 +573,7 @@ class ThorObjectSearchCOSPOMDP(pomdp_py.Agent):
                                         pomdp_py.Histogram({next_robot_state : 1.0}),
                                         normalize(next_target_belief))
         self.set_belief(next_belief)
+
+    def debug_last_plan(self):
+        pomdp_py.print_preferred_actions(self.tree)
+        pomdp_py.print_tree(self.tree)

@@ -96,6 +96,7 @@ def test_create():
     print("Planning one step...")
     _start_time = time.time()
     print(high_level_pomdp.plan_step())
+    high_level_pomdp.debug_last_plan()
     print("Took {:3f}s".format(time.time() - _start_time))
 
     viz = task_env.visualizer(**task_config["viz_config"])

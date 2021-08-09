@@ -1,5 +1,6 @@
 # COS-POMDP: Correlation Object Search POMDP
 import pomdp_py
+from pomdp_py.utils import typ
 from ..framework import Agent, Decision
 from ..utils.misc import resolve_robot_target_args
 
@@ -83,14 +84,14 @@ class Observation(pomdp_py.Observation):
         return self._hash
 
     def __repr__(self):
-        return str(self)
+        obzstr = ["{}:{}".format(o.objclass, o.location)
+                  for o in self.object_observations]
+        return "Obz({})".format(obzstr)
 
     def __str__(self):
-        obzstr = ["    {}".format(o)
+        obzstr = ["{}:{}".format(o.objclass, o.location)
                   for o in self.object_observations]
-        return\
-            "{}(\n"\
-            "    {})".format("\n".join(obzstr))
+        return typ.blue("Obz({})".format(obzstr))
 
     def __iter__(self):
         return iter(self.object_observations)
