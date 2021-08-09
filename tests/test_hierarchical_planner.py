@@ -1,3 +1,7 @@
+# Test the hierarchical planner as a whole
+# The goal here is to make the agent search for objects.
+
+
 import time
 import thortils
 from test_utils import corr_func
@@ -5,6 +9,7 @@ from cosp.thor.agent import (ThorObjectSearchCOSPOMDP,
                              HighLevelSearchRegion,
                              HighLevelCorrelationDist)
 from cosp.thor.object_search import ThorObjectSearch
+from cosp.thor.trial import ThorObjectSearchTrial
 from cosp.thor import constants
 from cosp.planning.hierarchical import HierarchicalPlanningAgent
 
@@ -35,21 +40,11 @@ def test_create():
         }
     }
 
-    controller = thortils.launch_controller(thor_config)
-    search_region = HighLevelSearchRegion(thortils.thor_reachable_positions(controller))
-    x, _, z = thortils.thor_agent_position(controller, as_tuple=True)
-    init_robot_pos = (x, z)  # high-level position
-
     detection_config = {
         "CounterTop": 0.7,
         "Apple": 0.5,
         "Bread": 0.6
     }
-
-    corr_dists = {
-        objclass: HighLevelCorrelationDist(objclass, target_class, search_region, corr_func)
-        for objclass in detection_config
-        if objclass != target_class}
 
     planning_config = {
         "max_depth": 10,
@@ -58,27 +53,21 @@ def test_create():
         "exploration_const": constants.TOS_REWARD_HI - constants.TOS_REWARD_LO
     }
 
-    print("Creating High Level POMDP...")
-    high_level_pomdp = ThorObjectSearchCOSPOMDP(task_config,
-                                                search_region,
-                                                init_robot_pos,
-                                                detection_config,
-                                                corr_dists,
-                                                planning_config)
+    agent_config = {"task_config": task_config,
+                    "detection_config": detection_config,
+                    "corr_func": corr_func,
+                    "planning_config": planning_config}
 
-    # Create a task environment
-    task_env = ThorObjectSearch(controller, task_config)
-    agent = HierarchicalPlanningAgent(high_level_pomdp)
-
-    print("Planning one step...")
-    _start_time = time.time()
-    print(high_level_pomdp.plan_step())
-    high_level_pomdp.debug_last_plan()
-    print("Took {:3f}s".format(time.time() - _start_time))
-
-    viz = task_env.visualizer(**task_config["viz_config"])
-    viz.visualize(task_env, agent)
-    time.sleep(5)
+    config = {
+        "thor": thor_config,
+        "max_steps": 100,
+        "task_env": "ThorObjectSearch",
+        "task_env_config": {"task_config": task_config},
+        "agent_class": "ThorObjectSearchCOSPOMDPAgent",
+        "agent_config": agent_config
+    }
+    trial = ThorObjectSearchTrial("test_hierarchical", config)
+    return trial.run(logging=True)
 
 
 if __name__ == "__main__":

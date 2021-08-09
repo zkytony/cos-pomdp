@@ -4,7 +4,7 @@ from ai2thor.controller import Controller
 import thortils
 
 from .object_search import ThorObjectSearch
-from .agent import ThorObjectSearchOptimalAgent
+from .agent import ThorObjectSearchOptimalAgent, ThorObjectSearchCOSPOMDPAgent
 from .result_types import PathResult, HistoryResult
 from . import constants
 

@@ -1,6 +1,7 @@
 import random
 import math
 from thortils import (thor_closest_object_of_type,
+                      thor_reachable_positions,
                       thor_agent_pose,
                       thor_object_with_id,
                       thor_object_receptors,
@@ -257,8 +258,6 @@ class HighLevelTransitionModel(pomdp_py.TransitionModel):
             next_robot_status = HighLevelStatus.MOVING
         elif isinstance(action, SearchDecision):
             next_robot_status = HighLevelStatus.SEARCHING
-        elif isinstance(action, DoneDecision):
-            next_robot_status = HighLevelStatus.DONE
         next_robot_state = HighLevelRobotState(next_robot_pos,
                                                next_robot_status)
         target_state = HighLevelObjectState(state.target_state.objclass,
@@ -576,4 +575,37 @@ class ThorObjectSearchCOSPOMDP(pomdp_py.Agent):
 
     def debug_last_plan(self):
         pomdp_py.print_preferred_actions(self.tree)
-        pomdp_py.print_tree(self.tree)
+        # pomdp_py.print_tree(self.tree)
+
+from ..planning.hierarchical import HierarchicalPlanningAgent
+
+class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent):
+    # In the current version, uses the controller in order to determine
+    # the search region and initial robot pose. In the more general case,
+    # the agent will begin with a partial map, or no map at all, and needs
+    # to explore and expand the map; in that case controller is not needed.
+    AGENT_USES_CONTROLLER = True
+
+    def __init__(self, controller, task_config, detection_config,
+                 corr_func, planning_config):
+        search_region = HighLevelSearchRegion(
+            thor_reachable_positions(controller))
+        x, _, z = thor_agent_pose(controller, as_tuple=True)[0]
+        init_robot_pos = (x, z)  # high-level position
+
+        self.task_type = task_config["task_type"]
+        if self.task_type == "class":
+            self.target_class = task_config["target"]
+
+        corr_dists = {
+            objclass: HighLevelCorrelationDist(objclass, self.target_class,
+                                               search_region, corr_func)
+            for objclass in detection_config
+            if objclass != self.target_class}
+        high_level_pomdp = ThorObjectSearchCOSPOMDP(task_config,
+                                                    search_region,
+                                                    init_robot_pos,
+                                                    detection_config,
+                                                    corr_dists,
+                                                    planning_config)
+        super().__init__(high_level_pomdp)

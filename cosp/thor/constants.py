@@ -12,7 +12,6 @@ DIAG_MOVE = False
 
 GOAL_DISTANCE = 1.0
 
-
 KITCHEN_OBJECT_CLASSES = [
     # Small objects
     "Apple",
