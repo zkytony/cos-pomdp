@@ -3,6 +3,7 @@
 import pygame
 import cv2
 import numpy as np
+import math
 
 from thortils import convert_scene_to_grid_map
 
