@@ -31,6 +31,10 @@ class ThorTrial(Trial):
         else:
             agent = agent_class(**self.config["agent_config"])
 
+        if self.config.get("visualize", False):
+            viz = task_env.visualizer(**self.config["viz_config"])
+            viz.visualize(task_env, agent)
+
         max_steps = self.config["max_steps"]
         for i in range(1, max_steps+1):
             action = agent.act()
@@ -42,6 +46,8 @@ class ThorTrial(Trial):
                 self.log_event(Event("Trial %s | %s" % (self.name, _step_info)))
             else:
                 print(_step_info)
+            if self.config.get("visualize", False):
+                viz.visualize(task_env, agent)
 
             if task_env.done(action):
                 break

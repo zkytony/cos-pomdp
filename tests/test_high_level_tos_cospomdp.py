@@ -4,7 +4,9 @@ from cosp.utils.math import euclidean_dist
 from cosp.thor.agent import (ThorObjectSearchCOSPOMDP,
                              HighLevelSearchRegion,
                              HighLevelCorrelationDist)
+from cosp.thor.object_search import ThorObjectSearch
 from cosp.thor import constants
+from cosp.planning.hierarchical import HierarchicalPlanningAgent
 
 CORR_MATRIX = {
     ("Apple", "CounterTop"): 0.7,
@@ -43,7 +45,11 @@ def test_create():
             "diagonal_ok": constants.DIAG_MOVE,
             "movement_params": thor_config["MOVEMENT_PARAMS"]
         },
-        "discount_factor": 0.99
+        "discount_factor": 0.99,
+        "visualize": True,
+        "viz_config": {
+            "res": 30
+        }
     }
 
     controller = thortils.launch_controller(thor_config)
@@ -76,9 +82,18 @@ def test_create():
                                                 detection_config,
                                                 corr_dists,
                                                 planning_config)
+
+    # Create a task environment
+    task_env = ThorObjectSearch(controller, task_config)
+    agent = HierarchicalPlanningAgent(high_level_pomdp)
+
     print("Planning one step...")
     _start_time = time.time()
     print(high_level_pomdp.plan_step())
+
+    viz = task_env.visualizer(**task_config["viz_config"])
+    viz.visualize(task_env, agent)
+
     print("Took {:3f}s".format(time.time() - _start_time))
 
 if __name__ == "__main__":

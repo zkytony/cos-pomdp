@@ -41,3 +41,7 @@ class Decision(Action):
 
     def form_pomdp(self):
         raise NotImplementedError
+
+class Visualizer:
+    def visualize(self, task_env, agent):
+        raise NotImplementedError

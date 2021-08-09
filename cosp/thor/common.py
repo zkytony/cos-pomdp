@@ -46,6 +46,9 @@ class ThorEnv(TaskEnv):
     def get_reward(self, state, action, next_state):
         raise NotImplementedError
 
+    def visualizer(self, **config):
+        raise NotImplementedError
+
 
 class ThorAgent(Agent):
     def __init__(self):

@@ -22,6 +22,7 @@ from .result_types import PathResult, HistoryResult
 from .utils import plot_path, plt, as_dict
 from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation
 from .agent import ThorObjectSearchOptimalAgent
+from .visual import ThorObjectSearchViz
 from . import constants
 
 
@@ -206,6 +207,9 @@ class TOS(ThorEnv):
         action = a.name if not a.name.startswith("Open") else "{}({})".format(a.name, a.params)
         return "Step {}: Action: {}, (x={}, z={}, pitch={}, yaw={}), Reward: {}"\
             .format(step, action, x, z, pitch, yaw, r)
+
+    def visualizer(self, **config):
+        return ThorObjectSearchViz(**config)
 
 # Class naming aliases
 ThorObjectSearch = TOS
