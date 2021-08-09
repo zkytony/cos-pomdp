@@ -48,6 +48,14 @@ class TOS(ThorEnv):
         self.goal_distance = task_config["nav_config"]["goal_distance"]
         self.task_config = task_config
 
+    @property
+    def target_id(self):
+        return self.target
+
+    @property
+    def robot_id(self):
+        return self.task_config.get("robot_id", "robot0")
+
     def compute_results(self):
         """
         We will compute:

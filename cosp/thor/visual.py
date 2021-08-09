@@ -6,7 +6,8 @@ import numpy as np
 
 from thortils import convert_scene_to_grid_map
 
-from ..utils.images import overlay
+from ..utils.images import overlay, cv2shape
+from ..utils.colors import lighter, lighter_with_alpha
 from ..framework import Visualizer
 from ..planning import HierarchicalPlanningAgent
 from . import constants
@@ -73,20 +74,32 @@ class ThorObjectSearchViz(Visualizer):
 
         robot_pose = task_env.get_state().agent_pose
         thor_x, _, thor_z = robot_pose[0]
+        print("robot state: true position {}".format((thor_x, thor_z)))
 
         # Draw belief about robot
+        x, y = self._get_robot_grid_pos(agent)
+        robot_color = self.get_color(task_env.robot_id)
+        img = self.draw_robot(img, x, y, None, color=robot_color, thickness=5)
+
+        # Draw belief about target
+        belief = self._get_target_belief(agent)
+        target_color = self.get_color(task_env.target_id)
+        img = self.draw_object_belief(img, belief, target_color)
+
+        self.show_img(img)
+
+    def _get_robot_grid_pos(self, agent):
         if isinstance(agent, HierarchicalPlanningAgent):
             mpe_state = agent.high_level_belief.mpe()
             robot_state = mpe_state.robot_state
             robot_grid_pos = self._grid_map.to_grid_pos(*robot_state["pos"])
-            print("robot state: true position {}\t believed position {}\t believed grid pos {}"\
-                  .format((thor_x, thor_z), robot_state["pos"], robot_grid_pos))
-            x, y = robot_grid_pos
-            robot_color = self.get_color(mpe_state.robot_id)
-            img = self.draw_robot(img, x, y, None, color=robot_color, thickness=5)
+            print("robot state: believed position {}".format(robot_state["pos"]))
+            print("robot state: believed grid pos {}".format(robot_grid_pos))
+        return robot_grid_pos
 
-        # Draw belief about target
-        self.show_img(img)
+    def _get_target_belief(self, agent):
+        if isinstance(agent, HierarchicalPlanningAgent):
+            return agent.high_level_belief.target_belief
 
     def show_img(self, img):
         """
@@ -123,4 +136,44 @@ class ThorObjectSearchViz(Visualizer):
             endpoint = (y+shift + int(round(shift*math.cos(th))),
                         x+shift + int(round(shift*math.sin(th))))
             cv2.line(img, (y+shift,x+shift), endpoint, color, 2)
+        return img
+
+
+    def draw_object_belief(self, img, belief, color,
+                           circle_drawn=None):
+        """
+        circle_drawn: map from pose to number of times drawn;
+            Used to determine size of circle to draw at a location
+        """
+        if circle_drawn is None:
+            circle_drawn = {}
+        radius = int(round(self._res / 2))
+        size = self._res // 3
+        last_val = -1
+        hist = belief.get_histogram()
+        for state in reversed(sorted(hist, key=hist.get)):
+            if last_val != -1:
+                color = lighter_with_alpha(color, 1-hist[state]/last_val)
+
+            if len(color) == 4:
+                stop = color[3]/255 < 0.1
+            else:
+                stop = np.mean(np.array(color[:3]) / np.array([255, 255, 255])) < 0.999
+
+            if not stop:
+                thor_x, thor_z = state['pos']
+                tx, ty = self._grid_map.to_grid_pos(thor_x, thor_z)
+                if (tx,ty) not in circle_drawn:
+                    circle_drawn[(tx,ty)] = 0
+                circle_drawn[(tx,ty)] += 1
+
+                img = cv2shape(img, cv2.rectangle,
+                               (ty*self._res,
+                                tx*self._res),
+                               (ty*self._res+self._res,
+                                tx*self._res+self._res),
+                               color, thickness=-1, alpha=color[3]/255)
+                last_val = hist[state]
+                if last_val <= 0:
+                    break
         return img

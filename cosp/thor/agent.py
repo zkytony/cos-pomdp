@@ -204,6 +204,9 @@ class HighLevelOOBelief(pomdp_py.OOBelief):
         # import pdb; pdb.set_trace()
         return cospomdp.ReducedState(self.robot_id, self.target_id,
                                      super().mpe(return_oostate=False))
+    @property
+    def target_belief(self):
+        return self.object_beliefs[self.target_id]
 
 class HighLevelSearchRegion(cospomdp.SearchRegion):
     """This is where the high-level belief will be defined over.
@@ -494,8 +497,7 @@ class ThorObjectSearchCOSPOMDP(pomdp_py.Agent):
                  detection_config,
                  corr_dists,
                  planning_config,
-                 init_target_belief="uniform",
-                 robot_id="robot0"):
+                 init_target_belief="uniform"):
         """
         Args:
             task_config (dict): Common task configuration in thor
@@ -508,7 +510,7 @@ class ThorObjectSearchCOSPOMDP(pomdp_py.Agent):
         init_robot_state = HighLevelRobotState(init_robot_pos, HighLevelStatus.INITIAL)
         init_robot_belief = pomdp_py.Histogram({init_robot_state : 1.0})
 
-        self.robot_id = robot_id
+        self.robot_id = task_config.get("robot_id", "robot0")
         if task_config["task_type"] == "class":
             target_class = task_config["target"]
             target_id = target_class

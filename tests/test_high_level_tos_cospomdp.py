@@ -37,6 +37,7 @@ def test_create():
     target_class = "Apple"
     thor_config = {**constants.CONFIG, **{"scene": scene}}
     task_config = {
+        "robot_id": robot_id,
         "task_type": "class",
         "target": target_class,
         "nav_config": {
@@ -52,7 +53,7 @@ def test_create():
             "res": 30,
             "colors": {
                 robot_id: [255, 100, 255],
-                target_class: [100, 100, 255]
+                target_class: [100, 100, 255, 128]
             }
         }
     }
