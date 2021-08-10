@@ -68,7 +68,7 @@ def test_create():
         "agent_class": "ThorObjectSearchCOSPOMDPAgent",
         "agent_config": agent_config
     }
-    trial = ThorObjectSearchTrial("test_hierarchical", config)
+    trial = ThorObjectSearchTrial("test_hierarchical", config, verbose=True)
     return trial.run(logging=True)
 
 

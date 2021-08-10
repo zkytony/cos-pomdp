@@ -11,7 +11,6 @@ from . import constants
 
 class MoveDecision(Decision):
     def __init__(self, dest):
-        dest = (-1.0, 1.25)
         super().__init__("move-to-{}".format(dest))
         self.dest = dest
 

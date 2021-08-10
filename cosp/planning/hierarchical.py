@@ -27,7 +27,7 @@ class HierarchicalPlanningAgent(Agent):
         decision = self.high_level_pomdp.plan_step()
         pomdp_args = self._decision_made(decision)
         _debug("  Decision made: {}".format(decision), c="green")
-        if decision != self._last_decision:
+        if self._last_decision is None:
             _debug("Decision changed. Making new low level POMDP", c="blue")
             self.low_level_pomdp = decision.form_pomdp(pomdp_args)
         _debug("Planning low level POMDP")

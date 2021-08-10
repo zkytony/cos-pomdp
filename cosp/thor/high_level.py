@@ -409,9 +409,10 @@ class ThorObjectSearchCOSPOMDP(POMDP):
                                                next_robot_state, target_state)
             pr_o = self.observation_model.probability(observation, next_state, action)
             next_target_belief[target_state] = pr_o * self.belief[next_state]
-        next_belief = HighLevelOOBelief(self.robot_id, self.target_id,
-                                        pomdp_py.Histogram({next_robot_state : 1.0}),
-                                        normalize(next_target_belief))
+        next_belief = HighLevelOOBelief(
+            self.robot_id, self.target_id,
+            pomdp_py.Histogram({next_robot_state : 1.0}),
+            pomdp_py.Histogram(normalize(next_target_belief)))
         self.set_belief(next_belief)
 
     def debug_last_plan(self):
