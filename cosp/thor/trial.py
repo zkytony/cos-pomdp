@@ -3,6 +3,10 @@ from sciex import Trial, Event
 from ai2thor.controller import Controller
 import thortils
 
+from ..utils.misc import _debug
+from ..utils import cfg
+cfg.DEBUG_LEVEL = 1
+
 from .object_search import ThorObjectSearch
 from .agent import ThorObjectSearchOptimalAgent, ThorObjectSearchCOSPOMDPAgent
 from .result_types import PathResult, HistoryResult
@@ -37,6 +41,7 @@ class ThorTrial(Trial):
 
         max_steps = self.config["max_steps"]
         for i in range(1, max_steps+1):
+            _debug(f"====== Step: {i} ======", "bold-white")
             action = agent.act()
             observation = task_env.execute(agent, action)
             agent.update(action, observation)

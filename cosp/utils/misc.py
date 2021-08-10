@@ -3,6 +3,7 @@ import time
 import pytz
 from pytz import reference as pytz_reference
 from pomdp_py.utils import typ
+from . import cfg
 
 # COS-POMDP specific
 def resolve_robot_target_args(robot_id, target_id, *args):
@@ -93,3 +94,23 @@ def nice_timestr(dtobj=None):
 
     localtime = pytz_reference.LocalTimezone()
     return dtobj.strftime("%a, %d-%b-%Y %I:%M:%S, " + localtime.tzname(dtobj))
+
+
+def _debug(content, p="yellow", lev=1, c=None):
+    """p: a string making function (e.g. typ.blue),
+    or more conveniently, just a string 'blue'.
+    If you want to bold, then do 'bold-blue'.
+    """
+    if c is not None:
+        p = c
+    bold = False
+    if type(p) == str:
+        if p.startswith("bold"):
+            bold = True
+            p = p.split("-")[1]
+        p = eval(f"typ.{p}")
+    if cfg.DEBUG_LEVEL >= lev:
+        if bold:
+            print(typ.bold(p(content)))
+        else:
+            print(p(content))
