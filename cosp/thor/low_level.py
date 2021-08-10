@@ -1,6 +1,6 @@
 import random
 import pomdp_py
-from thortils.navigation import transform_pose
+from thortils.navigation import transform_pose, convert_movement_to_action
 
 from . import constants
 from ..utils.math import indicator, normalize, euclidean_dist
@@ -15,6 +15,13 @@ class MoveAction(Action):
         self.name = name
         self.delta = delta
         super().__init__(name)
+
+    @staticmethod
+    def from_tos_action(tos_action):
+        name, delta = convert_movement_to_action(
+            tos_action.name,
+            {tos_action.name:tos_action.params})
+        return MoveAction(name, delta)
 
 def robot_pose_transition(robot_pose, action, **kwargs):
     """
