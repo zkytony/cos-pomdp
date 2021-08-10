@@ -42,6 +42,9 @@ class Decision(Action):
     def form_pomdp(self):
         raise NotImplementedError
 
+    def update_pomdp_belief(self, pomdp, action, observation):
+        raise NotImplementedError
+
     def __repr__(self):
         return "Decis(%s)" % self.name
 

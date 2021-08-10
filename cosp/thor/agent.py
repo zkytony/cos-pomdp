@@ -212,6 +212,9 @@ class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
         return self.task_config["robot_id"]
 
     def _decision_made(self, decision):
+        """
+        Prepares necessary arguments to build low-level POMDP
+        """
         if isinstance(decision, MoveDecision):
             movement_params = self.task_config["nav_config"]["movement_params"]
             action_tuples = get_navigation_actions(movement_params=movement_params)
@@ -229,6 +232,8 @@ class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
                         planning_config=self.planning_configs["MoveDecision"])
 
     def _action_computed(self, pomdp_action):
+        """Converts an Action to TOS_Action which can be executed
+        in Ai2Thor."""
         if isinstance(pomdp_action, MoveAction):
             movement_params = self.task_config["nav_config"]["movement_params"]
             return TOS_Action(pomdp_action.name,

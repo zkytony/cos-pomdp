@@ -2,6 +2,7 @@
 import math
 import random
 import pomdp_py
+from pomdp_py import Agent as POMDP
 from thortils import thor_object_type
 from . import constants
 from .decisions import MoveDecision, SearchDecision, DoneDecision
@@ -314,7 +315,7 @@ class HighLevelRewardModel(pomdp_py.RewardModel):
             return constants.TOS_REWARD_STEP
 
 
-class ThorObjectSearchCOSPOMDP(pomdp_py.Agent):
+class ThorObjectSearchCOSPOMDP(POMDP):
     """The COSPOMDP for Thor Object Search;
     It is a high-level planning framework.
 

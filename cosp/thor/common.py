@@ -51,15 +51,6 @@ class ThorEnv(TaskEnv):
 
 
 class ThorAgent(Agent):
-    def __init__(self):
-        pass
-
-    def act(self):
-        pass
-
-    def update(self, observation, reward):
-        pass
-
     @property
     def detector(self):
         return None

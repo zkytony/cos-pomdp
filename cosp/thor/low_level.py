@@ -129,28 +129,3 @@ class RobotPoseSensorModel:
 
     def probability(self, z, next_state, *args):
         return z == next_state.robot_state["pose"]
-
-class LowLevelPOMDP(pomdp_py.Agent):
-    def __init__(self, init_belief,
-                 policy_model,
-                 transition_model,
-                 observation_model,
-                 reward_model,
-                 planning_config):
-        super().__init__(init_belief, policy_model,
-                         transition_model,
-                         observation_model,
-                         reward_model)
-        self._planner = pomdp_py.POUCT(max_depth=planning_config["max_depth"],
-                                       discount_factor=planning_config["discount_factor"],
-                                       num_sims=planning_config["num_sims"],
-                                       exploration_const=planning_config["exploration_const"],
-                                       rollout_policy=policy_model,
-                                       action_prior=policy_model.action_prior)
-    def plan_step(self):
-        return self._planner.plan(self)
-
-    def update(self, action, tos_observation):
-        next_robot_state = self.transition_model.sample(self.belief.mpe(), action).robot_state
-        print(next_robot_state)
-        raise NotImplementedError
