@@ -1,26 +1,59 @@
 import pomdp_py
 from ..framework import Decision, Action
-
-# # Low
-
-
-
-
-# class LowLevelTransitionModel(pomdp_py.TransitionModel):
-#     pass
-
-
-
-
-
-
+from .low_level import (LowLevelTransitionModel,
+                        LowLevelObservationModel,
+                        LowLevelPOMDP,
+                        LowLevelRobotState,
+                        LowLevelOOBelief,
+                        RobotPoseSensorModel)
+from . import constants
 
 class MoveDecision(Decision):
     def __init__(self, dest):
         super().__init__("move-to-{}".format(dest))
         self.dest = dest
 
-    # def form_pomdp(self, ...):
+    class RewardModel(pomdp_py.RewardModel):
+        """This is a RewardModel for the low-level POMDP"""
+        def __init__(self, dest):
+            self.dest = dest
+
+        def sample(self, state, action, next_state):
+            position, rotation = next_state.robot_state["pose"]
+            x, _, z = position
+            if (x,z) == self.dest:
+                return constants.TOS_REWARD_HI
+            else:
+                return constants.TOS_REWARD_STEP
+
+    class PolicyModel(pomdp_py.UniformPolicyModel):
+        """This is a RewardModel for the low-level POMDP"""
+        def __init__(self, move_actions):
+            """move actions: list of MoveActions"""
+            self.move_actions = move_actions
+            self.action_prior = None
+            super().__init__(move_actions)
+
+    def form_pomdp(self, pomdp_args):
+        robot_id = pomdp_args["robot_id"]
+        robot_pose = pomdp_args["robot_pose"]
+        move_actions = pomdp_args["move_actions"]
+        planning_config = pomdp_args["planning_config"]
+
+        transition_model = LowLevelTransitionModel()
+        observation_model = LowLevelObservationModel(RobotPoseSensorModel())
+        policy_model = MoveDecision.PolicyModel(move_actions)
+        reward_model = MoveDecision.RewardModel(self.dest)
+        init_robot_belief = pomdp_py.Histogram({LowLevelRobotState(robot_pose): 1.0})
+        init_belief = LowLevelOOBelief(robot_id, {robot_id: init_robot_belief})
+        return LowLevelPOMDP(init_belief,
+                             policy_model,
+                             transition_model,
+                             observation_model,
+                             reward_model,
+                             planning_config)
+
+
     #     transition_model = make_transition_model(robotstate, movements)
     #     observation_model = make_observation_model(robotpose)
     #     policy_model = make_policy_model(movements)

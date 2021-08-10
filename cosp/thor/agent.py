@@ -165,8 +165,12 @@ from ..planning.hierarchical import HierarchicalPlanningAgent
 from .high_level import (HighLevelSearchRegion,
                          HighLevelCorrelationDist,
                          ThorObjectSearchCOSPOMDP)
+from .decisions import MoveDecision
+from .low_level import MoveAction
+from .common import ThorAgent
+from thortils.navigation import get_navigation_actions
 
-class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent):
+class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
     # In the current version, uses the controller in order to determine
     # the search region and initial robot pose. In the more general case,
     # the agent will begin with a partial map, or no map at all, and needs
@@ -174,25 +178,58 @@ class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent):
     AGENT_USES_CONTROLLER = True
 
     def __init__(self, controller, task_config, detection_config,
-                 corr_func, planning_config):
+                 corr_func, planning_configs):
         search_region = HighLevelSearchRegion(
             thor_reachable_positions(controller))
-        x, _, z = thor_agent_pose(controller, as_tuple=True)[0]
+        robot_pose = thor_agent_pose(controller, as_tuple=True)
+        x, _, z = robot_pose[0]
         init_robot_pos = (x, z)  # high-level position
+        self.init_robot_pose = robot_pose
 
-        self.task_type = task_config["task_type"]
+        self.task_config = task_config
+        self.task_type = self.task_config["task_type"]
         if self.task_type == "class":
-            self.target_class = task_config["target"]
+            self.target_class = self.task_config["target"]
 
         corr_dists = {
             objclass: HighLevelCorrelationDist(objclass, self.target_class,
                                                search_region, corr_func)
             for objclass in detection_config
             if objclass != self.target_class}
-        high_level_pomdp = ThorObjectSearchCOSPOMDP(task_config,
-                                                    search_region,
-                                                    init_robot_pos,
-                                                    detection_config,
-                                                    corr_dists,
-                                                    planning_config)
+
+        self.planning_configs = planning_configs
+        high_level_pomdp = ThorObjectSearchCOSPOMDP(
+            self.task_config,
+            search_region,
+            init_robot_pos,
+            detection_config,
+            corr_dists,
+            self.planning_configs["high_level"])
         super().__init__(high_level_pomdp)
+
+    @property
+    def robot_id(self):
+        return self.task_config["robot_id"]
+
+    def _decision_made(self, decision):
+        if isinstance(decision, MoveDecision):
+            movement_params = self.task_config["nav_config"]["movement_params"]
+            action_tuples = get_navigation_actions(movement_params=movement_params)
+            move_actions = [MoveAction(name, delta)
+                            for name, delta in action_tuples]
+            if self.low_level_pomdp is None:
+                # This is the first time to create a low level pomdp;
+                robot_pose = self.init_robot_pose
+            else:
+                # The low_level_pomdp's belief should always contain robot pose
+                robot_pose = self.low_level_belief.mpe().robot_state["pose"]
+            return dict(robot_id=self.robot_id,
+                        move_actions=move_actions,
+                        robot_pose=robot_pose,
+                        planning_config=self.planning_configs["MoveDecision"])
+
+    def _action_computed(self, pomdp_action):
+        if isinstance(pomdp_action, MoveAction):
+            movement_params = self.task_config["nav_config"]["movement_params"]
+            return TOS_Action(pomdp_action.name,
+                              movement_params[pomdp_action.name])

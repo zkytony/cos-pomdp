@@ -14,7 +14,6 @@ class HierarchicalPlanningAgent(Agent):
         self.low_level_pomdp = None
         self._last_decision = None
 
-
     def act(self):
         """Hierarchical planning.
         The high-level POMDP will always make a decision;
@@ -22,11 +21,19 @@ class HierarchicalPlanningAgent(Agent):
         then it overwrites the current low-level POMDP.
         Action is obtained by solving the low-level POMDP."""
         decision = self.high_level_pomdp.plan_step()
+        pomdp_args = self._decision_made(decision)
         if decision != self._last_decision:
-            self.low_level_pomdp = decision.form_pomdp()
-        action = self.low_level_pomdp.plan_step()
+            self.low_level_pomdp = decision.form_pomdp(pomdp_args)
+        pomdp_action = self.low_level_pomdp.plan_step()
+        action = self._action_computed(pomdp_action)
         self._last_decision = self._last_decision
         return action
+
+    def _decision_made(self, decision):
+        raise NotImplementedError
+
+    def _action_computed(self, pomdp_action):
+        raise NotImplementedError
 
     def update(self, action, observation):
         """
@@ -34,6 +41,7 @@ class HierarchicalPlanningAgent(Agent):
         are updated given the same observation and action;
         Indeed, the action is part of the decision.
         """
+        observation, reward = observation
         self.high_level_pomdp.update(self._last_decision, observation)
         self.low_level_pomdp.update(action, observation)
 

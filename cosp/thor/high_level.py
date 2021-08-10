@@ -1,6 +1,8 @@
 ########################### COS-POMDP agent #################################
+import math
 import random
 import pomdp_py
+from thortils import thor_object_type
 from . import constants
 from .decisions import MoveDecision, SearchDecision, DoneDecision
 from ..models import cospomdp
@@ -176,6 +178,7 @@ class HighLevelObservationModel(pomdp_py.ObservationModel):
             corr_dists (dict):  {"object class" for Si : Pr(Si | Starget) JointDist}
         """
         self._oms = {}
+        self.detection_config = detection_config
         for objclass in detection_config:
             true_pos_rate = detection_config[objclass]
             detection_model = HighLevelDetectionModel(objclass, true_pos_rate, rand=rand)
@@ -192,7 +195,8 @@ class HighLevelObservationModel(pomdp_py.ObservationModel):
 
     def probability(self, observation, next_state, action):
         return math.prod([self._oms[zi.objclass].probability(zi, next_state, action)
-                          for zi in observation.object_observations])
+                          for zi in observation.object_observations
+                          if zi.objclass in self.detection_config])
 
 from ..probability import JointDist, Event, TabularDistribution
 class HighLevelCorrelationDist(JointDist):

@@ -46,17 +46,19 @@ def test_create():
         "Bread": 0.6
     }
 
-    planning_config = {
+    pp = {
         "max_depth": 10,
         "discount_factor": 0.95,
         "num_sims": 100,
         "exploration_const": constants.TOS_REWARD_HI - constants.TOS_REWARD_LO
     }
+    planning_configs = {"high_level": pp,
+                        "MoveDecision": pp}
 
     agent_config = {"task_config": task_config,
                     "detection_config": detection_config,
                     "corr_func": corr_func,
-                    "planning_config": planning_config}
+                    "planning_configs": planning_configs}
 
     config = {
         "thor": thor_config,
