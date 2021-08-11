@@ -1,3 +1,6 @@
+####################
+# DYSFUNCT
+####################
 # Test the hierarchical planner as a whole
 # The goal here is to make the agent search for objects.
 
