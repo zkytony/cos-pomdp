@@ -23,18 +23,18 @@ class HierarchicalPlanningAgent(Agent):
         If this decision is different from the previous one,
         then it overwrites the current low-level POMDP.
         Action is obtained by solving the low-level POMDP."""
-        _debug("Planning high level decision...")
         decision = self.high_level_pomdp.plan_step()
         pomdp_args = self._decision_made(decision)
-        _debug("  Decision made: {}".format(decision), c="green")
         if self._last_decision is None:
-            _debug("Decision changed. Making new low level POMDP", c="blue")
-            self.low_level_pomdp = decision.form_pomdp(pomdp_args)
-        _debug("Planning low level POMDP")
+            self.low_level_pomdp = self.form_pomdp(decision, pomdp_args)
+
         pomdp_action = self.low_level_pomdp.plan_step()
         action = self._action_computed(pomdp_action)
         self._last_decision = self._last_decision
         return action
+
+    def form_pomdp(self, decision, pomdp_args):
+        raise NotImplementedError
 
     def _decision_made(self, decision):
         raise NotImplementedError
@@ -48,12 +48,12 @@ class HierarchicalPlanningAgent(Agent):
         are updated given the same observation and action;
         Indeed, the action is part of the decision.
         """
-        _debug("Updating beliefs")
-        observation, reward = observation
-        _debug("Updating high level POMDP belief...")
-        self.high_level_pomdp.update(self._last_decision, observation)
-        _debug("Updating low level POMDP belief...")
-        self.low_level_pomdp.update(action, observation)
+        # _debug("Updating beliefs")
+        # observation, reward = observation
+        # _debug("Updating high level POMDP belief...")
+        # self.high_level_pomdp.update(self._last_decision, observation)
+        # _debug("Updating low level POMDP belief...")
+        # self.low_level_pomdp.update(action, observation)
 
     @property
     def high_level_belief(self):

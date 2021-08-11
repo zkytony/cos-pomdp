@@ -1,3 +1,4 @@
+from pomdp_py.utils import typ
 from cosp.models.state import (HLObjectState,
                                LLObjectState,
                                HLJointState,
@@ -37,7 +38,19 @@ def test_observation_creation():
     except AssertionError:
         pass
 
+def test_action_creation():
+    a1 = Move("north", (-1, 1))
+    a2 = Move("north", (-1, 1))
+    assert(a1 == a2)
+    hash(a1)
+    hash(a2)
+    a3 = Interact("open", "drawer", {"openness": 90})
+    hash(a3)
+    print(typ.info(str(a3)))
+
+
 if __name__ == "__main__":
     test_state_creation()
     test_observation_creation()
+    test_action_creation()
     print("Passed.")
