@@ -31,6 +31,7 @@ from .decisions import MoveDecision
 from .low_level import (LowLevelObjectState,
                         MoveAction)
 from .common import ThorAgent
+from ..models.fansensor import FanSensor
 from thortils.navigation import (get_navigation_actions)
 
 
@@ -191,7 +192,8 @@ class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
     # to explore and expand the map; in that case controller is not needed.
     AGENT_USES_CONTROLLER = True
 
-    def __init__(self, controller, task_config, detection_config,
+    def __init__(self, controller,
+                 task_config, detector_config,
                  corr_func, planning_configs):
         search_region = HighLevelSearchRegion(
             thor_reachable_positions(controller))
@@ -209,11 +211,12 @@ class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
                                           thor_scene_from_controller(controller),
                                           thor_grid_size_from_controller(controller))
         self.target_belief = self._init_target_belief2D(coords2D, prior="uniform")
+        self.camera_model = FanSensor(**detector_config["intrinsics"])
 
         corr_dists = {
             objclass: HighLevelCorrelationDist(objclass, self.target_class,
                                                search_region, corr_func)
-            for objclass in detection_config
+            for objclass in detector_config["detection_rates"]
             if objclass != self.target_class}
 
         self.planning_configs = planning_configs
@@ -221,7 +224,7 @@ class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
             self.task_config,
             search_region,
             init_robot_pos,
-            detection_config,
+            detector_config["detection_rates"],
             corr_dists,
             self.planning_configs["high_level"])
         super().__init__(high_level_pomdp)
@@ -260,7 +263,17 @@ class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
 
     def _init_target_belief2D(self, coords, prior="uniform"):
         if prior == "uniform":
-            return normalize({LowLevelObjectState(self.target_class)})
+            return normalize({LowLevelObjectState(self.target_class, {"pos": pos}) : 1.0
+                              for pos in coords})
+        raise NotImplementedError
+
+    def update(self, action, observation):
+        """Update belief given action and observation (which is
+        actually a (reward, obseravtion) tuple)"""
+        observation, reward = observation
+        import pdb; pdb.set_trace()
+        # Update low-level target belief.
+
 
 
 

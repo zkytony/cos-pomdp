@@ -18,6 +18,10 @@ class HighLevelStatus:
 
 class HighLevelRobotState(pomdp_py.ObjectState):
     def __init__(self, pos, status):
+        """
+        pos: a full pose (position, rotation); see thortils.navigation
+        status (str)
+        """
         super().__init__("robot", dict(pos=pos, status=status))
 
 class HighLevelObjectState(pomdp_py.ObjectState):
@@ -172,16 +176,16 @@ class HighLevelDetectionModel(cospomdp.DetectionModel):
 
 
 class HighLevelObservationModel(pomdp_py.ObservationModel):
-    def __init__(self, target_class, detection_config, corr_dists, rand=random):
+    def __init__(self, target_class, detection_rates, corr_dists, rand=random):
         """
         Args:
-            detection_config (dict):  {"<object class>" : <true positive rate>}
+            detection_rates (dict):  {"<object class>" : <true positive rate>}
             corr_dists (dict):  {"object class" for Si : Pr(Si | Starget) JointDist}
         """
         self._oms = {}
-        self.detection_config = detection_config
-        for objclass in detection_config:
-            true_pos_rate = detection_config[objclass]
+        self.detection_rates = detection_rates
+        for objclass in detection_rates:
+            true_pos_rate = detection_rates[objclass]
             detection_model = HighLevelDetectionModel(objclass, true_pos_rate, rand=rand)
             if objclass == target_class:
                 corr_dist = None
@@ -197,7 +201,7 @@ class HighLevelObservationModel(pomdp_py.ObservationModel):
     def probability(self, observation, next_state, action):
         return math.prod([self._oms[zi.objclass].probability(zi, next_state, action)
                           for zi in observation.object_observations
-                          if zi.objclass in self.detection_config])
+                          if zi.objclass in self.detection_rates])
 
 from ..probability import JointDist, Event, TabularDistribution
 class HighLevelCorrelationDist(JointDist):
@@ -334,14 +338,14 @@ class ThorObjectSearchCOSPOMDP(POMDP):
                  task_config,
                  search_region,
                  init_robot_pos,
-                 detection_config,
+                 detection_rates,
                  corr_dists,
                  planning_config,
                  init_target_belief="uniform"):
         """
         Args:
             task_config (dict): Common task configuration in thor
-            detection_config (dict): See HighLevelObservationModel
+            detection_rates (dict): See HighLevelObservationModel
             corr_dists (dict): Maps from object class to JointDist,
                 that is, it includes all Pr(Si | Starget) distributions for all Si{1<=i<=N).
             init_robot_pos (tuple): initial robot position.
@@ -369,7 +373,7 @@ class ThorObjectSearchCOSPOMDP(POMDP):
             self.robot_id, self.target_id,
             init_robot_belief, init_target_belief)
         transition_model = HighLevelTransitionModel(self.robot_id, self.target_id)
-        observation_model = HighLevelObservationModel(target_class, detection_config, corr_dists)
+        observation_model = HighLevelObservationModel(target_class, detection_rates, corr_dists)
         policy_model = HighLevelPolicyModel(search_region,
                                             **planning_config.get("action_prior_params", {}))
         reward_model = HighLevelRewardModel()
@@ -391,6 +395,7 @@ class ThorObjectSearchCOSPOMDP(POMDP):
             action (Decision): decision made by high level planner
             tos_observation (TOS_Observation): image, depth image, detections.
         """
+        import pdb; pdb.set_trace()
         next_robot_state = self.transition_model.sample(self.belief.mpe(), action).robot_state
         zobjs = []
         for xyxy, conf, cls in tos_observation.detections:

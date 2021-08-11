@@ -48,6 +48,9 @@ class Decision(Action):
     def __repr__(self):
         return "Decis(%s)" % self.name
 
+    def __str__(self):
+        return self.name
+
 class Visualizer:
     def visualize(self, task_env, agent):
         raise NotImplementedError

@@ -40,10 +40,17 @@ def test_create():
         }
     }
 
-    detection_config = {
-        "CounterTop": 0.7,
-        "Apple": 0.5,
-        "Bread": 0.6
+    detector_config = {
+        "intrinsics": {
+            "min_range": constants.GRID_SIZE,
+            "max_range": constants.GRID_SIZE*5,
+            "fov": constants.FOV
+        },
+        "detection_rates": {
+            "CounterTop": 0.7,
+            "Apple": 0.5,
+            "Bread": 0.6
+        }
     }
 
     pp = {
@@ -56,7 +63,7 @@ def test_create():
                         "MoveDecision": pp}
 
     agent_config = {"task_config": task_config,
-                    "detection_config": detection_config,
+                    "detector_config": detector_config,
                     "corr_func": corr_func,
                     "planning_configs": planning_configs}
 

@@ -130,6 +130,7 @@ class LowLevelObservationModel(pomdp_py.ObservationModel):
                                              next_state,
                                              action)
 
+# ----------- Sensor models -------------- #
 class RobotPoseSensorModel:
     def sample(self, next_state, *args):
         return next_state.robot_state["pose"]
