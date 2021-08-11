@@ -2,8 +2,8 @@
 import random
 from pprint import pprint
 import thortils
+from thortils import compute_spl
 from cosp.thor.trial import build_object_search_trial
-from cosp.thor.utils import compute_spl
 from cosp.utils.math import mean_ci_normal
 
 

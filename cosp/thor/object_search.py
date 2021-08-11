@@ -12,14 +12,14 @@ from thortils import (thor_agent_pose,
                       thor_object_type,
                       thor_object_of_type_in_fov,
                       thor_object_position,
-                      thor_closest_object_of_type)
+                      thor_closest_object_of_type,
+                      thor_pose_as_dict)
 
 from thortils.vision import thor_img, thor_img_depth, thor_object_bboxes
 from thortils.utils import (to_degrees, closest,
                             normalize_angles, euclidean_dist)
 
 from .result_types import PathResult, HistoryResult
-from .utils import plot_path, plt, as_dict
 from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation
 from .agent import ThorObjectSearchOptimalAgent
 from .visual import ThorObjectSearchViz
@@ -84,7 +84,7 @@ class TOS(ThorEnv):
             self.target, self.task_type,
             **self.task_config["nav_config"])
         # Need to prepend starting pose. Get position only
-        shortest_path = [as_dict(self.init_state.agent_pose[0])]\
+        shortest_path = [thor_pose_as_dict(self.init_state.agent_pose[0])]\
                         + [p[0] for p in poses]
 
         actual_path = self.get_current_path()

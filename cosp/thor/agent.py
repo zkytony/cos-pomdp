@@ -5,19 +5,39 @@ from thortils import (thor_closest_object_of_type,
                       thor_agent_pose,
                       thor_object_with_id,
                       thor_object_receptors,
-                      thor_object_type)
+                      thor_object_type,
+                      thor_scene_from_controller,
+                      thor_grid_size_from_controller,
+                      thor_pose_as_tuple,
+                      thor_pose_as_dict,
+                      convert_scene_to_grid_map)
 
-from .utils import plt, as_tuple, as_dict
 from .common import TOS_Action, ThorAgent
 from . import constants
+from ..utils.math import indicator, normalize, euclidean_dist
+
+# Used by optimal agent
+import time
+from thortils.navigation import (get_shortest_path_to_object,
+                                 get_shortest_path_to_object_type)
+
+
+# Used by COSPOMDP agent
+from ..planning.hierarchical import HierarchicalPlanningAgent
+from .high_level import (HighLevelSearchRegion,
+                         HighLevelCorrelationDist,
+                         ThorObjectSearchCOSPOMDP)
+from .decisions import MoveDecision
+from .low_level import (LowLevelObjectState,
+                        MoveAction)
+from .common import ThorAgent
+from thortils.navigation import (get_navigation_actions)
+
 
 class ThorObjectSearchAgent(ThorAgent):
     AGENT_USES_CONTROLLER = False
 
 ######################### Optimal Agent ##################################
-import time
-from thortils.navigation import (get_shortest_path_to_object,
-                                 get_shortest_path_to_object_type)
 class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
     """
     The optimal agent uses ai2thor's shortest path method
@@ -139,12 +159,12 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
             if len(poses) == 0:
                 # No action needed. The robot is at where it should be already.
                 assert len(plan) == 0
-                pose_to_extend = as_dict((position, rotation))
+                pose_to_extend = thor_pose_as_dict((position, rotation))
             else:
                 pose_to_extend = poses[-1]
                 # in case navigation is needed between containers (should be rare),
                 # update the position and rotation for the next search.
-                position, rotation = as_tuple(poses[-1])
+                position, rotation = thor_pose_as_tuple(poses[-1])
 
             # Check if we need an open action
             if obj["objectId"] in openable_receptor_ids:
@@ -161,15 +181,9 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
 
         return overall_plan, overall_poses
 #############################################################################
-from ..planning.hierarchical import HierarchicalPlanningAgent
-from .high_level import (HighLevelSearchRegion,
-                         HighLevelCorrelationDist,
-                         ThorObjectSearchCOSPOMDP)
-from .decisions import MoveDecision
-from .low_level import MoveAction
-from .common import ThorAgent
-from thortils.navigation import get_navigation_actions
 
+
+###################### ThorObjectSearchCOSPOMDPAgent ########################
 class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
     # In the current version, uses the controller in order to determine
     # the search region and initial robot pose. In the more general case,
@@ -190,6 +204,11 @@ class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
         self.task_type = self.task_config["task_type"]
         if self.task_type == "class":
             self.target_class = self.task_config["target"]
+
+        coords2D = thor_map_coordinates2D(search_region.reachable_positions,
+                                          thor_scene_from_controller(controller),
+                                          thor_grid_size_from_controller(controller))
+        self.target_belief = self._init_target_belief2D(coords2D, prior="uniform")
 
         corr_dists = {
             objclass: HighLevelCorrelationDist(objclass, self.target_class,
@@ -238,3 +257,19 @@ class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
             movement_params = self.task_config["nav_config"]["movement_params"]
             return TOS_Action(pomdp_action.name,
                               movement_params[pomdp_action.name])
+
+    def _init_target_belief2D(self, coords, prior="uniform"):
+        if prior == "uniform":
+            return normalize({LowLevelObjectState(self.target_class)})
+
+
+
+def thor_map_coordinates2D(reachable_positions, scene_name, grid_size):
+    """Returns an array of 2D thor coordinates that includes
+    both reachable and unreachable locations (essentially based on
+    the rectangle that captures reachable_positions.)"""
+    grid_map = convert_scene_to_grid_map(reachable_positions,
+                                         scene_name, grid_size)
+    coords = [grid_map.to_thor_pos(x, y)
+              for x, y in grid_map.free_locations]
+    return coords
