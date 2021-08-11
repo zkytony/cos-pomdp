@@ -3,24 +3,9 @@ import numpy as np
 import moos3d.util as util
 import random
 from scipy.spatial.transform import Rotation as R
+from .sensor import SensorModel
 
-class SensorModel:
-    def __init__(self):
-        pass
-
-class CameraModel(SensorModel):
-    """Each observation is sets of voxels, grouped by objects (if known correspondence)"""
-    def __init__(self):
-        pass
-    @abstractmethod
-    def within_range(self, config, entity, **kwargs):
-        """
-        Returns True, if this camera model, when applied the given `config`,
-        will result in entity within the field of view.
-        """
-        pass
-
-class FrustumCamera(CameraModel):
+class FrustumCamera(SensorModel):
 
     @property
     def near(self):
