@@ -13,7 +13,10 @@ setup(name='cos-pomdp',
           'pomdp_py',
           'tqdm',
           'torch>=1.8.0',
-          'prettytable'
+          'prettytable',
+          'pytz',
+          'pandas',
+          'seaborn'
       ],
       author='Kaiyu Zheng',
       author_email='kaiyutony@gmail.com')
