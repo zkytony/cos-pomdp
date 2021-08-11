@@ -184,105 +184,103 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
 #############################################################################
 
 
-###################### ThorObjectSearchCOSPOMDPAgent ########################
-class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
-    # In the current version, uses the controller in order to determine
-    # the search region and initial robot pose. In the more general case,
-    # the agent will begin with a partial map, or no map at all, and needs
-    # to explore and expand the map; in that case controller is not needed.
-    AGENT_USES_CONTROLLER = True
+# ###################### ThorObjectSearchCOSPOMDPAgent ########################
+# class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
+#     # In the current version, uses the controller in order to determine
+#     # the search region and initial robot pose. In the more general case,
+#     # the agent will begin with a partial map, or no map at all, and needs
+#     # to explore and expand the map; in that case controller is not needed.
+#     AGENT_USES_CONTROLLER = True
 
-    def __init__(self, controller,
-                 task_config, detector_config,
-                 corr_func, planning_configs):
-        search_region = HighLevelSearchRegion(
-            thor_reachable_positions(controller))
-        robot_pose = thor_agent_pose(controller, as_tuple=True)
-        x, _, z = robot_pose[0]
-        init_robot_pos = (x, z)  # high-level position
-        self.init_robot_pose = robot_pose
+#     def __init__(self, controller,
+#                  task_config, detector_config,
+#                  corr_func, planning_configs):
+#         search_region = HighLevelSearchRegion(
+#             thor_reachable_positions(controller))
+#         robot_pose = thor_agent_pose(controller, as_tuple=True)
+#         x, _, z = robot_pose[0]
+#         init_robot_pos = (x, z)  # high-level position
+#         self.init_robot_pose = robot_pose
 
-        self.task_config = task_config
-        self.task_type = self.task_config["task_type"]
-        if self.task_type == "class":
-            self.target_class = self.task_config["target"]
+#         self.task_config = task_config
+#         self.task_type = self.task_config["task_type"]
+#         if self.task_type == "class":
+#             self.target_class = self.task_config["target"]
 
-        coords2D = thor_map_coordinates2D(search_region.reachable_positions,
-                                          thor_scene_from_controller(controller),
-                                          thor_grid_size_from_controller(controller))
-        self.target_belief = self._init_target_belief2D(coords2D, prior="uniform")
-        self.camera_model = FanSensor(**detector_config["intrinsics"])
+#         # coords2D = thor_map_coordinates2D(search_region.reachable_positions,
+#         #                                   thor_scene_from_controller(controller),
+#         #                                   thor_grid_size_from_controller(controller))
+#         # self.target_belief = self._init_target_belief2D(coords2D, prior="uniform")
+#         # self.camera_model = FanSensor(**detector_config["intrinsics"])
 
-        corr_dists = {
-            objclass: HighLevelCorrelationDist(objclass, self.target_class,
-                                               search_region, corr_func)
-            for objclass in detector_config["detection_rates"]
-            if objclass != self.target_class}
+#         corr_dists = {
+#             objclass: HighLevelCorrelationDist(objclass, self.target_class,
+#                                                search_region, corr_func)
+#             for objclass in detector_config["detection_rates"]
+#             if objclass != self.target_class}
 
-        self.planning_configs = planning_configs
-        high_level_pomdp = ThorObjectSearchCOSPOMDP(
-            self.task_config,
-            search_region,
-            init_robot_pos,
-            detector_config["detection_rates"],
-            corr_dists,
-            self.planning_configs["high_level"])
-        super().__init__(high_level_pomdp)
+#         self.planning_configs = planning_configs
+#         high_level_pomdp = ThorObjectSearchCOSPOMDP(
+#             self.task_config,
+#             search_region,
+#             init_robot_pos,
+#             detector_config["detection_rates"],
+#             corr_dists,
+#             self.planning_configs["high_level"])
+#         super().__init__(high_level_pomdp)
 
-    @property
-    def robot_id(self):
-        return self.task_config["robot_id"]
+#     @property
+#     def robot_id(self):
+#         return self.task_config["robot_id"]
 
-    def _decision_made(self, decision):
-        """
-        Prepares necessary arguments to build low-level POMDP
-        """
-        if isinstance(decision, MoveDecision):
-            movement_params = self.task_config["nav_config"]["movement_params"]
-            action_tuples = get_navigation_actions(movement_params=movement_params)
-            move_actions = [MoveAction(name, delta)
-                            for name, delta in action_tuples]
-            if self.low_level_pomdp is None:
-                # This is the first time to create a low level pomdp;
-                robot_pose = self.init_robot_pose
-            else:
-                # The low_level_pomdp's belief should always contain robot pose
-                robot_pose = self.low_level_belief.mpe().robot_state["pose"]
-            return dict(robot_id=self.robot_id,
-                        move_actions=move_actions,
-                        robot_pose=robot_pose,
-                        planning_config=self.planning_configs["MoveDecision"])
+#     def _decision_made(self, decision):
+#         """
+#         Prepares necessary arguments to build low-level POMDP
+#         """
+#         if isinstance(decision, MoveDecision):
+#             movement_params = self.task_config["nav_config"]["movement_params"]
+#             action_tuples = get_navigation_actions(movement_params=movement_params)
+#             move_actions = [MoveAction(name, delta)
+#                             for name, delta in action_tuples]
+#             if self.low_level_pomdp is None:
+#                 # This is the first time to create a low level pomdp;
+#                 robot_pose = self.init_robot_pose
+#             else:
+#                 # The low_level_pomdp's belief should always contain robot pose
+#                 robot_pose = self.low_level_belief.mpe().robot_state["pose"]
+#             return dict(robot_id=self.robot_id,
+#                         move_actions=move_actions,
+#                         robot_pose=robot_pose,
+#                         planning_config=self.planning_configs["MoveDecision"])
 
-    def _action_computed(self, pomdp_action):
-        """Converts an Action to TOS_Action which can be executed
-        in Ai2Thor."""
-        if isinstance(pomdp_action, MoveAction):
-            movement_params = self.task_config["nav_config"]["movement_params"]
-            return TOS_Action(pomdp_action.name,
-                              movement_params[pomdp_action.name])
+#     def _action_computed(self, pomdp_action):
+#         """Converts an Action to TOS_Action which can be executed
+#         in Ai2Thor."""
+#         if isinstance(pomdp_action, MoveAction):
+#             movement_params = self.task_config["nav_config"]["movement_params"]
+#             return TOS_Action(pomdp_action.name,
+#                               movement_params[pomdp_action.name])
 
-    def _init_target_belief2D(self, coords, prior="uniform"):
-        if prior == "uniform":
-            return normalize({LowLevelObjectState(self.target_class, {"pos": pos}) : 1.0
-                              for pos in coords})
-        raise NotImplementedError
+#     def _init_target_belief2D(self, coords, prior="uniform"):
+#         if prior == "uniform":
+#             return normalize({LowLevelObjectState(self.target_class, {"pos": pos}) : 1.0
+#                               for pos in coords})
+#         raise NotImplementedError
 
-    def update(self, action, observation):
-        """Update belief given action and observation (which is
-        actually a (reward, obseravtion) tuple)"""
-        observation, reward = observation
-        import pdb; pdb.set_trace()
-        # Update low-level target belief.
-
-
+#     def update(self, action, observation):
+#         """Update belief given action and observation (which is
+#         actually a (reward, obseravtion) tuple)"""
+#         observation, reward = observation
+#         import pdb; pdb.set_trace()
+#         # Update low-level target belief.
 
 
-def thor_map_coordinates2D(reachable_positions, scene_name, grid_size):
-    """Returns an array of 2D thor coordinates that includes
-    both reachable and unreachable locations (essentially based on
-    the rectangle that captures reachable_positions.)"""
-    grid_map = convert_scene_to_grid_map(reachable_positions,
-                                         scene_name, grid_size)
-    coords = [grid_map.to_thor_pos(x, y)
-              for x, y in grid_map.free_locations]
-    return coords
+# def thor_map_coordinates2D(reachable_positions, scene_name, grid_size):
+#     """Returns an array of 2D thor coordinates that includes
+#     both reachable and unreachable locations (essentially based on
+#     the rectangle that captures reachable_positions.)"""
+#     grid_map = convert_scene_to_grid_map(reachable_positions,
+#                                          scene_name, grid_size)
+#     coords = [grid_map.to_thor_pos(x, y)
+#               for x, y in grid_map.free_locations]
+#     return coords

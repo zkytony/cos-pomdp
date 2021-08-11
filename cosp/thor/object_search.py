@@ -1,5 +1,6 @@
 import random
 import math
+import numpy as np
 from collections import namedtuple
 from pprint import pprint
 
@@ -19,6 +20,7 @@ from thortils.vision import thor_img, thor_img_depth, thor_object_bboxes
 from thortils.utils import (to_degrees, closest,
                             normalize_angles, euclidean_dist)
 
+from ..vision.utils import projection
 from .result_types import PathResult, HistoryResult
 from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation
 from .agent import ThorObjectSearchOptimalAgent
@@ -113,8 +115,9 @@ class TOS(ThorEnv):
             TOS_Observation:
                 img: RGB image
                 img_depth: Depth image
-                detections: list of (xyxy, conf, cls) tuples. `cls` is
-                    the detected class, `conf` is confidence, `xyxy` is bounding box.
+                detections: list of (xyxy, conf, cls, pos) tuples. `cls` is
+                    the detected class, `conf` is confidence, `xyxy` is bounding box,
+                    'pos' is the 3D position of the detected object.
         """
         if event is None:
             event = self.controller.step(action="Pass")
@@ -128,9 +131,13 @@ class TOS(ThorEnv):
                 cls = thor_object_type(objectId)
                 conf = 1.0
                 xyxy = bboxes[objectId]
+                # pos = projection.inverse_perspective(np.mean(xyxy), ..) # TODO
             detections.append((xyxy, conf, cls))
         else:
             detections = detector.detect(img)
+            for i in range(len(detections)):
+                xyxy = detections[i][0]
+                # pos = projection.inverse_perspective(np.mean(xyxy), ..) # TODO
         return TOS_Observation(img, img_depth, detections)
 
     def get_state(self, event=None):
