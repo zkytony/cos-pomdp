@@ -4,17 +4,26 @@ import matplotlib.pyplot as plt
 from .math import to_rad
 
 # Plotting
-def plot_pose(ax, pos, rot, color='b', radians=True):
+def plot_pose(ax, pos, rot, d="+x", color='b',
+              radians=True, length=0.2, head=0.05, width=0.005):
     """
     pos: (x,y),
-    rot: angle"""
+    rot: angle
+    d: direction at 0 degrees. Either +x or +y"""
     if not radians:
         rot = to_rad(rot)
     ax.scatter([pos[0]], [pos[1]], c=color)
-    ax.arrow(pos[0], pos[1],
-             0.2*math.cos(rot),  # dx
-             0.2*math.sin(rot),  # dy
-             width=0.005, head_width=0.05, color=color)
+
+    if d == "+x":
+        dx = length*math.cos(rot)  # dx
+        dy = length*math.sin(rot)  # dy
+    elif d == "+y":
+        dx = length*math.sin(rot)  # dx
+        dy = length*math.cos(rot)  # dy
+    else:
+        raise ValueError("Unknown Direction {}".format(d))
+    ax.arrow(pos[0], pos[1], dx, dy,
+             width=width, head_width=head, color=color)
 
 def plot_dot(ax, px, py, color='blue', dotsize=2, fill=True, zorder=0, linewidth=0, edgecolor=None, label_text=None, alpha=1.0):
     very_center = plt.Circle((px, py), dotsize, facecolor=color, fill=fill, zorder=zorder, linewidth=linewidth, edgecolor=edgecolor, alpha=alpha)

@@ -22,17 +22,17 @@ from thortils.navigation import (get_shortest_path_to_object,
                                  get_shortest_path_to_object_type)
 
 
-# Used by COSPOMDP agent
-from ..planning.hierarchical import HierarchicalPlanningAgent
-from .high_level import (HighLevelSearchRegion,
-                         HighLevelCorrelationDist,
-                         ThorObjectSearchCOSPOMDP)
-from .decisions import MoveDecision
-from .low_level import (LowLevelObjectState,
-                        MoveAction)
-from .common import ThorAgent
-from ..models.fansensor import FanSensor
-from thortils.navigation import (get_navigation_actions)
+# # Used by COSPOMDP agent
+# from ..planning.hierarchical import HierarchicalPlanningAgent
+# from .high_level import (HighLevelSearchRegion,
+#                          HighLevelCorrelationDist,
+#                          ThorObjectSearchCOSPOMDP)
+# from .decisions import MoveDecision
+# from .low_level import (LowLevelObjectState,
+#                         MoveAction)
+# from .common import ThorAgent
+# from ..models.fansensor import FanSensor
+# from thortils.navigation import (get_navigation_actions)
 
 
 class ThorObjectSearchAgent(ThorAgent):

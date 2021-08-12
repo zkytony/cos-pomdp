@@ -266,9 +266,8 @@ class FrustumCamera(SensorModel):
         if (state._situation, objid) in self._observation_cache:
             return self._observation_cache[(state._situation, objid)]
 
-        robot_pose = state.robot_state["pose"]  # we need this to be quaternion
+        robot_pose = state.robot_state["pose"]
         p, r = self.transform_camera(robot_pose)
-        rx, ry, rz, qx, qy, qz, qw = robot_pose
 
         observable = False
         si = state.object_states[objid]

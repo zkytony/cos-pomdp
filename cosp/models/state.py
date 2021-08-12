@@ -24,7 +24,14 @@ class ObjectState2D(ObjectState):
 class ObjectState3D(ObjectState):
     pass
 
-class RobotState(ObjectState3D):
+class LowLevelRobotState(ObjectState3D):
+    def __init__(self, pose):
+        assert len(pose) == 7,\
+            "Robot pose needs to be position, rotation"\
+             "where rotation is represented in quaternion"
+        super().__init__("robot", dict(pose=pose))
+
+class LowLevelRobotState(ObjectState3D):
     def __init__(self, pose):
         assert len(pose) == 7,\
             "Robot pose needs to be position, rotation"\
