@@ -277,8 +277,6 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
                               movement_params[action.name])
         return action
 
-
-
     def update(self, action, tos_observation):
         pass
 

@@ -103,7 +103,15 @@ def test_create():
         "task_env": "ThorObjectSearch",
         "task_env_config": {"task_config": task_config},
         "agent_class": "ThorObjectSearchCOSPOMDPAgent",
-        "agent_config": agent_config
+        "agent_config": agent_config,
+        "visualize": True,
+        "viz_config": {
+            "res": 30,
+            "colors": {
+                robot_id: [255, 100, 255],
+                target_class: [100, 100, 255, 128]
+            }
+        }
     }
     trial = ThorObjectSearchTrial("test_hierarchical", config, verbose=True)
     return trial.run(logging=True)

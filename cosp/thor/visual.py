@@ -7,6 +7,7 @@ import math
 
 from thortils import convert_scene_to_grid_map
 
+from ..utils.math import to_rad
 from ..utils.images import overlay, cv2shape
 from ..utils.colors import lighter, lighter_with_alpha
 from ..framework import Visualizer
@@ -65,6 +66,9 @@ class ThorObjectSearchViz(Visualizer):
         return img
 
     def visualize(self, task_env, agent):
+        self.visualize2D(task_env, agent)
+
+    def visualize2D(self, task_env, agent):
         if self._grid_map is None:
             # First time visualize is called
             self._grid_map = convert_scene_to_grid_map(
@@ -78,9 +82,9 @@ class ThorObjectSearchViz(Visualizer):
         print("robot state: true position {}".format((thor_x, thor_z)))
 
         # Draw belief about robot
-        x, y = self._get_robot_grid_pos(agent)
+        x, y, th = self._get_robot_grid_pose(agent)
         robot_color = self.get_color(task_env.robot_id)
-        img = self.draw_robot(img, x, y, None, color=robot_color, thickness=5)
+        img = self.draw_robot(img, x, y, th, color=robot_color, thickness=5)
 
         # Draw belief about target
         belief = self._get_target_belief(agent)
@@ -89,18 +93,15 @@ class ThorObjectSearchViz(Visualizer):
 
         self.show_img(img)
 
-    def _get_robot_grid_pos(self, agent):
-        if isinstance(agent, HierarchicalPlanningAgent):
-            mpe_state = agent.high_level_belief.mpe()
-            robot_state = mpe_state.robot_state
-            robot_grid_pos = self._grid_map.to_grid_pos(*robot_state["pos"])
-            print("robot state: believed position {}".format(robot_state["pos"]))
-            print("robot state: believed grid pos {}".format(robot_grid_pos))
-        return robot_grid_pos
+    def _get_robot_grid_pose(self, agent):
+        mpe_state = agent.belief.mpe()
+        robot_state = mpe_state.robot_state
+        pos = self._grid_map.to_grid_pos(*robot_state["pose"][:2])
+        th = robot_state["pose"][2]
+        return (*pos, th)
 
     def _get_target_belief(self, agent):
-        if isinstance(agent, HierarchicalPlanningAgent):
-            return agent.high_level_belief.target_belief
+        return agent.belief.target_belief
 
     def show_img(self, img):
         """
@@ -134,8 +135,8 @@ class ThorObjectSearchViz(Visualizer):
         cv2.circle(img, (y+shift, x+shift), radius, color, thickness=thickness)
 
         if th is not None:
-            endpoint = (y+shift + int(round(shift*math.cos(th))),
-                        x+shift + int(round(shift*math.sin(th))))
+            endpoint = (y+shift + int(round(shift*math.cos(to_rad(th)))),
+                        x+shift + int(round(shift*math.sin(to_rad(th)))))
             cv2.line(img, (y+shift,x+shift), endpoint, color, 2)
         return img
 
@@ -162,7 +163,7 @@ class ThorObjectSearchViz(Visualizer):
                 stop = np.mean(np.array(color[:3]) / np.array([255, 255, 255])) < 0.999
 
             if not stop:
-                thor_x, thor_z = state['pos']
+                thor_x, thor_z = state['loc']
                 tx, ty = self._grid_map.to_grid_pos(thor_x, thor_z)
                 if (tx,ty) not in circle_drawn:
                     circle_drawn[(tx,ty)] = 0
