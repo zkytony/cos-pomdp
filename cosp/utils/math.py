@@ -39,7 +39,13 @@ def uniform(size, ranges):
     return tuple(random.randrange(ranges[i][0], ranges[i][1])
                  for i in range(size))
 
-# Math
+def roundany(x, base):
+    """
+    rounds the number x (integer or float) to
+    the closest number that increments by `base`.
+    """
+    return base * round(x / base)
+
 def to_radians(th):
     return th*np.pi / 180
 

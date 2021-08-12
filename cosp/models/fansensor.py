@@ -32,17 +32,14 @@ class FanSensor(SensorModel):
             "Robot pose must have x, y, th"
         # Sample a location (r,th) for the default robot pose
         th = random.uniform(0, self.fov) - self.fov/2
-        r = random.uniform(self.min_range, self.max_range+1)
+        r = random.uniform(self.min_range, self.max_range)
         x, y = pol2cart(r, th)
         # transform to robot pose
         x, y = np.matmul(R2d(robot_pose[2]), np.array([x,y])) # rotation
         x += robot_pose[0]  # translation dx
         y += robot_pose[1]  # translation dy
-        point = int(x), int(y)
-        if not self.in_range(point, robot_pose):
-            return self.uniform_sample_sensor_region(robot_pose)
-        else:
-            return point
+        point = (x, y)
+        return point
 
     @property
     def sensor_region_size(self):

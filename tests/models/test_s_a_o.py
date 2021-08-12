@@ -1,17 +1,14 @@
 from pomdp_py.utils import typ
-from cosp.models.state import (HLObjectState,
-                               LLObjectState,
-                               HLJointState,
-                               LLJointState)
+from cosp.models.state import *
 from cosp.models.action import *
 from cosp.models.observation import (ObjectDetection2D,
                                      ObjectDetection3D)
 
 def test_state_creation():
-    robot_state = HLObjectState("robot", {"pose": ((0, 1, 0), (0, 270, 0))})
-    object_state = HLObjectState("object", {"loc": (0, 5)})
-    s1 = HLJointState({1:robot_state, 2:object_state})
-    s2 = HLJointState({1:robot_state, 2:object_state})
+    robot_state = ObjectState2D("robot", {"pose": ((0, 1, 0), (0, 270, 0))})
+    object_state = ObjectState2D("object", {"loc": (0, 5)})
+    s1 = JointState2D({1:robot_state, 2:object_state})
+    s2 = JointState2D({1:robot_state, 2:object_state})
     hash(object_state)
     hash(robot_state)
     hash(s1)

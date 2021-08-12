@@ -1,13 +1,13 @@
 from pomdp_py import OOState, ObjectState
 
-class HLJointState(OOState):
+class JointState2D(OOState):
     pass
 
-class LLJointState(OOState):
+class JointState3D(OOState):
     pass
 
-class HLObjectState(ObjectState):
+class ObjectState2D(ObjectState):
     pass
 
-class LLObjectState(ObjectState):
+class ObjectState3D(ObjectState):
     pass

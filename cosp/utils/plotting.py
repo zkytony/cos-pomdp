@@ -1,5 +1,7 @@
+import math
 import numpy as np
 import matplotlib.pyplot as plt
+from .math import to_rad
 
 # Plotting
 def plot_pose(ax, pos, rot, color='b', radians=True):
