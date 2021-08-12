@@ -2,6 +2,7 @@ import random
 from pomdp_py.utils import typ
 from pomdp_py import Observation, ObservationModel, OOObservation, Gaussian
 from .fansensor import FanSensor
+from .frustum_camera import FrustumCamera
 from ..utils.math import roundany
 
 class LocDetection(Observation):
@@ -19,16 +20,29 @@ class LocDetection(Observation):
                  and (self.loc == other.loc))
     def __hash__(self):
         return hash((self.objclass, self.loc))
+    def __str__(self):
+        return typ.blue("o({}, {})".format(self.objclass, self.loc))
+    def __repr__(self):
+        return "loc({}, {})".format(self.objclass, self.loc)
 
 class ObjectDetection2D(LocDetection):
     def __init__(self, objclass, loc):
         assert loc is None or len(loc) == 2, "2D object detection needs 2D object location"
         super().__init__(objclass, loc)
 
-class ObjectDetection3D(LocDetection):
-    def __init__(self, objclass, loc):
-        assert loc is None or len(loc) == 3, "3D object detection needs 3D object location"
-        super().__init__(objclass, loc)
+class Voxel(LocDetection):
+    """3D object observation"""
+    FREE = "free"
+    OTHER = "other"
+    UNKNOWN = "unknown"
+    def __init__(self, label, loc):
+        """
+        label (objid or FREE or UNKNOWN)
+        loc (x, y, z) 3D location
+        """
+        self.label = label
+        super().__init__(label, loc)
+
 
 class JointObservation(Observation):
     def __init__(self, detections):
@@ -138,6 +152,17 @@ class CorrObservationModel(ObservationModel):
             zi = self.detection_model.sample(si, srobot)
         return zi
 
+
+
+def _round(round_to, loc_cont):
+    if self._round_to == "int":
+        return tuple(map(lambda x: int(round(x)), loc_cont))
+    elif type(self._round_to) == float:
+        return tuple(map(lambda x: roundany(x, roudn_to),
+                         loc_cont))
+    else:
+        return loc_cont
+
 class DetectionModel:
     """Interface for Pr(zi | si, srobot'); Domain-specific"""
     def __init__(self, objclass, round_to="int"):
@@ -156,15 +181,21 @@ class DetectionModel:
     def sample(self, si, srobot, a=None):
         raise NotImplementedError
 
+class DetectionModelFull:
+    """Interface for Pr(zi | s1, ..., sn, srobot') """
+    def __init__(self, objclass, round_to="int"):
+        self.objclass = objclass
+        self._round_to = round_to
 
-    def _round(self, loc_cont):
-        if self._round_to == "int":
-            return tuple(map(lambda x: int(round(x)), loc_cont))
-        elif type(self._round_to) == float:
-            return tuple(map(lambda x: roundany(x, self._roudn_to),
-                             loc_cont))
-        else:
-            return loc_cont
+    def probability(self, zi, s, a=None):
+        """
+        a (optional): action taken
+        """
+        raise NotImplementedError
+
+    def sample(self, s, a=None):
+        raise NotImplementedError
+
 
 
 class FanModelYoonseon(DetectionModel):
@@ -249,12 +280,12 @@ class FanModelYoonseon(DetectionModel):
                                 [[sigma**2, 0],
                                  [0, sigma**2]])
             # Needs to discretize otherwise MCTS tree cannot handle this.
-            loc = self._round(gaussian.random())
+            loc = _round(self._round_to, gaussian.random())
 
         elif event_occured == "B":
             # Sample from field of view
             loc_cont = self.sensor.uniform_sample_sensor_region(srobot["pose"])
-            loc = self._round(loc_cont)
+            loc = _round(self._round_to, loc_cont)
         else:  # event == C
             loc = None
         zi = ObjectDetection2D(si.objclass, loc)
@@ -325,7 +356,7 @@ class FanModelNoFP(DetectionModel):
                 gaussian = Gaussian(list(si["loc"]),
                                     [[self.sigma**2, 0],
                                      [0, self.sigma**2]])
-                loc = self._round(gaussian.random())
+                loc = _round(self._round_to, gaussian.random())
                 zi = ObjectDetection2D(si.objclass, loc)
                 event = "detected"
 
@@ -339,3 +370,45 @@ class FanModelNoFP(DetectionModel):
             return zi, event
         else:
             return zi
+
+
+class FrustumModelFull(DetectionModelFull):
+    """
+    Pr(zi | s1, ..., sn, srobot');
+    Low-level Frustum Camera Model with full state;
+    considers occlusion. Currently uses mos3d model.
+
+    quality_params: Parameters in the MOS3D observation model.
+    """
+    def __init__(self, objclass, camera_params, quality_params, log=False):
+        self.sensor = FrustumCamera(**camera_params)
+        self.alpha, self.beta, self.gamma = quality_params
+        self.log = log
+        super().__init__(objclass)
+
+    def probability(self, zi, s, a=None):
+        """
+        zi: voxel
+        s (JointState3D)
+        a (optional): action taken
+        """
+        if zi.label == Voxel.UNKNOWN:
+            return self.gamma  # not in FOV
+        elif zi.label == self.objclass:
+            return self.alpha  # i
+        else:
+            return self.beta   # not i
+
+    def sample(self, s, a=None):
+        si = s.object_states[self.objclass]
+        srobot = s.robot_state["pose"]
+        voxel = Voxel(si["loc"], Voxel.UNKNOWN)
+        if self.sensor.observable(self.objclass, s):
+            if FrustumCamera.sensor_functioning(self.alpha, self.beta, self.log):
+                voxel.label = self.objclass
+            else:
+                voxel.label = Voxel.OTHER
+            return voxel
+        else:
+            # Object not in FOV. The label is UNKNOWN.
+            return voxel

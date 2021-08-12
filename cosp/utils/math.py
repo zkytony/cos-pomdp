@@ -139,7 +139,7 @@ def R_euler(thx, thy, thz, affine=False):
     R = scipyR.from_euler("xyz", [thx, thy, thz], degrees=True)
     if affine:
         aR = np.zeros((4,4), dtype=float)
-        aR[:3,:3] = R.as_dcm()
+        aR[:3,:3] = R.as_matrix()
         aR[3,3] = 1
         R = aR
     return R
@@ -148,7 +148,7 @@ def R_quat(x, y, z, w, affine=False):
     R = scipyR.from_quat([x,y,z,w])
     if affine:
         aR = np.zeros((4,4), dtype=float)
-        aR[:3,:3] = R.as_dcm()
+        aR[:3,:3] = R.as_matrix()
         aR[3,3] = 1
         R = aR
     return R

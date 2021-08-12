@@ -23,3 +23,30 @@ class ObjectState2D(ObjectState):
 
 class ObjectState3D(ObjectState):
     pass
+
+class RobotState(ObjectState3D):
+    def __init__(self, pose):
+        assert len(pose) == 7,\
+            "Robot pose needs to be position, rotation"\
+             "where rotation is represented in quaternion"
+        super().__init__("robot", dict(pose=pose))
+
+class PhysicalObjectState(ObjectState3D):
+    def __init__(self, objclass, loc, coords=None):
+        """
+        loc (x,y,z) 3D object location
+        coords (list of 3D coordinates) specifies coordinates
+            that the object occupies, when the object is placed at
+            loc=(0,0,0)
+        """
+        self.coords = coords
+        if coords is None:
+            self.coords = [(0,0,0)]
+        super().__init__(objclass, dict(loc=loc))
+
+    def space_occupying(self):
+        x, y, z = self["loc"]
+        return [(x + c[0],
+                 y + c[1],
+                 z + c[2])
+                for c in self.coords]

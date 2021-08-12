@@ -1,9 +1,9 @@
 import math
 import numpy as np
-import moos3d.util as util
 import random
 from scipy.spatial.transform import Rotation as R
 from .sensor import SensorModel
+from ..utils import math as mymath
 
 class FrustumCamera(SensorModel):
 
@@ -35,7 +35,7 @@ class FrustumCamera(SensorModel):
         print("         far: " + str(self.far))
         print(" volume size: " + str(len(self.volume)))
 
-    def __init__(self, fov=90, aspect_ratio=1, near=1, far=5):
+    def __init__(self, fov=90, aspect_ratio=1, near=1, far=5, occlusion_enabled=True):
         """
         fov: angle (degree), how wide the viewing angle is.
         near: near-plane's distance to the camera
@@ -64,37 +64,37 @@ class FrustumCamera(SensorModel):
         p1A = np.array([w1/2, h1/2, -near])
         p1B = np.array([-w1/2, h1/2, -near])
         p1C = np.array([w1/2, -h1/2, -near])
-        n1 = np.cross(util.vec(p1A, p1B),
-                      util.vec(p1A, p1C))
+        n1 = np.cross(mymath.vec(p1A, p1B),
+                      mymath.vec(p1A, p1C))
 
         p2A = p1A
         p2B = p1C
         p2C = np.array([w2/2, h2/2, -far])
-        n2 = np.cross(util.vec(p2A, p2B),util.vec(p2A, p2C))
+        n2 = np.cross(mymath.vec(p2A, p2B),mymath.vec(p2A, p2C))
 
         p3A = p1A
         p3B = p2C
         p3C = p1B
-        n3 = np.cross(util.vec(p3A, p3B),
-                      util.vec(p3A, p3C))
+        n3 = np.cross(mymath.vec(p3A, p3B),
+                      mymath.vec(p3A, p3C))
 
         p4A = np.array([-w2/2, -h2/2, -far])
         p4B = np.array([-w1/2, -h1/2, -near])
         p4C = np.array([-w2/2, h2/2, -far])
-        n4 = np.cross(util.vec(p4A, p4B),
-                      util.vec(p4A, p4C))
+        n4 = np.cross(mymath.vec(p4A, p4B),
+                      mymath.vec(p4A, p4C))
 
         p5A = p4B
         p5B = p4A
         p5C = p2B
-        n5 = np.cross(util.vec(p5A, p5B),
-                      util.vec(p5A, p5C))
+        n5 = np.cross(mymath.vec(p5A, p5B),
+                      mymath.vec(p5A, p5C))
 
         p6A = p4A
         p6B = p4C
         p6C = p2C
-        n6 = np.cross(util.vec(p6A, p6B),
-                      util.vec(p6A, p6C))
+        n6 = np.cross(mymath.vec(p6A, p6B),
+                      mymath.vec(p6A, p6C))
 
         p = np.array([n1,n2,n3,n4,n5,n6])
         for i in range(6):  # normalize
@@ -114,17 +114,20 @@ class FrustumCamera(SensorModel):
                     if self.within_range((self._p, self._r), (x,y,z,1)):
                         volume.append([x,y,z,1])
         self._volume = np.array(volume, dtype=int)
+        self._occlusion_enabled = occlusion_enabled
+        self._observation_cache = {}
+
 
     def within_range(self, config, point):
         """Returns true if the point is within range of the sensor; but the point might not
         actually be visible due to occlusion"""
         p, r = config
         for i in range(6):
-            if np.dot(util.vec(r[i], point), p[i]) >= 0:
+            if np.dot(mymath.vec(r[i], point), p[i]) >= 0:
                 # print("Point outside plane %i" % i)
                 # print("    Plane normal: %s" % str(p[i]))
                 # print("    Plane refs: %s" % str(r[i]))
-                # print("       Measure: %.3f" % np.dot(util.vec(r[i], point), p[i]))
+                # print("       Measure: %.3f" % np.dot(mymath.vec(r[i], point), p[i]))
                 return False
         return True
 
@@ -198,17 +201,17 @@ class FrustumCamera(SensorModel):
         In other words, this is saying `set up the camera at the given pose`."""
         if len(pose) == 7:
             x, y, z, qx, qy, qz, qw = pose
-            R = util.R_quat(qx, qy, qz, qw, affine=True)
+            R = mymath.R_quat(qx, qy, qz, qw, affine=True)
         elif len(pose) == 6:
             x, y, z, thx, thy, thz = pose
-            R = util.R_euler(thx, thy, thz, affine=True)
-        r_moved = np.transpose(np.matmul(util.T(x, y, z),
+            R = mymath.R_euler(thx, thy, thz, affine=True)
+        r_moved = np.transpose(np.matmul(mymath.T(x, y, z),
                                          np.matmul(R, np.transpose(self._r))))
         p_moved =  np.transpose(np.matmul(R, np.transpose(self._p)))
         if permanent:
             self._p = p_moved
             self._r = r_moved
-            self._volume = np.transpose(np.matmul(util.T(x, y, z),
+            self._volume = np.transpose(np.matmul(mymath.T(x, y, z),
                                                   np.matmul(R, np.transpose(self._volume))))
         return p_moved, r_moved
 
@@ -222,11 +225,11 @@ class FrustumCamera(SensorModel):
             volume = self._volume
         if len(robot_pose) == 7:
             x, y, z, qx, qy, qz, qw = robot_pose
-            R = util.R_quat(qx, qy, qz, qw, affine=True)
+            R = mymath.R_quat(qx, qy, qz, qw, affine=True)
         elif len(robot_pose) == 6:
             x, y, z, thx, thy, thz = robot_pose
-            R = util.R_euler(thx, thy, thz, affine=True)
-        volume_moved = np.transpose(np.matmul(util.T(x, y, z),
+            R = mymath.R_euler(thx, thy, thz, affine=True)
+        volume_moved = np.transpose(np.matmul(mymath.T(x, y, z),
                                               np.matmul(R, np.transpose(volume))))
         # Get x,y,z only
         volume_moved = volume_moved[:,:3]
@@ -244,10 +247,36 @@ class FrustumCamera(SensorModel):
     @staticmethod
     def sensor_functioning(alpha=1000., beta=0., log=False):
         """Utility used when sampling observation, to determine if the sensor works properly.
-        (i.e. observed = True if the sensor works properly)"""
+        (i.e. observed = True if the sensor works properly)
+
+        log is true if we are dealing with log probabilities"""
         if log:
             # e^a / (e^a + e^b) = 1 / (e^{b-a} + 1)
             observed = random.uniform(0,1) < 1 / (math.exp(beta - alpha) + 1)
         else:
             observed = random.uniform(0,1) < alpha / (alpha + beta)
         return observed
+
+    def observable(self, objid, state):
+        """
+        Returns true if object with `objid` is observable (that is,
+        some part of it is not occluded). All object states are included
+        in the `state`.
+        """
+        if (state._situation, objid) in self._observation_cache:
+            return self._observation_cache[(state._situation, objid)]
+
+        robot_pose = state.robot_state["pose"]  # we need this to be quaternion
+        p, r = self.transform_camera(robot_pose)
+        rx, ry, rz, qx, qy, qz, qw = robot_pose
+
+        observable = False
+        si = state.object_states[objid]
+        if not self._occlusion_enabled:
+            for x, y, z in si.space_occupying():
+                if self.within_range((p, r), (x, y, z, 1)):
+                    observable = True
+                    break
+        # TODO: occlusion case
+        self._observation_cache[(state._situation, objid)] = observable
+        return observable
