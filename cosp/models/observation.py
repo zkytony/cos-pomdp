@@ -114,11 +114,11 @@ class CorrObservationModel(ObservationModel):
         zi = object_observation
         starget = next_state.target_state
         srobot = next_state.robot_state
-        dist_si = self._cond_dists[starget]  # Pr(Si | S_target = starget)
         if self.objclass == self.target_class:
             # Only the detection model matters, if both classes are the same
             return self.detection_model.probability(zi, starget, srobot)
 
+        dist_si = self._cond_dists[starget]  # Pr(Si | S_target = starget)
         pr_total = 0.0
         for si in dist_si.valrange(self.objclass):
             pr_detection = self.detection_model.probability(zi, si, srobot)
