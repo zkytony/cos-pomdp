@@ -155,10 +155,10 @@ class CorrObservationModel(ObservationModel):
 
 
 def _round(round_to, loc_cont):
-    if self._round_to == "int":
+    if round_to == "int":
         return tuple(map(lambda x: int(round(x)), loc_cont))
-    elif type(self._round_to) == float:
-        return tuple(map(lambda x: roundany(x, roudn_to),
+    elif type(round_to) == float:
+        return tuple(map(lambda x: roundany(x, round_to),
                          loc_cont))
     else:
         return loc_cont
@@ -412,3 +412,26 @@ class FrustumModelFull(DetectionModelFull):
         else:
             # Object not in FOV. The label is UNKNOWN.
             return voxel
+
+
+class JointObservationModel(ObservationModel):
+    def __init__(self, target_class, zi_models):
+        """
+        models: maps from objclass to ObservationModel;
+        each objclass is a detectable class
+        """
+        self.zi_models = zi_models
+        self._classes = list(sorted(self.zi_models.keys()))
+        self.target_class = target_class
+
+    def sample(self, next_state, action):
+        return JointObservation(tuple(self.zi_models[objclass].sample(next_state, action)
+                                      for objclass in self._classes))
+
+
+    def probability(self, observation, next_state, action):
+        pr_total = 1.0
+        for zi in observation.detections:
+            pr_zi = self.zi_models[zi.objclass].probability(zi, next_state)
+            pr_total *= pr_zi
+        return pr_total

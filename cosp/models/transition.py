@@ -3,7 +3,7 @@ from thortils.navigation import transform_pose, _is_full_pose
 
 from ..utils.math import indicator
 from .action import Move
-from .state import ObjectState2D
+from .state import ObjectState2D, JointState2D
 
 def robot_pose_transition(robot_pose, action,
                           grid_size=None, diagonal_ok=False):
@@ -28,8 +28,9 @@ def robot_pose_transition(robot_pose, action,
 
 
 class RobotTransition2D(TransitionModel):
-    def __init__(self, reachable_positions, grid_size=None, diagonal_ok=False):
+    def __init__(self, robot_id, reachable_positions, grid_size=None, diagonal_ok=False):
         """Snap to grid if `grid_size` is None. Otherwise, continuous."""
+        self.robot_id = robot_id
         self.reachable_positions = reachable_positions
         self._grid_size = grid_size
         self._diagonal_ok = diagonal_ok
@@ -42,6 +43,22 @@ class RobotTransition2D(TransitionModel):
                 current_robot_pose, action, grid_size=self._grid_size,
                 diagonal_ok=self._diagonal_ok)
         if next_robot_pose[:2] not in self.reachable_positions:
-            return ObjectState2D("robot", dict(pose=current_robot_pose))
+            return ObjectState2D(self.robot_id, dict(pose=current_robot_pose))
         else:
-            return ObjectState2D("robot", dict(pose=next_robot_pose))
+            return ObjectState2D(self.robot_id,  dict(pose=next_robot_pose))
+
+class JointTransitionModel2D(TransitionModel):
+    def __init__(self, target_id, robot_trans_model):
+        self.target_id = target_id
+        self.robot_trans_model = robot_trans_model
+
+    def sample(self, state, action):
+        next_robot_state = self.robot_trans_model.sample(state, action)
+        starget = state.target_state
+        next_target_state = ObjectState2D(starget.objclass,
+                                          dict(loc=starget["loc"]))
+        robot_id = self.robot_trans_model.robot_id
+        return JointState2D(robot_id,
+                            self.target_id,
+                            {robot_id: next_robot_state,
+                             self.target_id: next_target_state})

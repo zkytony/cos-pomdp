@@ -7,14 +7,36 @@
 
 import time
 import thortils
-from test_utils import corr_func
-from cosp.thor.agent import (ThorObjectSearchCOSPOMDP,
-                             HighLevelSearchRegion,
-                             HighLevelCorrelationDist)
-from cosp.thor.object_search import ThorObjectSearch
 from cosp.thor.trial import ThorObjectSearchTrial
+from cosp.utils.math import euclidean_dist
 from cosp.thor import constants
-from cosp.planning.hierarchical import HierarchicalPlanningAgent
+
+# Hard coded correlation
+CORR_MATRIX = {
+    ("Apple", "CounterTop"): 0.7,
+    ("Apple", "Bread"): 0.8,
+    ("Apple", "Fridge"): -1
+}
+for k in list(CORR_MATRIX.keys()):
+    CORR_MATRIX[tuple(reversed(k))] = CORR_MATRIX[k]
+
+def corr_func(target_pos, object_pos,
+              target_class, objclass):
+    """
+    Returns a float value to essentially mean
+    Pr(Si = object_pos | Starget = target_pos)
+    """
+    # This is a rather arbitrary function for now.
+    if target_class == objclass:
+        corr = 1.0
+    else:
+        corr = CORR_MATRIX[(target_class, objclass)]
+    distance = euclidean_dist(target_pos, object_pos)
+    if corr > 0:
+        return distance <= 2.0
+    else:
+        return distance >= 2.0
+
 
 def test_create():
     robot_id = "robot0"
@@ -43,32 +65,37 @@ def test_create():
         }
     }
 
-    detector_config = {
-        "intrinsics": {
-            "min_range": constants.GRID_SIZE,
-            "max_range": constants.GRID_SIZE*5,
-            "fov": constants.FOV
-        },
-        "detection_rates": {
-            "CounterTop": 0.7,
-            "Apple": 0.5,
-            "Bread": 0.6
-        }
-    }
+    detectables = [("Apple", "FanModelNoFP", [0.7, 0.1]),
+                   ("CounterTop", "FanModelNoFP", [0.9, 0.1]),
+                   ("Bread", "FanModelNoFP", [0.7, 0.1]),
+                   ("Fridge", "FanModelNoFP", [0.9, 0.1])]
+    detector_config = {}
+    for cls, model_type, quality_params in detectables:
+        if model_type == "FanModelNoFP":
+            fan_params = {
+                "min_range": constants.GRID_SIZE,
+                "max_range": constants.GRID_SIZE*5,
+                "fov": constants.FOV
+            }
+            detector_config[cls] =\
+                dict(type=model_type,
+                     params=dict(
+                         objclass=target_class,
+                         fan_params=fan_params,
+                         quality_params=quality_params,
+                         round_to=constants.GRID_SIZE))
 
-    pp = {
+    planning_configs = {
         "max_depth": 10,
         "discount_factor": 0.95,
         "num_sims": 100,
         "exploration_const": constants.TOS_REWARD_HI - constants.TOS_REWARD_LO
     }
-    planning_configs = {"high_level": pp,
-                        "MoveDecision": pp}
 
     agent_config = {"task_config": task_config,
                     "detector_config": detector_config,
                     "corr_func": corr_func,
-                    "planning_configs": planning_configs}
+                    "planning_config": planning_configs}
 
     config = {
         "thor": thor_config,

@@ -46,6 +46,6 @@ class Decision(Action):
     def __str__(self):
         return self.name
 
-class SearchDecision(Decision):
+class Search(Decision):
     def __init__(self):
         super().__init__("SEARCH")

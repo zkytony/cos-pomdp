@@ -9,13 +9,13 @@ from ..thor.constants import (GOAL_DISTANCE,
                               TOS_REWARD_LO,
                               TOS_REWARD_STEP,
                               GRID_SIZE,
-                              H_ANGLES)
+                              H_ROTATION)
 
 
 MOVES_2D = [
     Move("MoveAhead", (GRID_SIZE, 0.0)),
-    Move("RotateLeft", (0.0 -H_ANGLES)),
-    Move("RotateRight", (0.0, H_ANGLES)),
+    Move("RotateLeft", (0.0, -H_ROTATION)),
+    Move("RotateRight", (0.0, H_ROTATION))
 ]
 
 class ThorPolicyModel2D(RolloutPolicy):
@@ -61,11 +61,11 @@ class ThorPolicyModel2D(RolloutPolicy):
             target_loc = state.target_state["loc"]
             current_dist = euclidean_dist(
                 state.robot_state["pose"][:2], target_loc)
-            target_angle = (math.atan2(target_loc[1] - robot_state.pose[1],
-                                       target_loc[0] - robot_state.pose[0])) % (360.0)
-            cur_angle_diff = abs(robot_state.pose[2] - target_angle)
+            target_angle = (math.atan2(target_loc[1] - robot_state["pose"][1],
+                                       target_loc[0] - robot_state["pose"][0])) % (360.0)
+            cur_angle_diff = abs(robot_state["pose"][2] - target_angle)
             for move in MOVES_2D:
-                next_robot_state = self.robot_trans_model.sample(state, move)
+                next_robot_state = self.policy_model.robot_trans_model.sample(state, move)
                 if euclidean_dist(next_robot_state["pose"][:2], target_loc) < current_dist:
                     preferences.add((move, self.num_visits_init, self.val_init))
                 else:
