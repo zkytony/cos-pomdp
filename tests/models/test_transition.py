@@ -7,7 +7,10 @@ from cosp.utils.plotting import plot_pose
 import matplotlib.pyplot as plt
 
 def test():
-    Trobot = RobotTransition2D(grid_size=0.25)
+    w, l = 10, 10
+    Trobot = RobotTransition2D([(x,y)
+                                for x in range(w)
+                                for y in range(l)], grid_size=0.25)
 
     actions = {"forward": (1.0, 0.0),
                "left": (0.0, -45.0),
@@ -27,7 +30,21 @@ def test():
             "forward",
             "right",
             "right",
-            "back"]
+            "back",
+            "left",
+            "left",
+            "forward",
+            "forward",
+            "forward",
+            "forward",
+            "forward",
+            "forward",
+            "forward",
+            "forward",
+            "forward",
+            "right",
+            "right",
+            "forward"]
 
     poses = [state.robot_state["pose"]]
     for a in path:
@@ -36,7 +53,6 @@ def test():
                              {"robot": srobot})
         poses.append(state.robot_state["pose"])
 
-    w, l = 10, 10
     fig, ax = plt.subplots()
     ax.set_xlim(0, w)
     ax.set_ylim(0, l)

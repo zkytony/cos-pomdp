@@ -28,8 +28,9 @@ def robot_pose_transition(robot_pose, action,
 
 
 class RobotTransition2D(TransitionModel):
-    def __init__(self, grid_size=None, diagonal_ok=False):
+    def __init__(self, reachable_positions, grid_size=None, diagonal_ok=False):
         """Snap to grid if `grid_size` is None. Otherwise, continuous."""
+        self.reachable_positions = reachable_positions
         self._grid_size = grid_size
         self._diagonal_ok = diagonal_ok
 
@@ -40,4 +41,7 @@ class RobotTransition2D(TransitionModel):
             next_robot_pose = robot_pose_transition(
                 current_robot_pose, action, grid_size=self._grid_size,
                 diagonal_ok=self._diagonal_ok)
-        return ObjectState2D("robot", dict(pose=next_robot_pose))
+        if next_robot_pose[:2] not in self.reachable_positions:
+            return ObjectState2D("robot", dict(pose=current_robot_pose))
+        else:
+            return ObjectState2D("robot", dict(pose=next_robot_pose))
