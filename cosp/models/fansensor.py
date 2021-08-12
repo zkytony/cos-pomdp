@@ -73,37 +73,3 @@ class FanSensor(SensorModel):
         dist = euclidean_dist(point, (rx,ry))
         bearing = (math.atan2(point[1] - ry, point[0] - rx) - rth) % (2*math.pi)  # bearing (i.e. orientation)
         return (dist, bearing)
-
-
-class DiskSensor(SensorModel):
-    """Field of view is a disk"""
-    def __init__(self, name="disk_sensor", **params):
-        self.name = name
-        self.radius = params.get("radius", 5)
-        self._sensor_region = np.array(
-            [
-                [x,y]
-                for x in range(-2*self.radius-1, 2*self.radius+1)
-                for y in range(-2*self.radius-1, 2*self.radius+1)
-                # multiple by sqrt(2) to account for including diagonal cell in discrete grid.
-                if x**2 + y**2 <= (self.radius*math.sqrt(2))**2
-            ]
-        )
-        self._sensor_region_set = set(map(tuple, self._sensor_region.tolist()))
-
-    def in_range(self, point, robot_pose):
-        return euclidean_dist(robot_pose[:2],
-                              point) <= self.radius*math.sqrt(2)
-
-    def sensor_region(self, robot_pose):
-        region = self._sensor_region + np.array(robot_pose[:2])
-        return region
-
-    @property
-    def sensor_region_size(self):
-        return len(self._sensor_region)
-
-    def uniform_sample_sensor_region(self, robot_pose):
-        point = random.sample(self._sensor_region_set, 1)[0]
-        return (point[0] + robot_pose[0],
-                point[1] + robot_pose[1])

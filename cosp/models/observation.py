@@ -140,8 +140,9 @@ class CorrObservationModel(ObservationModel):
 
 class DetectionModel:
     """Interface for Pr(zi | si, srobot'); Domain-specific"""
-    def __init__(self):
-        pass
+    def __init__(self, objclass, round_to="int"):
+        self.objclass = objclass
+        self._round_to = round_to
 
     def probability(self, zi, si, srobot, a=None):
         """
@@ -155,8 +156,29 @@ class DetectionModel:
     def sample(self, si, srobot, a=None):
         raise NotImplementedError
 
-class FanModel(DetectionModel):
-    """Intended for 2D-level observation; Pr(zi | si, srobot')"""
+
+    def _round(self, loc_cont):
+        if self._round_to == "int":
+            return tuple(map(lambda x: int(round(x)), loc_cont))
+        elif type(self._round_to) == float:
+            return tuple(map(lambda x: roundany(x, self._roudn_to),
+                             loc_cont))
+        else:
+            return loc_cont
+
+
+class FanModelYoonseon(DetectionModel):
+    """Intended for 2D-level observation; Pr(zi | si, srobot')
+    Yoonseon's model proposed in the OOPOMDP paper;
+
+    Pros: parameterization is simplistic;
+          simulates both false positive and false negatives.
+
+    Cons: false positive assumption is unrealistic;
+          False positive and false negative rates are the same;
+          parameter values is too harsh and don't have good semantics
+          (e.g. epsilon=0.9 is a pretty bad sensor already).
+    """
     def __init__(self, objclass, fan_params,
                  quality_params, round_to="int"):
         """
@@ -170,7 +192,7 @@ class FanModel(DetectionModel):
         """
         self.sensor = FanSensor(**fan_params)
         self.params = quality_params
-        self._round_to = round_to
+        super().__init__(objclass, round_to)
 
     def _compute_params(self, object_in_sensing_region, epsilon):
         if object_in_sensing_region:
@@ -241,11 +263,79 @@ class FanModel(DetectionModel):
         else:
             return zi
 
-    def _round(self, loc_cont):
-        if self._round_to == "int":
-            return tuple(map(lambda x: int(round(x)), loc_cont))
-        elif type(self._round_to) == float:
-            return tuple(map(lambda x: roundany(x, self._roudn_to),
-                             loc_cont))
+
+class FanModelNoFP(DetectionModel):
+    """Intended for 2D-level observation; Pr(zi | si, srobot')
+
+    Model without involving false positives
+
+    Pros: semantic parameter;
+    Cons: no false positives modeled
+    """
+    def __init__(self, objclass, fan_params, quality_params, round_to="int"):
+        """
+        objclass: the class detected by this model
+        fan_params: initialization params for FanSensor
+        quality_params: (detection probability, sigma)
+        round_to: Round the sampled observation locations to,
+            either a float, 'int', or None
+        """
+        self.sensor = FanSensor(**fan_params)
+        self.params = quality_params  # calling it self.params to have consistent interface
+        super().__init__(objclass, round_to)
+
+    @property
+    def detection_prob(self):
+        return self.params[0]
+
+    @property
+    def sigma(self):
+        return self.params[1]
+
+    def probability(self, zi, si, srobot, a=None):
+        """
+        zi (LocDetection)
+        si (HLObjectstate)
+        srobot (HLObjectstate)
+        """
+        in_range = self.sensor.in_range(si["loc"], srobot["pose"])
+        if in_range:
+            if zi.loc is None:
+                # false negative
+                return 1.0 - self.detection_prob
+            else:
+                # True positive; gaussian centered at object loc
+                gaussian = Gaussian(list(si["loc"]),
+                                    [[self.sigma**2, 0],
+                                     [0, self.sigma**2]])
+                return self.detection_prob * gaussian[zi.loc]
         else:
-            return loc_cont
+            if zi.loc is None:
+                # True negative; we are not modeling false positives
+                return 1.0
+            else:
+                return 0.0
+
+
+    def sample(self, si, srobot, a=None, return_event=False):
+        in_range = self.sensor.in_range(si["loc"], srobot["pose"])
+        if in_range:
+            if random.uniform(0,1) <= self.detection_prob:
+                # sample according to gaussian
+                gaussian = Gaussian(list(si["loc"]),
+                                    [[self.sigma**2, 0],
+                                     [0, self.sigma**2]])
+                loc = self._round(gaussian.random())
+                zi = ObjectDetection2D(si.objclass, loc)
+                event = "detected"
+
+            else:
+                zi = ObjectDetection2D(si.objclass, None)
+                event = "missed"
+        else:
+            zi = ObjectDetection2D(si.objclass, None)
+            event = "out_of_range"
+        if return_event:
+            return zi, event
+        else:
+            return zi
