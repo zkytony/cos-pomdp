@@ -76,9 +76,6 @@ class ThorObjectSearchViz(Visualizer):
 
         img = self._make_gridworld_image(self._res)
 
-        robot_pose = task_env.get_state().agent_pose
-        thor_x, _, thor_z = robot_pose[0]
-
         # Draw belief about robot
         x, y, th = self._get_robot_grid_pose(agent)
         robot_color = self.get_color(task_env.robot_id)
@@ -137,8 +134,8 @@ class ThorObjectSearchViz(Visualizer):
         cv2.circle(img, (y+shift, x+shift), radius, color, thickness=thickness)
 
         if th is not None:
-            endpoint = (y+shift + int(round(shift*math.cos(to_rad(th)))),
-                        x+shift + int(round(shift*math.sin(to_rad(th)))))
+            endpoint = (y+shift + int(round(shift*math.sin(to_rad(th)))),
+                        x+shift + int(round(shift*math.cos(to_rad(th)))))
             cv2.line(img, (y+shift,x+shift), endpoint, color, 2)
         return img
 

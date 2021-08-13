@@ -247,7 +247,7 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
         thor_x, _, thor_z = robot_pose[0]
         _, yaw, _ = robot_pose[1]
         x, y = self.grid_map.to_grid_pos(thor_x, thor_z)
-        init_robot_pose = (x, y, yaw)
+        init_robot_pose = (x, y, yaw-90)  # yaw-90 because that's how GridMap's angles match with Ai2Thor angle (HARD BUG!)
         init_robot_state = ObjectState2D(self.robot_id, dict(pose=init_robot_pose))
         init_robot_belief = pomdp_py.Histogram({init_robot_state : 1.0})
         init_belief = JointBelief2D(self.robot_id, self.target_class,
@@ -308,6 +308,7 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
                 tos_action.name, {tos_action.name : tos_action.params})
             forward, h_angle, v_angle = delta
             forward /= self.grid_map.grid_size  # because we consider GridMap coordinates
+            h_angle = -h_angle   # due to GridMap axes (HARD BUG!)
             action = Move(movement, (forward, h_angle))  # We only care about 2D at this level.
 
         # update robot state
