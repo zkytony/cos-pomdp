@@ -234,20 +234,20 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
         #                                           scene, grid_size)
         # # init_target_belief = LocBelief2D.uniform(self.target_class, search_region)
 
-        # ##informed
-        # obj = thor_closest_object_of_type(controller.last_event, self.target_class)
-        # x, y, z = thor_object_position(controller.last_event, obj["objectId"], as_tuple=True)
-        # init_target_belief = LocBelief2D.informed(self.target_class,
-        #                                           (roundany(x, grid_size),
-        #                                            roundany(z, grid_size)),
-        #                                           search_region)
+        ##informed
+        obj = thor_closest_object_of_type(controller.last_event, self.target_class)
+        thor_x, _, thor_z = thor_object_position(controller.last_event, obj["objectId"], as_tuple=True)
+        x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
+        init_target_belief = LocBelief2D.informed(self.target_class,
+                                                  (x, z),
+                                                  search_region)
 
         self.robot_id = task_config.get("robot_id", "robot0")
         robot_pose = thor_agent_pose(controller, as_tuple=True)
         thor_x, _, thor_z = robot_pose[0]
         _, yaw, _ = robot_pose[1]
         x, y = self.grid_map.to_grid_pos(thor_x, thor_z)
-        init_robot_pose = (x, y, yaw-90)  # yaw-90 because that's how GridMap's angles match with Ai2Thor angle (HARD BUG!)
+        init_robot_pose = (x, y, (yaw-90)%360.0)  # yaw-90 because that's how GridMap's angles match with Ai2Thor angle (HARD BUG!)
         init_robot_state = ObjectState2D(self.robot_id, dict(pose=init_robot_pose))
         init_robot_belief = pomdp_py.Histogram({init_robot_state : 1.0})
         init_belief = JointBelief2D(self.robot_id, self.target_class,
@@ -274,13 +274,13 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
             zi_models[detectable_class] = corr_model
         observation_model = JointObservationModel(self.target_class, zi_models)
 
+        # Reward model
+        reward_model = ThorRewardModel2D(zi_models[self.target_class].detection_model.sensor)
+
         # Policy model
-        policy_model = ThorPolicyModel2D(robot_trans_model,
+        policy_model = ThorPolicyModel2D(robot_trans_model, reward_model,
                                          num_visits_init=10,
                                          val_init=constants.TOS_REWARD_HI)
-
-        # Reward model
-        reward_model = ThorRewardModel2D()
         super().__init__(init_belief, policy_model,
                          transition_model, observation_model, reward_model)
 
@@ -295,7 +295,6 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
         action = self._planner.plan(self)
         if isinstance(action, Move):
             movement_params = self.task_config["nav_config"]["movement_params"]
-            return TOS_Action("RotateLeft", {"degrees":45.0})
             return TOS_Action(action.name,
                               movement_params[action.name])
         return action
@@ -310,6 +309,8 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
             forward /= self.grid_map.grid_size  # because we consider GridMap coordinates
             h_angle = -h_angle   # due to GridMap axes (HARD BUG!)
             action = Move(movement, (forward, h_angle))  # We only care about 2D at this level.
+        else:
+            action = tos_action
 
         # update robot state
         mpe_state = self.belief.mpe()
@@ -347,8 +348,15 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
                                     next_robot_belief, next_target_belief)
         self.set_belief(next_belief)
 
+        self.debug_last_plan()
+
         # Update planner
         self._planner.update(self, action, observation)
+
+    def debug_last_plan(self):
+        pomdp_py.print_preferred_actions(self.tree)
+        self.tree.print_children_value()
+        # pomdp_py.print_tree(self.tree)
 
 
 

@@ -173,7 +173,7 @@ class TOS(ThorEnv):
         """Returns true if  the task is over. The object search task is over when the
         agent took the 'Done' action.
         """
-        return action.name == "Done"
+        return action.name.lower() == "done"
 
     def success(self, action, agent_pose=None, horizon=None):
         """Returns True if the task is a success.

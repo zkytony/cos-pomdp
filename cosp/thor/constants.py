@@ -77,3 +77,6 @@ ALL_OBJECT_CLASSES = KITCHEN_OBJECT_CLASSES +\
                      LIVING_ROOM_OBJECT_CLASSES +\
                      BATHROOM_OBJECT_CLASSES +\
                      BEDROOM_OBJECT_CLASSES
+
+def get_acceptable_thor_actions():
+    return MOVEMENTS

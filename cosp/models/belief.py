@@ -22,7 +22,6 @@ class LocBelief2D(Histogram):
     @classmethod
     def informed(cls, objclass, true_loc, search_region):
         hist = {}
-        import pdb; pdb.set_trace()
         for loc in search_region:
             s = ObjectState2D(objclass, dict(loc=loc))
             if loc == true_loc:

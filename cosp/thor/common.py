@@ -1,5 +1,6 @@
 from collections import namedtuple
 from ..framework import TaskEnv, Agent
+from . import constants
 
 # State, Action, Observation used in object search task
 TOS_Action = namedtuple("Action", ['name', 'params'])
@@ -23,8 +24,10 @@ class ThorEnv(TaskEnv):
 
     def execute(self, agent, action):
         state = self.get_state(self.controller)
-        event = self.controller.step(action=action.name, **action.params)
-        self.controller.step(action="Pass")
+        if action.name in constants.get_acceptable_thor_actions():
+            event = self.controller.step(action=action.name, **action.params)
+        else:
+            event = self.controller.step(action="Pass")
 
         next_state = self.get_state(event)
         observation = self.get_observation(event, detector=agent.detector)

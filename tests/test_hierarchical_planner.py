@@ -52,7 +52,7 @@ def test_create():
         if model_type == "FanModelNoFP":
             fan_params = {
                 "min_range": 1,
-                "max_range": 4,
+                "max_range": 6,
                 "fov": constants.FOV
             }
             detector_config[cls] =\
@@ -89,9 +89,9 @@ def test_create():
 
 
     planning_configs = {
-        "max_depth": 10,
+        "max_depth": 15,
         "discount_factor": 0.95,
-        "num_sims": 100,
+        "num_sims": 400,
         "exploration_const": constants.TOS_REWARD_HI - constants.TOS_REWARD_LO
     }
 

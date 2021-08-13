@@ -20,20 +20,23 @@ def _facing2d(robot_pose, point):
     return np.dot(np.array([px - rx, py - ry]),
                   np.array([rx2 - rx, ry2 - ry])) > 0
 
-def thor_success2d(robot_pose, target_loc,
+def thor_success2d(robot_pose, target_loc, sensor,
                    dist_thresh=GOAL_DISTANCE):
     x, y, th = robot_pose
     if euclidean_dist((x,y), target_loc)*GRID_SIZE <= dist_thresh:
-        if _facing2d(robot_pose, target_loc):
+        # robot_pose = (robot_pose[0], robot_pose[1], (robot_pose[2]-135)%360.0)
+        if sensor.in_range(target_loc, robot_pose):
             return True
     return False
 
 class ThorRewardModel2D(RewardModel):
+    def __init__(self, sensor):
+        self.sensor = sensor
     def sample(self, state, action, next_state):
         robot_pose = next_state.robot_state["pose"]
         target_loc = next_state.target_state["loc"]
         if isinstance(action, Done):
-            if thor_success2d(robot_pose, target_loc):
+            if thor_success2d(robot_pose, target_loc, self.sensor):
                 return TOS_REWARD_HI
             else:
                 return TOS_REWARD_LO

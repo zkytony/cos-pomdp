@@ -20,12 +20,14 @@ MOVES_2D = [
 ]
 
 class ThorPolicyModel2D(RolloutPolicy):
-    def __init__(self, robot_trans_model, num_visits_init=10, val_init=TOS_REWARD_HI):
+    def __init__(self, robot_trans_model, reward_model,
+                 num_visits_init=10, val_init=TOS_REWARD_HI):
         self.robot_trans_model = robot_trans_model
+        self._legal_moves = {}
+        self._reward_model = reward_model
         self.action_prior = ThorPolicyModel2D.ActionPrior(num_visits_init,
                                                           val_init, self)
-        self._legal_moves = {}
-        self._reward_mdoel = ThorRewardModel2D()
+
 
     def sample(self, state):
         return random.sample(self.get_all_actions(state=state), 1)[0]
@@ -34,7 +36,8 @@ class ThorPolicyModel2D(RolloutPolicy):
         return MOVES_2D + [Done()]# + [Search(), Done()]
 
     def rollout(self, state, history=None):
-        preferences = self.action_prior.get_preferred_actions(state, history)
+        preferences = self.action_prior.get_preferred_actions(state, history)\
+            | {(Done(), 0, 0)}
         if len(preferences) > 0:
             return random.sample(preferences, 1)[0][0]
         else:
@@ -73,5 +76,4 @@ class ThorPolicyModel2D(RolloutPolicy):
                     next_angle_diff = abs(next_robot_state["pose"][2] - target_angle)
                     if next_angle_diff < cur_angle_diff:
                         preferences.add((move, self.num_visits_init, self.val_init))
-            # preferences.add((Search(), self.num_visits_init, self.val_init))
             return preferences
