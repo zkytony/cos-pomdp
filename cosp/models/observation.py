@@ -249,7 +249,7 @@ class FanModelYoonseon(DetectionModel):
             self.sensor.in_range(si["loc"], srobot["pose"]), epsilon)
 
         # Requires Python >= 3.6
-        prob = 0.0
+        prob = 1e-12
         # Event A:
         # object in sensing region and observation comes from object i
         if zi.loc is None:
@@ -345,7 +345,7 @@ class FanModelNoFP(DetectionModel):
                 # True negative; we are not modeling false positives
                 return 1.0
             else:
-                return 0.0
+                return 1e-12
 
 
     def sample(self, si, srobot, a=None, return_event=False):

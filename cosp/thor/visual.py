@@ -17,7 +17,7 @@ from . import constants
 class ThorObjectSearchViz(Visualizer):
     def __init__(self, **config):
         self._res = config.get("res", 30)   # resolution
-        self._grid_map = None
+        self._grid_map = config.get("grid_map", None)
         self._linewidth = config.get("linewidth", 1)
         self._bg_path = config.get("bg_path", None)
         self._colors = config.get("colors", {})

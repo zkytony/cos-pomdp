@@ -38,9 +38,11 @@ class RobotTransition2D(TransitionModel):
         next_robot_pose = current_robot_pose
         if isinstance(action, Move):
             nx, ny, nth = robot_pose_transition(
-                current_robot_pose, action,
-                diagonal_ok=self._diagonal_ok)
-            next_robot_pose = (int(round(nx)), int(round(ny)), nth)
+                current_robot_pose, action)
+            if self._diagonal_ok:
+                next_robot_pose = (int(round(nx)), int(round(ny)), nth)
+            else:
+                next_robot_pose = (int(nx), int(ny), nth)
         if next_robot_pose[:2] not in self.reachable_positions:
             return ObjectState2D(self.robot_id, dict(pose=current_robot_pose))
         else:
