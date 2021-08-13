@@ -219,28 +219,19 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
         scene = thor_scene_from_controller(controller)
         self.grid_map = convert_scene_to_grid_map(reachable_positions,
                                                   scene, grid_size)
+        # initial belief
         search_region = SearchRegion2D({(x,y)
                                         for x in range(self.grid_map.width)
                                         for y in range(self.grid_map.length)})
         init_target_belief = LocBelief2D.uniform(self.target_class, search_region)
 
-        # # initial belief
-        # reachable_positions = thor_reachable_positions(controller)
-        # scene = thor_scene_from_controller(controller)
-        # search_region = SearchRegion2D(
-        #     thor_map_coordinates2D(
-        #         reachable_positions, scene, grid_size))
-        # self.grid_map = convert_scene_to_grid_map(reachable_positions,
-        #                                           scene, grid_size)
-        # # init_target_belief = LocBelief2D.uniform(self.target_class, search_region)
-
-        ##informed
-        obj = thor_closest_object_of_type(controller.last_event, self.target_class)
-        thor_x, _, thor_z = thor_object_position(controller.last_event, obj["objectId"], as_tuple=True)
-        x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
-        init_target_belief = LocBelief2D.informed(self.target_class,
-                                                  (x, z),
-                                                  search_region)
+        # ##informed
+        # obj = thor_closest_object_of_type(controller.last_event, self.target_class)
+        # thor_x, _, thor_z = thor_object_position(controller.last_event, obj["objectId"], as_tuple=True)
+        # x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
+        # init_target_belief = LocBelief2D.informed(self.target_class,
+        #                                           (x, z),
+        #                                           search_region)
 
         self.robot_id = task_config.get("robot_id", "robot0")
         robot_pose = thor_agent_pose(controller, as_tuple=True)
