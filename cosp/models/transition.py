@@ -1,30 +1,32 @@
+import math
 from pomdp_py import TransitionModel
-from thortils.navigation import transform_pose, _is_full_pose
 
-from ..utils.math import indicator
+from ..utils.math import indicator, to_rad
 from .action import Move
 from .state import ObjectState2D, JointState2D
 
-def robot_pose_transition(robot_pose, action, diagonal_ok=False):
+def robot_pose_transition2d(robot_pose, action, diagonal_ok=False):
     """
     Uses the transform_pose function to compute the next pose,
     given a robot pose and an action.
 
+    Note: robot_pose is a 2D POMDP (gridmap) pose.
+
     Args:
-        robot_pose (position, rotation), or (x, y, th)
+        robot_pose (x, y, th)
         action (MoveAction)
         see transform_pose for kwargs [grid_size, diagonal_ok]
     """
-    if _is_full_pose(robot_pose):
-        return transform_pose(robot_pose, (action.name, action.delta),
-                              diagonal_ok=diagonal_ok, schema="vw")
-
-    elif len(robot_pose) == 3:
-        return transform_pose(robot_pose, (action.name, action.delta),
-                              diagonal_ok=diagonal_ok, schema="vw2d")
+    rx, ry, rth = robot_pose
+    forward, angle = action.delta
+    nth = rth + angle
+    nx = rx + forward*math.cos(to_rad(nth))
+    ny = ry + forward*math.sin(to_rad(nth))
+    if diagonal_ok:
+        next_robot_pose = (int(round(nx)), int(round(ny)), nth)
     else:
-        raise ValueError("Unrecognized robot_pose format {}".format(robot_pose))
-
+        next_robot_pose = (int(nx), int(ny), nth)
+    return next_robot_pose
 
 class RobotTransition2D(TransitionModel):
     def __init__(self, robot_id, reachable_positions, diagonal_ok=False):
@@ -37,12 +39,8 @@ class RobotTransition2D(TransitionModel):
         current_robot_pose = state.robot_state["pose"]
         next_robot_pose = current_robot_pose
         if isinstance(action, Move):
-            nx, ny, nth = robot_pose_transition(
-                current_robot_pose, action)
-            if self._diagonal_ok:
-                next_robot_pose = (int(round(nx)), int(round(ny)), nth)
-            else:
-                next_robot_pose = (int(nx), int(ny), nth)
+            next_robot_pose = robot_pose_transition2d(
+                current_robot_pose, action, diagonal_ok=self._diagonal_ok)
         if next_robot_pose[:2] not in self.reachable_positions:
             return ObjectState2D(self.robot_id, dict(pose=current_robot_pose))
         else:

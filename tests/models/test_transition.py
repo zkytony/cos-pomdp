@@ -10,19 +10,19 @@ def test():
     w, l = 10, 10
     Trobot = RobotTransition2D("robot", [(x,y)
                                          for x in range(w)
-                                         for y in range(l)])
+                                         for y in range(l)],
+                               diagonal_ok=True)
 
     actions = {"forward": (1.0, 0.0),
-               "left": (0.0, -45.0),
-               "right": (0.0, 45.0),
+               "left": (0.0, 45.0),
+               "right": (0.0, -45.0),
                "back": (-1.0, 0.0)}
 
-    init_pose = (2, 5, 90)
+    init_pose = (2, 5, 0)
     state = JointState2D("robot", None,
                          {"robot": ObjectState2D("robot", dict(pose=init_pose))})
 
     path = ["forward",
-            "left",
             "left",
             "forward",
             "right",
@@ -48,6 +48,7 @@ def test():
 
     poses = [state.robot_state["pose"]]
     for a in path:
+        # import pdb; pdb.set_trace()
         srobot = Trobot.sample(state, Move(a, actions[a]))
         state = JointState2D("robot", None,
                              {"robot": srobot})
@@ -59,7 +60,7 @@ def test():
     ax.set_aspect('equal')
     for i, robot_pose in enumerate(poses):
         print(robot_pose)
-        plot_pose(ax, robot_pose[0:2], to_rad(robot_pose[2]), length=0.2, head=0.1, d="+y")
+        plot_pose(ax, robot_pose[0:2], to_rad(robot_pose[2]), length=0.2, head=0.1, d="+x")
         if i == 0:
             plt.show(block=False)
             ax.set_title("--")
