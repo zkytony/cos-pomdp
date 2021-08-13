@@ -1,33 +1,19 @@
 import math
 import random
 from pomdp_py import RolloutPolicy, ActionPrior
-from .action import Move, Search, Done
+from .action import Move, Search, Done, MOVES_2D_GRID
 from .reward import ThorRewardModel2D
 from ..utils.math import euclidean_dist
-from ..thor.constants import (GOAL_DISTANCE,
-                              TOS_REWARD_HI,
-                              TOS_REWARD_LO,
-                              TOS_REWARD_STEP,
-                              GRID_SIZE,
-                              H_ROTATION)
-from thortils.grid_map import GridMap
-
-# Note that POMDP planning happens on top of GridMap
-MOVES_2D_GRID = [
-    Move("MoveAhead",   (1.0, 0.0)),
-    Move("RotateLeft",  (0.0, GridMap.to_grid_dyaw(-H_ROTATION))),
-    Move("RotateRight", (0.0, GridMap.to_grid_dyaw(H_ROTATION))
-]
+from ..thor import constants
 
 class ThorPolicyModel2D(RolloutPolicy):
     def __init__(self, robot_trans_model, reward_model,
-                 num_visits_init=10, val_init=TOS_REWARD_HI):
+                 num_visits_init=10, val_init=constants.TOS_REWARD_HI):
         self.robot_trans_model = robot_trans_model
         self._legal_moves = {}
         self._reward_model = reward_model
         self.action_prior = ThorPolicyModel2D.ActionPrior(num_visits_init,
                                                           val_init, self)
-
 
     def sample(self, state):
         return random.sample(self.get_all_actions(state=state), 1)[0]
@@ -48,7 +34,7 @@ class ThorPolicyModel2D(RolloutPolicy):
             return self._legal_moves[state.robot_state]
         else:
             robot_pose = state.robot_state["pose"]
-            valid_moves = set(a for a in MOVES_2D
+            valid_moves = set(a for a in MOVES_2D_GRID
                 if self.robot_trans_model.sample(state, a)["pose"] != robot_pose)
             self._legal_moves[state.robot_state] = valid_moves
             return valid_moves
@@ -68,7 +54,7 @@ class ThorPolicyModel2D(RolloutPolicy):
             target_angle = (math.atan2(target_loc[1] - robot_state["pose"][1],
                                        target_loc[0] - robot_state["pose"][0])) % (360.0)
             cur_angle_diff = abs(robot_state["pose"][2] - target_angle)
-            for move in MOVES_2D:
+            for move in MOVES_2D_GRID:
                 next_robot_state = self.policy_model.robot_trans_model.sample(state, move)
                 if euclidean_dist(next_robot_state["pose"][:2], target_loc) < current_dist:
                     preferences.add((move, self.num_visits_init, self.val_init))

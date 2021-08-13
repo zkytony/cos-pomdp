@@ -16,6 +16,13 @@ class Move(Action):
         self.delta = delta
         super().__init__(name)
 
+# Note that POMDP planning happens on top of GridMap
+MOVES_2D_GRID = [
+    Move("MoveAhead",   (1.0, 0.0)),
+    Move("RotateLeft",  (0.0, GridMap.to_grid_dyaw(-H_ROTATION))),
+    Move("RotateRight", (0.0, GridMap.to_grid_dyaw(H_ROTATION)))
+]
+
 class Interact(Action):
     """Interacts with an object (objid) with interaction type (name),
     with parameters"""

@@ -51,9 +51,3 @@ class ThorEnv(TaskEnv):
 
     def visualizer(self, **config):
         raise NotImplementedError
-
-
-class ThorAgent(Agent):
-    @property
-    def detector(self):
-        return None

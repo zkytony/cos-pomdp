@@ -35,9 +35,23 @@ from thortils.navigation import (get_shortest_path_to_object,
 # from ..models.fansensor import FanSensor
 # from thortils.navigation import (get_navigation_actions)
 
+from ..models.action import Move
+class ThorAgent(Agent):
+    @property
+    def detector(self):
+        return None
 
 class ThorObjectSearchAgent(ThorAgent):
     AGENT_USES_CONTROLLER = False
+
+class ThorPOMDPAgent(ThorObjectSearchAgent):
+    def __init__(self, grid_map):
+        # the grid map used to define POMDP state space
+        self.grid_map
+
+    def update(self, tos_action, observation):
+        # Convert tos_action movements to
+        if tos_action.name in
 
 ######################### Optimal Agent ##################################
 class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
@@ -239,9 +253,8 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
         self.robot_id = task_config.get("robot_id", "robot0")
         robot_pose = thor_agent_pose(controller, as_tuple=True)
         thor_x, _, thor_z = robot_pose[0]
-        _, yaw, _ = robot_pose[1]
-        x, y = self.grid_map.to_grid_pos(thor_x, thor_z)
-        init_robot_pose = (x, y, yaw)  # yaw-90 because that's how GridMap's angles match with Ai2Thor angle (HARD BUG!)
+        _, thor_yaw, _ = robot_pose[1]
+        init_robot_pose = self.grid_map.to_grid_pose(thor_x, thor_z, thor_yaw)
         init_robot_state = ObjectState2D(self.robot_id, dict(pose=init_robot_pose))
         init_robot_belief = pomdp_py.Histogram({init_robot_state : 1.0})
         init_belief = JointBelief2D(self.robot_id, self.target_class,
