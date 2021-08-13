@@ -295,6 +295,7 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
         action = self._planner.plan(self)
         if isinstance(action, Move):
             movement_params = self.task_config["nav_config"]["movement_params"]
+            return TOS_Action("RotateLeft", {"degrees":45.0})
             return TOS_Action(action.name,
                               movement_params[action.name])
         return action

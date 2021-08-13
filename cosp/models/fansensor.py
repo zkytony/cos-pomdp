@@ -3,7 +3,7 @@ import random
 import numpy as np
 
 from .sensor import SensorModel
-from ..utils.math import to_rad, R2d, euclidean_dist, pol2cart
+from ..utils.math import to_rad, to_deg, R2d, euclidean_dist, pol2cart
 from ..utils.misc import in_range_inclusive
 
 class FanSensor(SensorModel):
@@ -35,7 +35,7 @@ class FanSensor(SensorModel):
         r = random.uniform(self.min_range, self.max_range)
         x, y = pol2cart(r, th)
         # transform to robot pose
-        x, y = np.matmul(R2d(robot_pose[2]), np.array([x,y])) # rotation
+        x, y = np.matmul(R2d(to_rad(robot_pose[2])), np.array([x,y])) # rotation
         x += robot_pose[0]  # translation dx
         y += robot_pose[1]  # translation dy
         point = (x, y)
@@ -53,6 +53,7 @@ class FanSensor(SensorModel):
         """
         if robot_pose[:2] == point and self.min_range == 0:
             return True
+        robot_pose = (*robot_pose[:2], to_rad(robot_pose[2]))
 
         dist, bearing = self.shoot_beam(robot_pose, point)
         if self.min_range <= dist <= self.max_range:

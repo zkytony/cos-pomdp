@@ -40,7 +40,7 @@ def corr_func(target_pos, object_pos,
 
 def test_create():
     robot_id = "robot0"
-    scene = "FloorPlan1"
+    scene = "FloorPlan2"
     target_class = "Apple"
 
     detectables = [("Apple", "FanModelNoFP", [0.7, 0.1])]

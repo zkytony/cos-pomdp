@@ -11,7 +11,7 @@ import time
 def test_fan_model_yoonseon():
     w, l = 20, 20
     srobot = ObjectState2D("robot",
-                           dict(pose=(4, 5.5, to_rad(0))))
+                           dict(pose=(4, 5.5, 270)))
     si = ObjectState2D("Mug",
                        dict(loc=(5, 6)))
     fan_params = dict(fov=90, min_range=0, max_range=5)
@@ -48,7 +48,7 @@ def test_fan_model_yoonseon():
 def test_fan_model_nofp():
     w, l = 20, 20
     srobot = ObjectState2D("robot",
-                           dict(pose=(2, 5.5, to_rad(0))))
+                           dict(pose=(2, 5.5, 0)))
     si = ObjectState2D("Mug",
                        dict(loc=(5, 6)))
     fan_params = dict(fov=90, min_range=0, max_range=5)
@@ -108,5 +108,5 @@ def plot_fan_model_samples(model, si, srobot,
 
 
 if __name__ == "__main__":
-    # test_fan_model_yoonseon()
-    test_fan_model_nofp()
+    test_fan_model_yoonseon()
+    # test_fan_model_nofp()

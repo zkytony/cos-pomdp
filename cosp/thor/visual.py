@@ -89,6 +89,10 @@ class ThorObjectSearchViz(Visualizer):
         target_color = self.get_color(task_env.target_id)
         img = self.draw_object_belief(img, belief, target_color)
 
+        # Draw field of view
+        sensor = agent.observation_model.zi_models[agent.target_class].detection_model.sensor
+        img = self.draw_fov(img, sensor, (x, y, th))
+
         self.show_img(img)
 
     def _get_robot_grid_pose(self, agent):
@@ -175,4 +179,16 @@ class ThorObjectSearchViz(Visualizer):
                 last_val = hist[state]
                 if last_val <= 0:
                     break
+        return img
+
+    def draw_fov(self, img, sensor, robot_pose):
+        size = self._res // 2
+        radius = int(round(size / 2))
+        shift = int(round(self._res / 2))
+        for x in range(self._grid_map.width):
+            for y in range(self._grid_map.length):
+                if sensor.in_range((x,y), robot_pose):
+                    img = cv2shape(img, cv2.circle,
+                                   (y*self._res+shift, x*self._res+shift),
+                                   radius, [233, 233, 8], thickness=-1, alpha=0.7)
         return img
