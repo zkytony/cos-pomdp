@@ -21,7 +21,7 @@ class GridMapVizualizer(Visualizer):
         self._linewidth = config.get("linewidth", 1)
         self._bg_path = config.get("bg_path", None)
         self._colors = config.get("colors", {})
-        self.on_init()
+        self._initialized = False
 
     @property
     def img_width(self):
@@ -89,6 +89,9 @@ class GridMapVizualizer(Visualizer):
         But when displaying, to match the THOR unity's orientation, the image
         is flipped, so that in the displayed image, +x is right, +z is up.
         """
+        if not self._initialized:
+            self.on_init()
+            self._initialized = True
         img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
         img = cv2.flip(img, 1)  # flip horizontally
         pygame.surfarray.blit_array(self._display_surf, img)

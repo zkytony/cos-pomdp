@@ -13,7 +13,7 @@ from thortils import (thor_closest_object_of_type,
                       thor_pose_as_dict,
                       convert_scene_to_grid_map)
 
-from .common import TOS_Action, ThorAgent
+from .common import TOS_Action
 from . import constants
 from ..utils.math import indicator, normalize, euclidean_dist
 
@@ -36,25 +36,23 @@ from thortils.navigation import (get_shortest_path_to_object,
 # from thortils.navigation import (get_navigation_actions)
 
 from ..models.action import Move
-class ThorAgent(Agent):
+class ThorAgent:
+    AGENT_USES_CONTROLLER = False
     @property
     def detector(self):
         return None
 
-class ThorObjectSearchAgent(ThorAgent):
-    AGENT_USES_CONTROLLER = False
-
-class ThorPOMDPAgent(ThorObjectSearchAgent):
+class ThorPOMDPAgent(ThorAgent):
     def __init__(self, grid_map):
         # the grid map used to define POMDP state space
         self.grid_map
 
-    def update(self, tos_action, observation):
-        # Convert tos_action movements to
-        if tos_action.name in
+    # def update(self, tos_action, observation):
+    #     # Convert tos_action movements to
+    #     if tos_action.name in
 
 ######################### Optimal Agent ##################################
-class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
+class ThorObjectSearchOptimalAgent(ThorAgent):
     """
     The optimal agent uses ai2thor's shortest path method
     to retrieve a path, and then follows this path by taking
@@ -210,8 +208,8 @@ from ..models.observation import (CorrObservationModel,
                                   FanModelNoFP,
                                   ObjectDetection2D,
                                   JointObservation)
-from ..models.policy import ThorPolicyModel2D
-from ..models.reward import ThorRewardModel2D
+from ..models.policy import PolicyModel2D
+from ..models.reward import ObjectSearchRewardModel2D
 from ..models.action import Move
 from ..utils.math import roundany
 from thortils.scene import convert_scene_to_grid_map
@@ -282,12 +280,12 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
         observation_model = JointObservationModel(self.target_class, zi_models)
 
         # Reward model
-        reward_model = ThorRewardModel2D(zi_models[self.target_class].detection_model.sensor)
+        reward_model = ObjectSearchRewardModel2D(zi_models[self.target_class].detection_model.sensor)
 
         # Policy model
-        policy_model = ThorPolicyModel2D(robot_trans_model, reward_model,
-                                         num_visits_init=10,
-                                         val_init=constants.TOS_REWARD_HI)
+        policy_model = PolicyModel2D(robot_trans_model, reward_model,
+                                     num_visits_init=10,
+                                     val_init=constants.TOS_REWARD_HI)
         super().__init__(init_belief, policy_model,
                          transition_model, observation_model, reward_model)
 
@@ -321,8 +319,10 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
             action = tos_action
 
         # update robot state
-        mpe_state = self.belief.mpe()
-        next_robot_state = self.transition_model.sample(mpe_state, action).robot_state
+        thor_robot_pose = tos_observation.robot_pose
+        thor_robot_pose2d = (thor_robot_pose[0]['x'], thor_robot_pose[0]['z'], thor_robot_pose[1]['y'])
+        next_robot_state = ObjectState2D(self.robot_id,
+                                         dict(pose=self.grid_map.to_grid_pose(*thor_robot_pose2d)))
         next_robot_belief = pomdp_py.Histogram({next_robot_state : 1.0})
         print(next_robot_state)
 

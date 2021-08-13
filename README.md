@@ -1,5 +1,15 @@
 # cos-pomdp
 
+COS-POMDP is a POMDP.
+This package defines that POMDP and a planner to solve it.
+This package also includes instantiation of this POMDP to Ai2Thor for object search.
+
+How should a POMDP project be developed?
+You define the POMDP. Then, instantiate it on your domain.
+Do all the necessary state (e.g. coordinate) conversions.
+You create one or more planner given that POMDP.
+Then, you have a POMDP and a solver for it!
+
 ## Organization
 ```
   cos-pomdp/

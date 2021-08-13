@@ -24,7 +24,7 @@ from ..vision.utils import projection
 from .result_types import PathResult, HistoryResult
 from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation
 from .agent import ThorObjectSearchOptimalAgent
-from .visual import ThorObjectSearchViz
+from .visual import ThorObjectSearchViz2D
 from . import constants
 
 
@@ -147,7 +147,7 @@ class TOS(ThorEnv):
                 xyxy = detections[i][0]
                 # TODO: COMPLETE
                 # pos = projection.inverse_perspective(np.mean(xyxy), ..) # TODO
-        return TOS_Observation(img, img_depth, detections)
+        return TOS_Observation(img, img_depth, detections, thor_agent_pose(event))
 
     def get_state(self, event=None):
         # stores agent pose as tuple, for convenience.
@@ -237,7 +237,7 @@ class TOS(ThorEnv):
             .format(step, action, x, z, pitch, yaw, r)
 
     def visualizer(self, **config):
-        return ThorObjectSearchViz(**config)
+        return ThorObjectSearchViz2D(**config)
 
 # Class naming aliases
 ThorObjectSearch = TOS

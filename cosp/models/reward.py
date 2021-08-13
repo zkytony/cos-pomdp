@@ -9,35 +9,28 @@ from ..thor.constants import (GOAL_DISTANCE,
 from ..utils.math import euclidean_dist, to_rad
 from .action import Done
 
-def _facing2d(robot_pose, point):
-    rx, ry, th = robot_pose
-    if (rx, ry) == point:
-        return True
-    # point in direction of robot facing
-    rx2 = rx + math.sin(to_rad(th))
-    ry2 = ry + math.cos(to_rad(th))
-    px, py = point
-    return np.dot(np.array([px - rx, py - ry]),
-                  np.array([rx2 - rx, ry2 - ry])) > 0
-
-def thor_success2d(robot_pose, target_loc, sensor,
-                   dist_thresh=GOAL_DISTANCE):
-    x, y, th = robot_pose
-    if euclidean_dist((x,y), target_loc)*GRID_SIZE <= dist_thresh:
-        # robot_pose = (robot_pose[0], robot_pose[1], (robot_pose[2]-135)%360.0)
-        if sensor.in_range(target_loc, robot_pose):
-            return True
-    return False
-
-class ThorRewardModel2D(RewardModel):
-    def __init__(self, sensor):
+class ObjectSearchRewardModel2D(RewardModel):
+    def __init__(self, sensor, hi=100, lo=-100, step=-1):
         self.sensor = sensor
+        self._hi = hi
+        self._lo = lo
+        self._step = step
+
     def sample(self, state, action, next_state):
         robot_pose = next_state.robot_state["pose"]
         target_loc = next_state.target_state["loc"]
         if isinstance(action, Done):
-            if thor_success2d(robot_pose, target_loc, self.sensor):
-                return TOS_REWARD_HI
+            if self.success2d(robot_pose, target_loc):
+                return self._hi
             else:
-                return TOS_REWARD_LO
-        return TOS_REWARD_STEP
+                return self._lo
+        return self._step
+
+    def success2d(self, robot_pose, target_loc,
+                  dist_thresh=GOAL_DISTANCE):
+        x, y, th = robot_pose
+        if euclidean_dist((x,y), target_loc)*GRID_SIZE <= dist_thresh:
+            # robot_pose = (robot_pose[0], robot_pose[1], (robot_pose[2]-135)%360.0)
+            if self.sensor.in_range(target_loc, robot_pose):
+                return True
+        return False

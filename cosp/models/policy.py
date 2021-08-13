@@ -2,18 +2,17 @@ import math
 import random
 from pomdp_py import RolloutPolicy, ActionPrior
 from .action import Move, Search, Done, MOVES_2D_GRID
-from .reward import ThorRewardModel2D
 from ..utils.math import euclidean_dist
 from ..thor import constants
 
-class ThorPolicyModel2D(RolloutPolicy):
+class PolicyModel2D(RolloutPolicy):
     def __init__(self, robot_trans_model, reward_model,
                  num_visits_init=10, val_init=constants.TOS_REWARD_HI):
         self.robot_trans_model = robot_trans_model
         self._legal_moves = {}
         self._reward_model = reward_model
-        self.action_prior = ThorPolicyModel2D.ActionPrior(num_visits_init,
-                                                          val_init, self)
+        self.action_prior = None#PolicyModel2D.ActionPrior(num_visits_init,
+                                 #                     val_init, self)
 
     def sample(self, state):
         return random.sample(self.get_all_actions(state=state), 1)[0]
@@ -22,10 +21,13 @@ class ThorPolicyModel2D(RolloutPolicy):
         return MOVES_2D_GRID + [Done()]# + [Search(), Done()]
 
     def rollout(self, state, history=None):
-        preferences = self.action_prior.get_preferred_actions(state, history)\
-            | {(Done(), 0, 0)}
-        if len(preferences) > 0:
-            return random.sample(preferences, 1)[0][0]
+        if self.action_prior is not None:
+            preferences = self.action_prior.get_preferred_actions(state, history)\
+                | {(Done(), 0, 0)}
+            if len(preferences) > 0:
+                return random.sample(preferences, 1)[0][0]
+            else:
+                return random.sample(self.get_all_actions(state=state), 1)[0]
         else:
             return random.sample(self.get_all_actions(state=state), 1)[0]
 

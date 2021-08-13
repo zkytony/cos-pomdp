@@ -1,4 +1,6 @@
 from pomdp_py import SimpleAction
+# from ..thor.constants import ()
+from thortils.grid_map import GridMap
 
 
 class Action(SimpleAction):
@@ -19,8 +21,8 @@ class Move(Action):
 # Note that POMDP planning happens on top of GridMap
 MOVES_2D_GRID = [
     Move("MoveAhead",   (1.0, 0.0)),
-    Move("RotateLeft",  (0.0, GridMap.to_grid_dyaw(-H_ROTATION))),
-    Move("RotateRight", (0.0, GridMap.to_grid_dyaw(H_ROTATION)))
+    Move("RotateLeft",  (0.0, 45.0)),#GridMap.to_grid_dyaw(-H_ROTATION))),
+    Move("RotateRight", (0.0, -45.0))#GridMap.to_grid_dyaw(H_ROTATION)))
 ]
 
 class Interact(Action):
@@ -37,7 +39,6 @@ class Interact(Action):
 class Done(Action):
     def __init__(self):
         super().__init__("done")
-
 
 class Decision(Action):
     """A Decision is a High-level action;

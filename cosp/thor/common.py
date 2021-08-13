@@ -5,7 +5,7 @@ from . import constants
 # State, Action, Observation used in object search task
 TOS_Action = namedtuple("Action", ['name', 'params'])
 TOS_State = namedtuple("State", ['agent_pose', 'horizon'])
-TOS_Observation = namedtuple("Observation", ["img", "img_depth", "detections"])
+TOS_Observation = namedtuple("Observation", ["img", "img_depth", "detections", "robot_pose"])
 
 # Generic classes for task and agent in Thor environments.
 class ThorEnv(TaskEnv):
