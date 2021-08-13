@@ -215,30 +215,39 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
             self.target_class = self.task_config["target"]
 
         grid_size = thor_grid_size_from_controller(controller)
-
-        # initial belief
         reachable_positions = thor_reachable_positions(controller)
         scene = thor_scene_from_controller(controller)
-        search_region = SearchRegion2D(
-            thor_map_coordinates2D(
-                reachable_positions, scene, grid_size))
         self.grid_map = convert_scene_to_grid_map(reachable_positions,
                                                   scene, grid_size)
-        # init_target_belief = LocBelief2D.uniform(self.target_class, search_region)
+        search_region = SearchRegion2D({(x,y)
+                                        for x in range(self.grid_map.width)
+                                        for y in range(self.grid_map.length)})
+        init_target_belief = LocBelief2D.uniform(self.target_class, search_region)
 
-        ##informed
-        obj = thor_closest_object_of_type(controller.last_event, self.target_class)
-        x, y, z = thor_object_position(controller.last_event, obj["objectId"], as_tuple=True)
-        init_target_belief = LocBelief2D.informed(self.target_class,
-                                                  (roundany(x, grid_size),
-                                                   roundany(z, grid_size)),
-                                                  search_region)
+        # # initial belief
+        # reachable_positions = thor_reachable_positions(controller)
+        # scene = thor_scene_from_controller(controller)
+        # search_region = SearchRegion2D(
+        #     thor_map_coordinates2D(
+        #         reachable_positions, scene, grid_size))
+        # self.grid_map = convert_scene_to_grid_map(reachable_positions,
+        #                                           scene, grid_size)
+        # # init_target_belief = LocBelief2D.uniform(self.target_class, search_region)
+
+        # ##informed
+        # obj = thor_closest_object_of_type(controller.last_event, self.target_class)
+        # x, y, z = thor_object_position(controller.last_event, obj["objectId"], as_tuple=True)
+        # init_target_belief = LocBelief2D.informed(self.target_class,
+        #                                           (roundany(x, grid_size),
+        #                                            roundany(z, grid_size)),
+        #                                           search_region)
 
         self.robot_id = task_config.get("robot_id", "robot0")
         robot_pose = thor_agent_pose(controller, as_tuple=True)
-        x, _, z = robot_pose[0]
+        thor_x, _, thor_z = robot_pose[0]
         _, yaw, _ = robot_pose[1]
-        init_robot_pose = (x, z, yaw)
+        x, y = self.grid_map.to_grid_pos(thor_x, thor_z)
+        init_robot_pose = (x, y, yaw)
         init_robot_state = ObjectState2D(self.robot_id, dict(pose=init_robot_pose))
         init_robot_belief = pomdp_py.Histogram({init_robot_state : 1.0})
         init_belief = JointBelief2D(self.robot_id, self.target_class,
@@ -246,8 +255,7 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
 
         # Transition model
         robot_trans_model = RobotTransition2D(self.robot_id,
-                                              reachable_positions,
-                                              grid_size=grid_size,
+                                              self.grid_map.free_locations,
                                               diagonal_ok=constants.DIAG_MOVE)
         transition_model = JointTransitionModel2D(self.target_class,
                                                   robot_trans_model)
@@ -295,9 +303,10 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
         tos_observation, reward = observation
 
         if tos_action.name in self.task_config["nav_config"]["movement_params"]:
-            movement, delta = convert_movement_to_action(tos_action.name,
-                                                         {tos_action.name : tos_action.params})
+            movement, delta = convert_movement_to_action(
+                tos_action.name, {tos_action.name : tos_action.params})
             forward, h_angle, v_angle = delta
+            forward /= self.grid_map.grid_size  # because we consider GridMap coordinates
             action = Move(movement, (forward, h_angle))  # We only care about 2D at this level.
 
         # update robot state
@@ -314,7 +323,8 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
         for detectable_class in self.observation_model.classes:
             if detectable_class in cls_to_loc3d:
                 loc3d = cls_to_loc3d[detectable_class]
-                zi = ObjectDetection2D(detectable_class, (loc3d[0], loc3d[2]))
+                gx, gy = self.grid_map.to_grid_pos(loc3d[0], loc3d[2])
+                zi = ObjectDetection2D(detectable_class, (gx, gy))
             else:
                 zi = ObjectDetection2D(detectable_class, None)
             pomdp_detections.append(zi)
@@ -329,6 +339,8 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
             next_target_hist[starget] =\
                 self.observation_model.probability(observation, next_state, action) * target_belief[starget]
         next_target_belief = LocBelief2D(normalize(next_target_hist))
+        if math.isnan(next_target_belief[next_target_belief.mpe()]):
+            import pdb; pdb.set_trace()
         next_belief = JointBelief2D(self.robot_id, self.target_class,
                                     next_robot_belief, next_target_belief)
         self.set_belief(next_belief)

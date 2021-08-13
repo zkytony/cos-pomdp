@@ -43,16 +43,16 @@ def test_create():
     scene = "FloorPlan1"
     target_class = "Apple"
 
-    detectables = [("Apple", "FanModelNoFP", [0.7, 0.1]),
-                   ("CounterTop", "FanModelNoFP", [0.9, 0.1]),
-                   ("Bread", "FanModelNoFP", [0.7, 0.1]),
-                   ("Fridge", "FanModelNoFP", [0.9, 0.1])]
+    detectables = [("Apple", "FanModelNoFP", [0.7, 0.1])]
+                   # ("CounterTop", "FanModelNoFP", [0.9, 0.1]),
+                   # ("Bread", "FanModelNoFP", [0.7, 0.1]),
+                   # ("Fridge", "FanModelNoFP", [0.9, 0.1])]
     detector_config = {}
     for cls, model_type, quality_params in detectables:
         if model_type == "FanModelNoFP":
             fan_params = {
-                "min_range": constants.GRID_SIZE,
-                "max_range": constants.GRID_SIZE*5,
+                "min_range": 1,
+                "max_range": 4,
                 "fov": constants.FOV
             }
             detector_config[cls] =\

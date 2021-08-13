@@ -4,7 +4,8 @@ from pomdp_py import RewardModel
 from ..thor.constants import (GOAL_DISTANCE,
                               TOS_REWARD_HI,
                               TOS_REWARD_LO,
-                              TOS_REWARD_STEP)
+                              TOS_REWARD_STEP,
+                              GRID_SIZE)
 from ..utils.math import euclidean_dist, to_rad
 from .action import Done
 
@@ -22,7 +23,7 @@ def _facing2d(robot_pose, point):
 def thor_success2d(robot_pose, target_loc,
                    dist_thresh=GOAL_DISTANCE):
     x, y, th = robot_pose
-    if euclidean_dist((x,y), target_loc) <= dist_thresh:
+    if euclidean_dist((x,y), target_loc)*GRID_SIZE <= dist_thresh:
         if _facing2d(robot_pose, target_loc):
             return True
     return False

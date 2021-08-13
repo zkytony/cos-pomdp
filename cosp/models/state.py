@@ -1,3 +1,5 @@
+# All locations are in GridMap coordinate system.
+
 from pomdp_py import OOState, ObjectState
 
 class JointState(OOState):

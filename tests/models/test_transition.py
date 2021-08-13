@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 
 def test():
     w, l = 10, 10
-    Trobot = RobotTransition2D([(x,y)
-                                for x in range(w)
-                                for y in range(l)], grid_size=0.25)
+    Trobot = RobotTransition2D("robot", [(x,y)
+                                         for x in range(w)
+                                         for y in range(l)])
 
     actions = {"forward": (1.0, 0.0),
                "left": (0.0, -45.0),

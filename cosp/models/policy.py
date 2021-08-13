@@ -12,8 +12,9 @@ from ..thor.constants import (GOAL_DISTANCE,
                               H_ROTATION)
 
 
+# Note that POMDP planning happens on top of GridMap
 MOVES_2D = [
-    Move("MoveAhead", (GRID_SIZE, 0.0)),
+    Move("MoveAhead", (1.0, 0.0)),
     Move("RotateLeft", (0.0, -H_ROTATION)),
     Move("RotateRight", (0.0, H_ROTATION))
 ]

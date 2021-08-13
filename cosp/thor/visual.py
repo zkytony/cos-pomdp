@@ -71,15 +71,13 @@ class ThorObjectSearchViz(Visualizer):
     def visualize2D(self, task_env, agent):
         if self._grid_map is None:
             # First time visualize is called
-            self._grid_map = convert_scene_to_grid_map(
-                task_env.controller, task_env.scene, constants.GRID_SIZE)
+            self._grid_map = agent.grid_map
             self.on_init()
 
         img = self._make_gridworld_image(self._res)
 
         robot_pose = task_env.get_state().agent_pose
         thor_x, _, thor_z = robot_pose[0]
-        print("robot state: true position {}".format((thor_x, thor_z)))
 
         # Draw belief about robot
         x, y, th = self._get_robot_grid_pose(agent)
@@ -96,7 +94,7 @@ class ThorObjectSearchViz(Visualizer):
     def _get_robot_grid_pose(self, agent):
         mpe_state = agent.belief.mpe()
         robot_state = mpe_state.robot_state
-        pos = self._grid_map.to_grid_pos(*robot_state["pose"][:2])
+        pos = robot_state["pose"][:2]
         th = robot_state["pose"][2]
         return (*pos, th)
 
@@ -163,8 +161,7 @@ class ThorObjectSearchViz(Visualizer):
                 stop = np.mean(np.array(color[:3]) / np.array([255, 255, 255])) < 0.999
 
             if not stop:
-                thor_x, thor_z = state['loc']
-                tx, ty = self._grid_map.to_grid_pos(thor_x, thor_z)
+                tx, ty = state['loc']
                 if (tx,ty) not in circle_drawn:
                     circle_drawn[(tx,ty)] = 0
                 circle_drawn[(tx,ty)] += 1
