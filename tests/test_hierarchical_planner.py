@@ -42,28 +42,6 @@ def test_create():
     robot_id = "robot0"
     scene = "FloorPlan1"
     target_class = "Apple"
-    thor_config = {**constants.CONFIG, **{"scene": scene}}
-    task_config = {
-        "robot_id": robot_id,
-        "task_type": "class",
-        "target": target_class,
-        "nav_config": {
-            "goal_distance": constants.GOAL_DISTANCE,
-            "v_angles": constants.V_ANGLES,
-            "h_angles": constants.H_ANGLES,
-            "diagonal_ok": constants.DIAG_MOVE,
-            "movement_params": thor_config["MOVEMENT_PARAMS"]
-        },
-        "discount_factor": 0.99,
-        "visualize": True,
-        "viz_config": {
-            "res": 30,
-            "colors": {
-                robot_id: [255, 100, 255],
-                target_class: [100, 100, 255, 128]
-            }
-        }
-    }
 
     detectables = [("Apple", "FanModelNoFP", [0.7, 0.1]),
                    ("CounterTop", "FanModelNoFP", [0.9, 0.1]),
@@ -84,6 +62,31 @@ def test_create():
                          fan_params=fan_params,
                          quality_params=quality_params,
                          round_to=constants.GRID_SIZE))
+
+    thor_config = {**constants.CONFIG, **{"scene": scene}}
+    task_config = {
+        "robot_id": robot_id,
+        "task_type": "class",
+        "target": target_class,
+        "detectables": set(detector_config.keys()),
+        "nav_config": {
+            "goal_distance": constants.GOAL_DISTANCE,
+            "v_angles": constants.V_ANGLES,
+            "h_angles": constants.H_ANGLES,
+            "diagonal_ok": constants.DIAG_MOVE,
+            "movement_params": thor_config["MOVEMENT_PARAMS"]
+        },
+        "discount_factor": 0.99,
+        "visualize": True,
+        "viz_config": {
+            "res": 30,
+            "colors": {
+                robot_id: [255, 100, 255],
+                target_class: [100, 100, 255, 128]
+            }
+        }
+    }
+
 
     planning_configs = {
         "max_depth": 10,

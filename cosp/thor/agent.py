@@ -6,6 +6,7 @@ from thortils import (thor_closest_object_of_type,
                       thor_object_with_id,
                       thor_object_receptors,
                       thor_object_type,
+                      thor_object_position,
                       thor_scene_from_controller,
                       thor_grid_size_from_controller,
                       thor_pose_as_tuple,
@@ -185,16 +186,22 @@ class ThorObjectSearchOptimalAgent(ThorObjectSearchAgent):
 
 
 import pomdp_py
-from ..models.state import ObjectState2D
+from ..models.state import ObjectState2D, JointState2D
 from ..models.belief import LocBelief2D, JointBelief2D
 from ..models.search_region import SearchRegion2D
 from ..models.transition import RobotTransition2D, JointTransitionModel2D
 from ..models.correlation import CorrelationDist
-from ..models.observation import CorrObservationModel, JointObservationModel, FanModelNoFP
+from ..models.observation import (CorrObservationModel,
+                                  JointObservationModel,
+                                  FanModelNoFP,
+                                  ObjectDetection2D,
+                                  JointObservation)
 from ..models.policy import ThorPolicyModel2D
 from ..models.reward import ThorRewardModel2D
 from ..models.action import Move
+from ..utils.math import roundany
 from thortils.scene import convert_scene_to_grid_map
+from thortils.navigation import convert_movement_to_action
 
 class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
     AGENT_USES_CONTROLLER = True
@@ -211,23 +218,30 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
 
         # initial belief
         reachable_positions = thor_reachable_positions(controller)
+        scene = thor_scene_from_controller(controller)
         search_region = SearchRegion2D(
             thor_map_coordinates2D(
-                thor_reachable_positions(controller),
-                thor_scene_from_controller(controller),
-                grid_size))
-        init_target_belief = LocBelief2D(self.target_class,
-                                         search_region,
-                                         prior="uniform")
+                reachable_positions, scene, grid_size))
+        self.grid_map = convert_scene_to_grid_map(reachable_positions,
+                                                  scene, grid_size)
+        # init_target_belief = LocBelief2D.uniform(self.target_class, search_region)
+
+        ##informed
+        obj = thor_closest_object_of_type(controller.last_event, self.target_class)
+        x, y, z = thor_object_position(controller.last_event, obj["objectId"], as_tuple=True)
+        init_target_belief = LocBelief2D.informed(self.target_class,
+                                                  (roundany(x, grid_size),
+                                                   roundany(z, grid_size)),
+                                                  search_region)
 
         self.robot_id = task_config.get("robot_id", "robot0")
         robot_pose = thor_agent_pose(controller, as_tuple=True)
         x, _, z = robot_pose[0]
         _, yaw, _ = robot_pose[1]
         init_robot_pose = (x, z, yaw)
-        init_robot_state = ObjectState2D("robot", dict(pose=init_robot_pose))
+        init_robot_state = ObjectState2D(self.robot_id, dict(pose=init_robot_pose))
         init_robot_belief = pomdp_py.Histogram({init_robot_state : 1.0})
-        init_belief = JointBelief2D("robot", self.target_class,
+        init_belief = JointBelief2D(self.robot_id, self.target_class,
                                     init_robot_belief, init_target_belief)
 
         # Transition model
@@ -277,8 +291,51 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
                               movement_params[action.name])
         return action
 
-    def update(self, action, tos_observation):
-        pass
+    def update(self, tos_action, observation):
+        tos_observation, reward = observation
+
+        if tos_action.name in self.task_config["nav_config"]["movement_params"]:
+            movement, delta = convert_movement_to_action(tos_action.name,
+                                                         {tos_action.name : tos_action.params})
+            forward, h_angle, v_angle = delta
+            action = Move(movement, (forward, h_angle))  # We only care about 2D at this level.
+
+        # update robot state
+        mpe_state = self.belief.mpe()
+        next_robot_state = self.transition_model.sample(mpe_state, action).robot_state
+        next_robot_belief = pomdp_py.Histogram({next_robot_state : 1.0})
+        print(next_robot_state)
+
+        # get POMDP observation
+        cls_to_loc3d = {}
+        for xyxy, conf, cls, loc3d in tos_observation.detections:
+            cls_to_loc3d[cls] = loc3d
+        pomdp_detections = []
+        for detectable_class in self.observation_model.classes:
+            if detectable_class in cls_to_loc3d:
+                loc3d = cls_to_loc3d[detectable_class]
+                zi = ObjectDetection2D(detectable_class, (loc3d[0], loc3d[2]))
+            else:
+                zi = ObjectDetection2D(detectable_class, None)
+            pomdp_detections.append(zi)
+        observation = JointObservation(tuple(pomdp_detections))
+
+        next_target_hist = {}
+        target_belief = self.belief.target_belief
+        for starget in target_belief:
+            next_state = JointState2D(self.robot_id, self.target_class,
+                                      {self.robot_id: next_robot_state,
+                                       self.target_class: starget})
+            next_target_hist[starget] =\
+                self.observation_model.probability(observation, next_state, action) * target_belief[starget]
+        next_target_belief = LocBelief2D(normalize(next_target_hist))
+        next_belief = JointBelief2D(self.robot_id, self.target_class,
+                                    next_robot_belief, next_target_belief)
+        self.set_belief(next_belief)
+
+        # Update planner
+        self._planner.update(self, action, observation)
+
 
 
 

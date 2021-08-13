@@ -128,15 +128,24 @@ class TOS(ThorEnv):
             detections = []
             bboxes = thor_object_bboxes(event)  # xyxy
             for objectId in bboxes:
+                loc3d = thor_object_position(event, objectId, as_tuple=True)
+                if loc3d is None:
+                    # This is due to objectId, though provided in
+                    # bounding box, is not found in event metadata.
+                    # Perhaps this is a bug in ai2thor
+                    pass
+
                 cls = thor_object_type(objectId)
+                if cls not in self.task_config["detectables"]:
+                    continue
                 conf = 1.0
                 xyxy = bboxes[objectId]
-                # pos = projection.inverse_perspective(np.mean(xyxy), ..) # TODO
-            detections.append((xyxy, conf, cls))
+                detections.append((xyxy, conf, cls, loc3d))
         else:
             detections = detector.detect(img)
             for i in range(len(detections)):
                 xyxy = detections[i][0]
+                # TODO: COMPLETE
                 # pos = projection.inverse_perspective(np.mean(xyxy), ..) # TODO
         return TOS_Observation(img, img_depth, detections)
 

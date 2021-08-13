@@ -421,12 +421,12 @@ class JointObservationModel(ObservationModel):
         each objclass is a detectable class
         """
         self.zi_models = zi_models
-        self._classes = list(sorted(self.zi_models.keys()))
+        self.classes = list(sorted(self.zi_models.keys()))
         self.target_class = target_class
 
     def sample(self, next_state, action):
         return JointObservation(tuple(self.zi_models[objclass].sample(next_state, action)
-                                      for objclass in self._classes))
+                                      for objclass in self.classes))
 
 
     def probability(self, observation, next_state, action):

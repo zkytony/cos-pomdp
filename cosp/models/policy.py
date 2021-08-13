@@ -30,7 +30,7 @@ class ThorPolicyModel2D(RolloutPolicy):
         return random.sample(self.get_all_actions(state=state), 1)[0]
 
     def get_all_actions(self, state, history=None):
-        return MOVES_2D + [Search(), Done()]
+        return MOVES_2D + [Done()]# + [Search(), Done()]
 
     def rollout(self, state, history=None):
         preferences = self.action_prior.get_preferred_actions(state, history)
@@ -72,5 +72,5 @@ class ThorPolicyModel2D(RolloutPolicy):
                     next_angle_diff = abs(next_robot_state["pose"][2] - target_angle)
                     if next_angle_diff < cur_angle_diff:
                         preferences.add((move, self.num_visits_init, self.val_init))
-            preferences.add((Search(), self.num_visits_init, self.val_init))
+            # preferences.add((Search(), self.num_visits_init, self.val_init))
             return preferences

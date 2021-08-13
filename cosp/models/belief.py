@@ -1,10 +1,12 @@
 import random
 from pomdp_py import GenerativeDistribution, Histogram, OOBelief
 from .state import JointState2D, ObjectState2D
+from ..utils.math import normalize
 
 class LocBelief2D(Histogram):
     """Intended for high-level belief over an object's locations."""
-    def __init__(self, objclass, search_region, prior="uniform"):
+    @classmethod
+    def uniform(cls, objclass, search_region):
         """
         Args:
             objclass: Class of object belief is formed
@@ -14,12 +16,20 @@ class LocBelief2D(Histogram):
         hist = {}
         for loc in search_region:
             s = ObjectState2D(objclass, dict(loc=loc))
-            if prior == "uniform":
+            hist[s] = 1.0
+        return LocBelief2D(normalize(hist))
+
+    @classmethod
+    def informed(cls, objclass, true_loc, search_region):
+        hist = {}
+        import pdb; pdb.set_trace()
+        for loc in search_region:
+            s = ObjectState2D(objclass, dict(loc=loc))
+            if loc == true_loc:
                 hist[s] = 1.0
             else:
-                hist[s] = prior[loc]
-        super().__init__(hist)
-
+                hist[s] = 1e-12
+        return LocBelief2D(normalize(hist))
 
 class JointBelief2D(OOBelief):
     def __init__(self, robot_id, target_id, robot_belief, target_belief):
