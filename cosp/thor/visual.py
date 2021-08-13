@@ -14,13 +14,22 @@ from ..framework import Visualizer
 from ..planning import HierarchicalPlanningAgent
 from . import constants
 
-class ThorObjectSearchViz(Visualizer):
+class GridMapVizualizer(Visualizer):
     def __init__(self, **config):
         self._res = config.get("res", 30)   # resolution
         self._grid_map = config.get("grid_map", None)
         self._linewidth = config.get("linewidth", 1)
         self._bg_path = config.get("bg_path", None)
         self._colors = config.get("colors", {})
+        self.on_init()
+
+    @property
+    def img_width(self):
+        return self._grid_map.width * self._res
+
+    @property
+    def img_height(self):
+        return self._grid_map.length * self._res
 
     def on_init(self):
         """pygame init"""
@@ -35,14 +44,6 @@ class ThorObjectSearchViz(Visualizer):
         # Font
         self._myfont = pygame.font.SysFont('Comic Sans MS', 30)
         self._running = True
-
-    @property
-    def img_width(self):
-        return self._grid_map.width * self._res
-
-    @property
-    def img_height(self):
-        return self._grid_map.length * self._res
 
     def _make_gridworld_image(self, r):
         # Preparing 2d array
@@ -66,41 +67,20 @@ class ThorObjectSearchViz(Visualizer):
         return img
 
     def visualize(self, task_env, agent):
-        self.visualize2D(task_env, agent)
+        raise NotImplementedError
 
-    def visualize2D(self, task_env, agent):
-        if self._grid_map is None:
-            # First time visualize is called
-            self._grid_map = agent.grid_map
-            self.on_init()
+    def render(self):
+        return self._make_gridworld_image(self._res)
 
-        img = self._make_gridworld_image(self._res)
+    def highlight(self, img, locations, color=(128,128,128), thor=False):
+        r = self._res
+        for loc in locations:
+            if thor:
+                loc = self._grid_map.to_grid_pos(loc[0], loc[1])
+            x, y = loc
+            cv2.rectangle(img, (y*r, x*r), (y*r+r, x*r+r),color, -1)
+        return img
 
-        # Draw belief about robot
-        x, y, th = self._get_robot_grid_pose(agent)
-        robot_color = self.get_color(task_env.robot_id)
-        img = self.draw_robot(img, x, y, th, color=robot_color, thickness=5)
-
-        # Draw belief about target
-        belief = self._get_target_belief(agent)
-        target_color = self.get_color(task_env.target_id)
-        img = self.draw_object_belief(img, belief, target_color)
-
-        # Draw field of view
-        sensor = agent.observation_model.zi_models[agent.target_class].detection_model.sensor
-        img = self.draw_fov(img, sensor, (x, y, th))
-
-        self.show_img(img)
-
-    def _get_robot_grid_pose(self, agent):
-        mpe_state = agent.belief.mpe()
-        robot_state = mpe_state.robot_state
-        pos = robot_state["pose"][:2]
-        th = robot_state["pose"][2]
-        return (*pos, th)
-
-    def _get_target_belief(self, agent):
-        return agent.belief.target_belief
 
     def show_img(self, img):
         """
@@ -139,7 +119,6 @@ class ThorObjectSearchViz(Visualizer):
             cv2.line(img, (y+shift,x+shift), endpoint, color, 2)
         return img
 
-
     def draw_object_belief(self, img, belief, color,
                            circle_drawn=None):
         """
@@ -177,6 +156,45 @@ class ThorObjectSearchViz(Visualizer):
                 if last_val <= 0:
                     break
         return img
+
+
+
+class ThorObjectSearchViz2D(GridMapVizualizer):
+    def __init__(self, **config):
+        super().__init__(**config)
+
+    def visualize(self, task_env, agent):
+        if self._grid_map is None:
+            # First time visualize is called
+            self._grid_map = agent.grid_map
+
+        img = self._make_gridworld_image(self._res)
+
+        # Draw belief about robot
+        x, y, th = self._get_robot_grid_pose(agent)
+        robot_color = self.get_color(task_env.robot_id)
+        img = self.draw_robot(img, x, y, th, color=robot_color, thickness=5)
+
+        # Draw belief about target
+        belief = self._get_target_belief(agent)
+        target_color = self.get_color(task_env.target_id)
+        img = self.draw_object_belief(img, belief, target_color)
+
+        # Draw field of view
+        sensor = agent.observation_model.zi_models[agent.target_class].detection_model.sensor
+        img = self.draw_fov(img, sensor, (x, y, th))
+
+        self.show_img(img)
+
+    def _get_robot_grid_pose(self, agent):
+        mpe_state = agent.belief.mpe()
+        robot_state = mpe_state.robot_state
+        pos = robot_state["pose"][:2]
+        th = robot_state["pose"][2]
+        return (*pos, th)
+
+    def _get_target_belief(self, agent):
+        return agent.belief.target_belief
 
     def draw_fov(self, img, sensor, robot_pose):
         size = self._res // 2

@@ -223,22 +223,25 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
         search_region = SearchRegion2D({(x,y)
                                         for x in range(self.grid_map.width)
                                         for y in range(self.grid_map.length)})
-        init_target_belief = LocBelief2D.uniform(self.target_class, search_region)
-
-        # ##informed
-        # obj = thor_closest_object_of_type(controller.last_event, self.target_class)
-        # thor_x, _, thor_z = thor_object_position(controller.last_event, obj["objectId"], as_tuple=True)
-        # x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
-        # init_target_belief = LocBelief2D.informed(self.target_class,
-        #                                           (x, z),
-        #                                           search_region)
+        if task_config["prior"] == "uniform":
+            init_target_belief = LocBelief2D.uniform(self.target_class, search_region)
+        elif task_config["prior"] == "informed":
+            ##informed
+            obj = thor_closest_object_of_type(controller.last_event, self.target_class)
+            thor_x, _, thor_z = thor_object_position(controller.last_event, obj["objectId"], as_tuple=True)
+            x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
+            init_target_belief = LocBelief2D.informed(self.target_class,
+                                                      (x, z),
+                                                      search_region)
+        else:
+            raise ValueError("Invalid prior type")
 
         self.robot_id = task_config.get("robot_id", "robot0")
         robot_pose = thor_agent_pose(controller, as_tuple=True)
         thor_x, _, thor_z = robot_pose[0]
         _, yaw, _ = robot_pose[1]
         x, y = self.grid_map.to_grid_pos(thor_x, thor_z)
-        init_robot_pose = (x, y, (yaw-90)%360.0)  # yaw-90 because that's how GridMap's angles match with Ai2Thor angle (HARD BUG!)
+        init_robot_pose = (x, y, yaw)  # yaw-90 because that's how GridMap's angles match with Ai2Thor angle (HARD BUG!)
         init_robot_state = ObjectState2D(self.robot_id, dict(pose=init_robot_pose))
         init_robot_belief = pomdp_py.Histogram({init_robot_state : 1.0})
         init_belief = JointBelief2D(self.robot_id, self.target_class,
@@ -298,7 +301,8 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
                 tos_action.name, {tos_action.name : tos_action.params})
             forward, h_angle, v_angle = delta
             forward /= self.grid_map.grid_size  # because we consider GridMap coordinates
-            h_angle = -h_angle   # due to GridMap axes (HARD BUG!)
+            # h_angle = -h_angle   # due to GridMap axes (HARD BUG!)
+            # import pdb; pdb.set_trace()
             action = Move(movement, (forward, h_angle))  # We only care about 2D at this level.
         else:
             action = tos_action

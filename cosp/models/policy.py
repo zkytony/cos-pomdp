@@ -10,13 +10,13 @@ from ..thor.constants import (GOAL_DISTANCE,
                               TOS_REWARD_STEP,
                               GRID_SIZE,
                               H_ROTATION)
-
+from thortils.grid_map import GridMap
 
 # Note that POMDP planning happens on top of GridMap
-MOVES_2D = [
-    Move("MoveAhead", (1.0, 0.0)),
-    Move("RotateLeft", (0.0, -H_ROTATION)),
-    Move("RotateRight", (0.0, H_ROTATION))
+MOVES_2D_GRID = [
+    Move("MoveAhead",   (1.0, 0.0)),
+    Move("RotateLeft",  (0.0, GridMap.to_grid_dyaw(-H_ROTATION))),
+    Move("RotateRight", (0.0, GridMap.to_grid_dyaw(H_ROTATION))
 ]
 
 class ThorPolicyModel2D(RolloutPolicy):
@@ -33,7 +33,7 @@ class ThorPolicyModel2D(RolloutPolicy):
         return random.sample(self.get_all_actions(state=state), 1)[0]
 
     def get_all_actions(self, state, history=None):
-        return MOVES_2D + [Done()]# + [Search(), Done()]
+        return MOVES_2D_GRID + [Done()]# + [Search(), Done()]
 
     def rollout(self, state, history=None):
         preferences = self.action_prior.get_preferred_actions(state, history)\
