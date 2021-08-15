@@ -12,10 +12,10 @@ from thortils import (launch_controller,
                       thor_object_position,
                       ithor_scene_names)
 from thortils.constants import KITCHEN_TRAIN_SCENES, KITCHEN_VAL_SCENES
-from cosp.vision.detector import Detector
-from cosp.vision.utils.metrics import simple_box_iou
-from cosp.utils.math import euclidean_dist
-from cosp.utils.pandas import flatten_index
+from cospomdp.vision.detector import Detector
+from cospomdp.vision.utils.metrics import simple_box_iou
+from cospomdp.utils.math import euclidean_dist
+from cospomdp.utils.pandas import flatten_index
 
 # Some constant configs
 IOU_THRES = 0.5
@@ -111,5 +111,5 @@ def plot():
 
 if __name__ == "__main__":
     os.makedirs(OUTDIR, exist_ok=True)
-    # run()
+    run()
     plot()
