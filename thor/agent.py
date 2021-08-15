@@ -13,9 +13,9 @@ from thortils import (thor_closest_object_of_type,
                       thor_pose_as_dict,
                       convert_scene_to_grid_map)
 
-from .common import TOS_Action
-from . import constants
-from ..utils.math import indicator, normalize, euclidean_dist
+from common import TOS_Action
+import constants
+from cospomdp.utils.math import indicator, normalize, euclidean_dist
 
 # Used by optimal agent
 import time
@@ -35,7 +35,7 @@ from thortils.navigation import (get_shortest_path_to_object,
 # from ..models.fansensor import FanSensor
 # from thortils.navigation import (get_navigation_actions)
 
-from ..models.action import Move
+from cospomdp.domain.action import Move2D
 class ThorAgent:
     AGENT_USES_CONTROLLER = False
     @property
@@ -197,284 +197,284 @@ class ThorObjectSearchOptimalAgent(ThorAgent):
 #############################################################################
 
 
-import pomdp_py
-from ..models.state import ObjectState2D, JointState2D
-from ..models.belief import LocBelief2D, JointBelief2D
-from ..models.search_region import SearchRegion2D
-from ..models.transition import RobotTransition2D, JointTransitionModel2D
-from ..models.correlation import CorrelationDist
-from ..models.observation import (CorrObservationModel,
-                                  JointObservationModel,
-                                  FanModelNoFP,
-                                  ObjectDetection2D,
-                                  JointObservation)
-from ..models.policy import PolicyModel2D
-from ..models.reward import ObjectSearchRewardModel2D
-from ..models.action import Move
-from ..utils.math import roundany
-from thortils.scene import convert_scene_to_grid_map
-from thortils.navigation import convert_movement_to_action
+# import pomdp_py
+# from ..models.state import ObjectState2D, JointState2D
+# from ..models.belief import LocBelief2D, JointBelief2D
+# from ..models.search_region import SearchRegion2D
+# from ..models.transition import RobotTransition2D, JointTransitionModel2D
+# from ..models.correlation import CorrelationDist
+# from ..models.observation import (CorrObservationModel,
+#                                   JointObservationModel,
+#                                   FanModelNoFP,
+#                                   ObjectDetection2D,
+#                                   JointObservation)
+# from ..models.policy import PolicyModel2D
+# from ..models.reward import ObjectSearchRewardModel2D
+# from ..models.action import Move
+# from ..utils.math import roundany
+# from thortils.scene import convert_scene_to_grid_map
+# from thortils.navigation import convert_movement_to_action
 
-class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
-    AGENT_USES_CONTROLLER = True
-
-    def __init__(self, controller,
-                 task_config, detector_config,
-                 corr_func, planning_config):
-        self.task_config = task_config
-        self.task_type = self.task_config["task_type"]
-        if self.task_type == "class":
-            self.target_class = self.task_config["target"]
-
-        grid_size = thor_grid_size_from_controller(controller)
-        reachable_positions = thor_reachable_positions(controller)
-        scene = thor_scene_from_controller(controller)
-        self.grid_map = convert_scene_to_grid_map(reachable_positions,
-                                                  scene, grid_size)
-        # initial belief
-        search_region = SearchRegion2D({(x,y)
-                                        for x in range(self.grid_map.width)
-                                        for y in range(self.grid_map.length)})
-        if task_config["prior"] == "uniform":
-            init_target_belief = LocBelief2D.uniform(self.target_class, search_region)
-        elif task_config["prior"] == "informed":
-            ##informed
-            obj = thor_closest_object_of_type(controller.last_event, self.target_class)
-            thor_x, _, thor_z = thor_object_position(controller.last_event, obj["objectId"], as_tuple=True)
-            x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
-            init_target_belief = LocBelief2D.informed(self.target_class,
-                                                      (x, z),
-                                                      search_region)
-        else:
-            raise ValueError("Invalid prior type")
-
-        self.robot_id = task_config.get("robot_id", "robot0")
-        robot_pose = thor_agent_pose(controller, as_tuple=True)
-        thor_x, _, thor_z = robot_pose[0]
-        _, thor_yaw, _ = robot_pose[1]
-        init_robot_pose = self.grid_map.to_grid_pose(thor_x, thor_z, thor_yaw)
-        init_robot_state = ObjectState2D(self.robot_id, dict(pose=init_robot_pose))
-        init_robot_belief = pomdp_py.Histogram({init_robot_state : 1.0})
-        init_belief = JointBelief2D(self.robot_id, self.target_class,
-                                    init_robot_belief, init_target_belief)
-
-        # Transition model
-        robot_trans_model = RobotTransition2D(self.robot_id,
-                                              self.grid_map.free_locations,
-                                              diagonal_ok=constants.DIAG_MOVE)
-        transition_model = JointTransitionModel2D(self.target_class,
-                                                  robot_trans_model)
-
-        # Observation model
-        zi_models = {}
-        for detectable_class in detector_config:
-            dcfg = detector_config[detectable_class]
-            corr_dist = CorrelationDist(detectable_class, self.target_class,
-                                        search_region, corr_func)
-            model_type = dcfg["type"]
-            params = dcfg["params"]
-            detector = eval(model_type)(**params)
-            corr_model = CorrObservationModel(detectable_class, self.target_class,
-                                              detector, corr_dist)
-            zi_models[detectable_class] = corr_model
-        observation_model = JointObservationModel(self.target_class, zi_models)
-
-        # Reward model
-        reward_model = ObjectSearchRewardModel2D(zi_models[self.target_class].detection_model.sensor)
-
-        # Policy model
-        policy_model = PolicyModel2D(robot_trans_model, reward_model,
-                                     num_visits_init=10,
-                                     val_init=constants.TOS_REWARD_HI)
-        super().__init__(init_belief, policy_model,
-                         transition_model, observation_model, reward_model)
-
-        self._planner = pomdp_py.POUCT(max_depth=planning_config["max_depth"],
-                                       discount_factor=planning_config["discount_factor"],
-                                       num_sims=planning_config["num_sims"],
-                                       exploration_const=planning_config["exploration_const"],
-                                       rollout_policy=policy_model,
-                                       action_prior=policy_model.action_prior)
-
-    def act(self):
-        action = self._planner.plan(self)
-        if isinstance(action, Move):
-            movement_params = self.task_config["nav_config"]["movement_params"]
-            return TOS_Action(action.name,
-                              movement_params[action.name])
-        return action
-
-    def update(self, tos_action, observation):
-        tos_observation, reward = observation
-
-        if tos_action.name in self.task_config["nav_config"]["movement_params"]:
-            movement, delta = convert_movement_to_action(
-                tos_action.name, {tos_action.name : tos_action.params})
-            forward, h_angle, v_angle = delta
-            forward /= self.grid_map.grid_size  # because we consider GridMap coordinates
-            # h_angle = -h_angle   # due to GridMap axes (HARD BUG!)
-            # import pdb; pdb.set_trace()
-            action = Move(movement, (forward, h_angle))  # We only care about 2D at this level.
-        else:
-            action = tos_action
-
-        # update robot state
-        thor_robot_pose = tos_observation.robot_pose
-        thor_robot_pose2d = (thor_robot_pose[0]['x'], thor_robot_pose[0]['z'], thor_robot_pose[1]['y'])
-        next_robot_state = ObjectState2D(self.robot_id,
-                                         dict(pose=self.grid_map.to_grid_pose(*thor_robot_pose2d)))
-        next_robot_belief = pomdp_py.Histogram({next_robot_state : 1.0})
-        print(next_robot_state)
-
-        # HACKY: Need a better solution; If the robot steps onto an unreachable place,
-        # then remove that obstacle from the grid map (because the robot is on it)
-        if next_robot_state["pose"][:2] in self.grid_map.obstacles:
-            self.grid_map.obstacles.remove(next_robot_state["pose"][:2])
-            self.grid_map.free_locations.add(next_robot_state["pose"][:2])
-
-        # get POMDP observation
-        cls_to_loc3d = {}
-        for xyxy, conf, cls, loc3d in tos_observation.detections:
-            cls_to_loc3d[cls] = loc3d
-        pomdp_detections = []
-        for detectable_class in self.observation_model.classes:
-            if detectable_class in cls_to_loc3d:
-                loc3d = cls_to_loc3d[detectable_class]
-                gx, gy = self.grid_map.to_grid_pos(loc3d[0], loc3d[2])
-                zi = ObjectDetection2D(detectable_class, (gx, gy))
-            else:
-                zi = ObjectDetection2D(detectable_class, None)
-            pomdp_detections.append(zi)
-        observation = JointObservation(tuple(pomdp_detections))
-
-        next_target_hist = {}
-        target_belief = self.belief.target_belief
-        for starget in target_belief:
-            next_state = JointState2D(self.robot_id, self.target_class,
-                                      {self.robot_id: next_robot_state,
-                                       self.target_class: starget})
-            next_target_hist[starget] =\
-                self.observation_model.probability(observation, next_state, action) * target_belief[starget]
-        next_target_belief = LocBelief2D(normalize(next_target_hist))
-        if math.isnan(next_target_belief[next_target_belief.mpe()]):
-            import pdb; pdb.set_trace()
-        next_belief = JointBelief2D(self.robot_id, self.target_class,
-                                    next_robot_belief, next_target_belief)
-        self.set_belief(next_belief)
-
-        self.debug_last_plan()
-
-        # Update planner
-        self._planner.update(self, action, observation)
-
-    def debug_last_plan(self):
-        pomdp_py.print_preferred_actions(self.tree)
-        self.tree.print_children_value()
-        # pomdp_py.print_tree(self.tree)
-
-
-
-
-
-
-
-# ###################### ThorObjectSearchCOSPOMDPAgent ########################
-# class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
-#     # In the current version, uses the controller in order to determine
-#     # the search region and initial robot pose. In the more general case,
-#     # the agent will begin with a partial map, or no map at all, and needs
-#     # to explore and expand the map; in that case controller is not needed.
+# class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
 #     AGENT_USES_CONTROLLER = True
 
 #     def __init__(self, controller,
 #                  task_config, detector_config,
-#                  corr_func, planning_configs):
-#         search_region = HighLevelSearchRegion(
-#             thor_reachable_positions(controller))
-#         robot_pose = thor_agent_pose(controller, as_tuple=True)
-#         x, _, z = robot_pose[0]
-#         init_robot_pos = (x, z)  # high-level position
-#         self.init_robot_pose = robot_pose
-
+#                  corr_func, planning_config):
 #         self.task_config = task_config
 #         self.task_type = self.task_config["task_type"]
 #         if self.task_type == "class":
 #             self.target_class = self.task_config["target"]
 
-#         # coords2D = thor_map_coordinates2D(search_region.reachable_positions,
-#         #                                   thor_scene_from_controller(controller),
-#         #                                   thor_grid_size_from_controller(controller))
-#         # self.target_belief = self._init_target_belief2D(coords2D, prior="uniform")
-#         # self.camera_model = FanSensor(**detector_config["intrinsics"])
+#         grid_size = thor_grid_size_from_controller(controller)
+#         reachable_positions = thor_reachable_positions(controller)
+#         scene = thor_scene_from_controller(controller)
+#         self.grid_map = convert_scene_to_grid_map(reachable_positions,
+#                                                   scene, grid_size)
+#         # initial belief
+#         search_region = SearchRegion2D({(x,y)
+#                                         for x in range(self.grid_map.width)
+#                                         for y in range(self.grid_map.length)})
+#         if task_config["prior"] == "uniform":
+#             init_target_belief = LocBelief2D.uniform(self.target_class, search_region)
+#         elif task_config["prior"] == "informed":
+#             ##informed
+#             obj = thor_closest_object_of_type(controller.last_event, self.target_class)
+#             thor_x, _, thor_z = thor_object_position(controller.last_event, obj["objectId"], as_tuple=True)
+#             x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
+#             init_target_belief = LocBelief2D.informed(self.target_class,
+#                                                       (x, z),
+#                                                       search_region)
+#         else:
+#             raise ValueError("Invalid prior type")
 
-#         corr_dists = {
-#             objclass: HighLevelCorrelationDist(objclass, self.target_class,
-#                                                search_region, corr_func)
-#             for objclass in detector_config["detection_rates"]
-#             if objclass != self.target_class}
+#         self.robot_id = task_config.get("robot_id", "robot0")
+#         robot_pose = thor_agent_pose(controller, as_tuple=True)
+#         thor_x, _, thor_z = robot_pose[0]
+#         _, thor_yaw, _ = robot_pose[1]
+#         init_robot_pose = self.grid_map.to_grid_pose(thor_x, thor_z, thor_yaw)
+#         init_robot_state = ObjectState2D(self.robot_id, dict(pose=init_robot_pose))
+#         init_robot_belief = pomdp_py.Histogram({init_robot_state : 1.0})
+#         init_belief = JointBelief2D(self.robot_id, self.target_class,
+#                                     init_robot_belief, init_target_belief)
 
-#         self.planning_configs = planning_configs
-#         high_level_pomdp = ThorObjectSearchCOSPOMDP(
-#             self.task_config,
-#             search_region,
-#             init_robot_pos,
-#             detector_config["detection_rates"],
-#             corr_dists,
-#             self.planning_configs["high_level"])
-#         super().__init__(high_level_pomdp)
+#         # Transition model
+#         robot_trans_model = RobotTransition2D(self.robot_id,
+#                                               self.grid_map.free_locations,
+#                                               diagonal_ok=constants.DIAG_MOVE)
+#         transition_model = JointTransitionModel2D(self.target_class,
+#                                                   robot_trans_model)
 
-#     @property
-#     def robot_id(self):
-#         return self.task_config["robot_id"]
+#         # Observation model
+#         zi_models = {}
+#         for detectable_class in detector_config:
+#             dcfg = detector_config[detectable_class]
+#             corr_dist = CorrelationDist(detectable_class, self.target_class,
+#                                         search_region, corr_func)
+#             model_type = dcfg["type"]
+#             params = dcfg["params"]
+#             detector = eval(model_type)(**params)
+#             corr_model = CorrObservationModel(detectable_class, self.target_class,
+#                                               detector, corr_dist)
+#             zi_models[detectable_class] = corr_model
+#         observation_model = JointObservationModel(self.target_class, zi_models)
 
-#     def _decision_made(self, decision):
-#         """
-#         Prepares necessary arguments to build low-level POMDP
-#         """
-#         if isinstance(decision, MoveDecision):
+#         # Reward model
+#         reward_model = ObjectSearchRewardModel2D(zi_models[self.target_class].detection_model.sensor)
+
+#         # Policy model
+#         policy_model = PolicyModel2D(robot_trans_model, reward_model,
+#                                      num_visits_init=10,
+#                                      val_init=constants.TOS_REWARD_HI)
+#         super().__init__(init_belief, policy_model,
+#                          transition_model, observation_model, reward_model)
+
+#         self._planner = pomdp_py.POUCT(max_depth=planning_config["max_depth"],
+#                                        discount_factor=planning_config["discount_factor"],
+#                                        num_sims=planning_config["num_sims"],
+#                                        exploration_const=planning_config["exploration_const"],
+#                                        rollout_policy=policy_model,
+#                                        action_prior=policy_model.action_prior)
+
+#     def act(self):
+#         action = self._planner.plan(self)
+#         if isinstance(action, Move):
 #             movement_params = self.task_config["nav_config"]["movement_params"]
-#             action_tuples = get_navigation_actions(movement_params=movement_params)
-#             move_actions = [MoveAction(name, delta)
-#                             for name, delta in action_tuples]
-#             if self.low_level_pomdp is None:
-#                 # This is the first time to create a low level pomdp;
-#                 robot_pose = self.init_robot_pose
+#             return TOS_Action(action.name,
+#                               movement_params[action.name])
+#         return action
+
+#     def update(self, tos_action, observation):
+#         tos_observation, reward = observation
+
+#         if tos_action.name in self.task_config["nav_config"]["movement_params"]:
+#             movement, delta = convert_movement_to_action(
+#                 tos_action.name, {tos_action.name : tos_action.params})
+#             forward, h_angle, v_angle = delta
+#             forward /= self.grid_map.grid_size  # because we consider GridMap coordinates
+#             # h_angle = -h_angle   # due to GridMap axes (HARD BUG!)
+#             # import pdb; pdb.set_trace()
+#             action = Move2D(movement, (forward, h_angle))  # We only care about 2D at this level.
+#         else:
+#             action = tos_action
+
+#         # update robot state
+#         thor_robot_pose = tos_observation.robot_pose
+#         thor_robot_pose2d = (thor_robot_pose[0]['x'], thor_robot_pose[0]['z'], thor_robot_pose[1]['y'])
+#         next_robot_state = ObjectState2D(self.robot_id,
+#                                          dict(pose=self.grid_map.to_grid_pose(*thor_robot_pose2d)))
+#         next_robot_belief = pomdp_py.Histogram({next_robot_state : 1.0})
+#         print(next_robot_state)
+
+#         # HACKY: Need a better solution; If the robot steps onto an unreachable place,
+#         # then remove that obstacle from the grid map (because the robot is on it)
+#         if next_robot_state["pose"][:2] in self.grid_map.obstacles:
+#             self.grid_map.obstacles.remove(next_robot_state["pose"][:2])
+#             self.grid_map.free_locations.add(next_robot_state["pose"][:2])
+
+#         # get POMDP observation
+#         cls_to_loc3d = {}
+#         for xyxy, conf, cls, loc3d in tos_observation.detections:
+#             cls_to_loc3d[cls] = loc3d
+#         pomdp_detections = []
+#         for detectable_class in self.observation_model.classes:
+#             if detectable_class in cls_to_loc3d:
+#                 loc3d = cls_to_loc3d[detectable_class]
+#                 gx, gy = self.grid_map.to_grid_pos(loc3d[0], loc3d[2])
+#                 zi = ObjectDetection2D(detectable_class, (gx, gy))
 #             else:
-#                 # The low_level_pomdp's belief should always contain robot pose
-#                 robot_pose = self.low_level_belief.mpe().robot_state["pose"]
-#             return dict(robot_id=self.robot_id,
-#                         move_actions=move_actions,
-#                         robot_pose=robot_pose,
-#                         planning_config=self.planning_configs["MoveDecision"])
+#                 zi = ObjectDetection2D(detectable_class, None)
+#             pomdp_detections.append(zi)
+#         observation = JointObservation(tuple(pomdp_detections))
 
-#     def _action_computed(self, pomdp_action):
-#         """Converts an Action to TOS_Action which can be executed
-#         in Ai2Thor."""
-#         if isinstance(pomdp_action, MoveAction):
-#             movement_params = self.task_config["nav_config"]["movement_params"]
-#             return TOS_Action(pomdp_action.name,
-#                               movement_params[pomdp_action.name])
+#         next_target_hist = {}
+#         target_belief = self.belief.target_belief
+#         for starget in target_belief:
+#             next_state = JointState2D(self.robot_id, self.target_class,
+#                                       {self.robot_id: next_robot_state,
+#                                        self.target_class: starget})
+#             next_target_hist[starget] =\
+#                 self.observation_model.probability(observation, next_state, action) * target_belief[starget]
+#         next_target_belief = LocBelief2D(normalize(next_target_hist))
+#         if math.isnan(next_target_belief[next_target_belief.mpe()]):
+#             import pdb; pdb.set_trace()
+#         next_belief = JointBelief2D(self.robot_id, self.target_class,
+#                                     next_robot_belief, next_target_belief)
+#         self.set_belief(next_belief)
 
-#     def _init_target_belief2D(self, coords, prior="uniform"):
-#         if prior == "uniform":
-#             return normalize({LowLevelObjectState(self.target_class, {"pos": pos}) : 1.0
-#                               for pos in coords})
-#         raise NotImplementedError
+#         self.debug_last_plan()
 
-#     def update(self, action, observation):
-#         """Update belief given action and observation (which is
-#         actually a (reward, obseravtion) tuple)"""
-#         observation, reward = observation
-#         import pdb; pdb.set_trace()
-#         # Update low-level target belief.
+#         # Update planner
+#         self._planner.update(self, action, observation)
+
+#     def debug_last_plan(self):
+#         pomdp_py.print_preferred_actions(self.tree)
+#         self.tree.print_children_value()
+#         # pomdp_py.print_tree(self.tree)
 
 
-def thor_map_coordinates2D(reachable_positions, scene_name, grid_size):
-    """Returns an array of 2D thor coordinates that includes
-    both reachable and unreachable locations (essentially based on
-    the rectangle that captures reachable_positions.)"""
-    grid_map = convert_scene_to_grid_map(reachable_positions,
-                                         scene_name, grid_size)
-    coords = [grid_map.to_thor_pos(x, y)
-              for x, y in grid_map.free_locations]
-    return coords
+
+
+
+
+
+# # ###################### ThorObjectSearchCOSPOMDPAgent ########################
+# # class ThorObjectSearchCOSPOMDPAgent(HierarchicalPlanningAgent, ThorAgent):
+# #     # In the current version, uses the controller in order to determine
+# #     # the search region and initial robot pose. In the more general case,
+# #     # the agent will begin with a partial map, or no map at all, and needs
+# #     # to explore and expand the map; in that case controller is not needed.
+# #     AGENT_USES_CONTROLLER = True
+
+# #     def __init__(self, controller,
+# #                  task_config, detector_config,
+# #                  corr_func, planning_configs):
+# #         search_region = HighLevelSearchRegion(
+# #             thor_reachable_positions(controller))
+# #         robot_pose = thor_agent_pose(controller, as_tuple=True)
+# #         x, _, z = robot_pose[0]
+# #         init_robot_pos = (x, z)  # high-level position
+# #         self.init_robot_pose = robot_pose
+
+# #         self.task_config = task_config
+# #         self.task_type = self.task_config["task_type"]
+# #         if self.task_type == "class":
+# #             self.target_class = self.task_config["target"]
+
+# #         # coords2D = thor_map_coordinates2D(search_region.reachable_positions,
+# #         #                                   thor_scene_from_controller(controller),
+# #         #                                   thor_grid_size_from_controller(controller))
+# #         # self.target_belief = self._init_target_belief2D(coords2D, prior="uniform")
+# #         # self.camera_model = FanSensor(**detector_config["intrinsics"])
+
+# #         corr_dists = {
+# #             objclass: HighLevelCorrelationDist(objclass, self.target_class,
+# #                                                search_region, corr_func)
+# #             for objclass in detector_config["detection_rates"]
+# #             if objclass != self.target_class}
+
+# #         self.planning_configs = planning_configs
+# #         high_level_pomdp = ThorObjectSearchCOSPOMDP(
+# #             self.task_config,
+# #             search_region,
+# #             init_robot_pos,
+# #             detector_config["detection_rates"],
+# #             corr_dists,
+# #             self.planning_configs["high_level"])
+# #         super().__init__(high_level_pomdp)
+
+# #     @property
+# #     def robot_id(self):
+# #         return self.task_config["robot_id"]
+
+# #     def _decision_made(self, decision):
+# #         """
+# #         Prepares necessary arguments to build low-level POMDP
+# #         """
+# #         if isinstance(decision, MoveDecision):
+# #             movement_params = self.task_config["nav_config"]["movement_params"]
+# #             action_tuples = get_navigation_actions(movement_params=movement_params)
+# #             move_actions = [MoveAction(name, delta)
+# #                             for name, delta in action_tuples]
+# #             if self.low_level_pomdp is None:
+# #                 # This is the first time to create a low level pomdp;
+# #                 robot_pose = self.init_robot_pose
+# #             else:
+# #                 # The low_level_pomdp's belief should always contain robot pose
+# #                 robot_pose = self.low_level_belief.mpe().robot_state["pose"]
+# #             return dict(robot_id=self.robot_id,
+# #                         move_actions=move_actions,
+# #                         robot_pose=robot_pose,
+# #                         planning_config=self.planning_configs["MoveDecision"])
+
+# #     def _action_computed(self, pomdp_action):
+# #         """Converts an Action to TOS_Action which can be executed
+# #         in Ai2Thor."""
+# #         if isinstance(pomdp_action, MoveAction):
+# #             movement_params = self.task_config["nav_config"]["movement_params"]
+# #             return TOS_Action(pomdp_action.name,
+# #                               movement_params[pomdp_action.name])
+
+# #     def _init_target_belief2D(self, coords, prior="uniform"):
+# #         if prior == "uniform":
+# #             return normalize({LowLevelObjectState(self.target_class, {"pos": pos}) : 1.0
+# #                               for pos in coords})
+# #         raise NotImplementedError
+
+# #     def update(self, action, observation):
+# #         """Update belief given action and observation (which is
+# #         actually a (reward, obseravtion) tuple)"""
+# #         observation, reward = observation
+# #         import pdb; pdb.set_trace()
+# #         # Update low-level target belief.
+
+
+# def thor_map_coordinates2D(reachable_positions, scene_name, grid_size):
+#     """Returns an array of 2D thor coordinates that includes
+#     both reachable and unreachable locations (essentially based on
+#     the rectangle that captures reachable_positions.)"""
+#     grid_map = convert_scene_to_grid_map(reachable_positions,
+#                                          scene_name, grid_size)
+#     coords = [grid_map.to_thor_pos(x, y)
+#               for x, y in grid_map.free_locations]
+#     return coords

@@ -1,6 +1,5 @@
 from collections import namedtuple
-from ..framework import TaskEnv, Agent
-from . import constants
+import constants
 
 # State, Action, Observation used in object search task
 TOS_Action = namedtuple("Action", ['name', 'params'])
@@ -8,7 +7,7 @@ TOS_State = namedtuple("State", ['agent_pose', 'horizon'])
 TOS_Observation = namedtuple("Observation", ["img", "img_depth", "detections", "robot_pose"])
 
 # Generic classes for task and agent in Thor environments.
-class ThorEnv(TaskEnv):
+class ThorEnv:
     def __init__(self, controller):
         self.controller = controller
         self._history = []  # stores the (s', a, o, r) tuples so far

@@ -21,12 +21,12 @@ from thortils.vision import thor_img, thor_img_depth, thor_object_bboxes
 from thortils.utils import (to_degrees, closest,
                             normalize_angles, euclidean_dist)
 
-from ..vision.utils import projection
-from .result_types import PathResult, HistoryResult
-from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation
-from .agent import ThorObjectSearchOptimalAgent
-from .visual import ThorObjectSearchViz2D
-from . import constants
+from cospomdp.vision.utils import projection
+from result_types import PathResult, HistoryResult
+from common import ThorEnv, TOS_Action, TOS_State, TOS_Observation
+from agent import ThorObjectSearchOptimalAgent
+from visual import ThorObjectSearchViz2D
+import constants
 
 
 # ------------- Task ------------- #

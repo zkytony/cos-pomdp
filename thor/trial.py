@@ -3,14 +3,14 @@ from sciex import Trial, Event
 from ai2thor.controller import Controller
 import thortils
 
-from ..utils.misc import _debug
-from ..utils import cfg
+from cospomdp.utils.misc import _debug
+from cospomdp.utils import cfg
 cfg.DEBUG_LEVEL = 1
 
-from .object_search import ThorObjectSearch
-from .agent import ThorObjectSearchOptimalAgent, ThorObjectSearchCOSPOMDPAgent
-from .result_types import PathResult, HistoryResult
-from . import constants
+from object_search import ThorObjectSearch
+from agent import ThorObjectSearchOptimalAgent#, ThorObjectSearchCOSPOMDPAgent
+from result_types import PathResult, HistoryResult
+import constants
 
 class ThorTrial(Trial):
 

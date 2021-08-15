@@ -7,14 +7,12 @@ import math
 
 from thortils import convert_scene_to_grid_map
 
-from ..utils.math import to_rad
-from ..utils.images import overlay, cv2shape
-from ..utils.colors import lighter, lighter_with_alpha
-from ..framework import Visualizer
-from ..planning import HierarchicalPlanningAgent
-from . import constants
+from cospomdp.utils.math import to_rad
+from cospomdp.utils.images import overlay, cv2shape
+from cospomdp.utils.colors import lighter, lighter_with_alpha
+import constants
 
-class GridMapVizualizer(Visualizer):
+class GridMapVizualizer:
     def __init__(self, **config):
         self._res = config.get("res", 30)   # resolution
         self._grid_map = config.get("grid_map", None)
