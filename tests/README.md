@@ -1,6 +1,8 @@
-# How to run tests
+# tests for cospomdp
 
-## install these tools
+## How to run tests
+
+### install these tools
 ```
 pip install pytest-testmon
 pip install pytest-watch
@@ -22,7 +24,6 @@ Then just run
 ```
 ptw
 ```
-
 
 ### Explanation
 
