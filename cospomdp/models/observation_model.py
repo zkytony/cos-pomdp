@@ -1,79 +1,15 @@
 import random
+from functools import reduce
 from pomdp_py.utils import typ
-from pomdp_py import Observation, ObservationModel, OOObservation, Gaussian
-from .fansensor import FanSensor
-from .frustum_camera import FrustumCamera
+from pomdp_py import ObservationModel, Gaussian
+
+from .sensors import FanSensor, FrustumCamera
 from ..utils.math import roundany
-
-class LocDetection(Observation):
-    """
-    Note for ai2thor domain: The POMDP model always uses the GridMap,
-       i.e. 0-based coordinate indices, for locations. The underlying
-       state space and observation space are discretized.
-    """
-    def __init__(self, objclass, loc):
-        self.objclass = objclass
-        self.loc = loc
-    def __eq__(self, other):
-        return isinstance(self, LocDetection)\
-            and ((self.objclass == other.objclass)\
-                 and (self.loc == other.loc))
-    def __hash__(self):
-        return hash((self.objclass, self.loc))
-    def __str__(self):
-        return typ.blue("o({}, {})".format(self.objclass, self.loc))
-    def __repr__(self):
-        return "loc({}, {})".format(self.objclass, self.loc)
-
-class ObjectDetection2D(LocDetection):
-    def __init__(self, objclass, loc):
-        assert loc is None or len(loc) == 2, "2D object detection needs 2D object location"
-        super().__init__(objclass, loc)
-
-class Voxel(LocDetection):
-    """3D object observation"""
-    FREE = "free"
-    OTHER = "other"
-    UNKNOWN = "unknown"
-    def __init__(self, label, loc):
-        """
-        label (objid or FREE or UNKNOWN)
-        loc (x, y, z) 3D location
-        """
-        self.label = label
-        super().__init__(label, loc)
-
-
-class JointObservation(Observation):
-    def __init__(self, detections):
-        """
-        detections: a tuple of object detections; each is a LocDetection.
-            We assume that detections has been sorted in some way so
-            there is consistency when comparing two JointObservations.
-        """
-        self.detections = detections
-        self._hashcode = hash(self.detections)
-
-    def __eq__(self, other):
-        return isinstance(other, JointObservation)\
-            and self.detections == other.detections
-
-    def __hash__(self):
-        return self._hashcode
-
-    def __repr__(self):
-        obzstr = ["{}:{}".format(o.objclass, o.loc)
-                  for o in self.detections]
-        return "Obz({})".format(obzstr)
-
-    def __str__(self):
-        obzstr = ["{}:{}".format(o.objclass, o.loc)
-                  for o in self.detections]
-        return typ.blue("Obz({})".format(obzstr))
+from ..domain.observation import Loc2D, CosObservation2D
 
 
 ### Observation models
-class CorrObservationModel(ObservationModel):
+class CosObjectObservationModel2D(ObservationModel):
     """This is the model for Pr( zi | starget, srobot' ),
     a result of the conditional independence assumption. It is
     the observation model in COS-POMDP.
@@ -85,73 +21,76 @@ class CorrObservationModel(ObservationModel):
     The term Pr(zi | si, srobot') is a detection_model
     The term Pr(si | starget) is a given distribution, which specifies the
     correlation.
+
+    Remember we are interested in solving the problem where there is
+    a target object and n other correlated objects. We do not care about
+    classes, in fact. That is just an application.
     """
-    def __init__(self, objclass, target_class,
-                 detection_model, corr_dist):
+    def __init__(self, corr_object_id, target_id, robot_id,
+                 detection_model, corr_dist=None):
         """
         Args:
-            objclass (str): Class for object i
-            target_class (str): Target class
+            corr_object_id (str): ID of correlated object, aka, object i
+            target_id (str): Target object's ID
+            robot_id (str): Robot's ID
+            detection_model (DetectionModel): model for Pr(zi | si, srobot')
             corr_dist (JointDist): Distribution of Pr(Si | Starget); The interface
                 of JointDist allows for this to be either Pr(Si, Starget) or Pr(Si | Starget)
                 underneath the hood.
 
-                If objclass = target_class, then corr_dist is optional.
-
-                TODO: maybe we need to be more creative here for the joint distribution,
-                because feeding in absolute coordinates won't generalize
-            detection_model (DetectionModel): model for Pr(zi | si, srobot')
+                If corr_object_id = target_id, then corr_dist is optional.
         """
-        self.objclass = objclass
-        self.target_class = target_class
+        self.corr_object_id = corr_object_id
+        self.target_id = target_id
+        self.robot_id = robot_id
         self.detection_model = detection_model
 
         # Compute the conditional distribution for every value of Starget
-        if self.objclass != self.target_class:
+        if self.corr_object_id != self.target_id:
+            if corr_dist is None:
+                raise ValueError("Must provide correlational distribution.")
+
             self._cond_dists = {}
-            for starget in corr_dist.valrange(target_class):
+            for starget in corr_dist.valrange(target_id):
                 # Obtain Pr(Si | S_target = starget)
                 self._cond_dists[starget] =\
-                    corr_dist.marginal([self.objclass], evidence={self.target_class: starget})
+                    corr_dist.marginal([self.corr_object_id], evidence={self.target_id: starget})
 
     def corr_cond_dist(self, starget):
         return self._cond_dists[starget]
 
-    def probability(self, object_observation, next_state, *args):
+    def probability(self, zi, snext, *args):
         # action doesn't matter here
         """
         Args:
-            object_observation (ObjectObservation): observation of an object
-            next_state (State): state where the observation is made
-            action (Action): action that led to the next state
+            zi (Loc2D): observation of object i
+            snext (CosState2D): next state
         """
-        zi = object_observation
-        starget = next_state.target_state
-        srobot = next_state.robot_state
-        if self.objclass == self.target_class:
+        starget = snext.s(self.target_id)
+        srobot = snext.s(self.robot_id)
+        if self.corr_object_id == self.target_id:
             # Only the detection model matters, if both classes are the same
             return self.detection_model.probability(zi, starget, srobot)
 
         dist_si = self._cond_dists[starget]  # Pr(Si | S_target = starget)
-        pr_total = 0.0
-        for si in dist_si.valrange(self.objclass):
+        pr_total = 1e-12
+        for si in dist_si.valrange(self.corr_object_id):
             pr_detection = self.detection_model.probability(zi, si, srobot)
-            pr_corr = dist_si.prob({self.objclass: si})  # compute Pr(Si = si | S_target = starget)
+            pr_corr = dist_si.prob({self.corr_object_id: si})  # compute Pr(Si = si | S_target = starget)
             pr_total += pr_detection * pr_corr
         return pr_total
 
-    def sample(self, next_state, *args):
+    def sample(self, snext, *args):
         # action doesn't matter here
-        starget = next_state.target_state
-        srobot = next_state.robot_state
-        if self.objclass == self.target_class:
+        starget = snext.s(self.target_id)
+        srobot = snext.s(self.robot_id)
+        if self.corr_object_id == self.target_class:
             zi = self.detection_model.sample(starget, srobot)
         else:
             dist_si = self._cond_dists[starget]  # Pr(Si | S_target = starget)
-            si = dist_si.sample()[self.objclass]
+            si = dist_si.sample()[self.corr_object_id]
             zi = self.detection_model.sample(si, srobot)
         return zi
-
 
 
 def _round(round_to, loc_cont):
@@ -162,6 +101,7 @@ def _round(round_to, loc_cont):
                          loc_cont))
     else:
         return loc_cont
+
 
 class DetectionModel:
     """Interface for Pr(zi | si, srobot'); Domain-specific"""
@@ -181,22 +121,6 @@ class DetectionModel:
     def sample(self, si, srobot, a=None):
         raise NotImplementedError
 
-class DetectionModelFull:
-    """Interface for Pr(zi | s1, ..., sn, srobot') """
-    def __init__(self, objclass, round_to="int"):
-        self.objclass = objclass
-        self._round_to = round_to
-
-    def probability(self, zi, s, a=None):
-        """
-        a (optional): action taken
-        """
-        raise NotImplementedError
-
-    def sample(self, s, a=None):
-        raise NotImplementedError
-
-
 
 class FanModelYoonseon(DetectionModel):
     """Intended for 2D-level observation; Pr(zi | si, srobot')
@@ -210,10 +134,10 @@ class FanModelYoonseon(DetectionModel):
           parameter values is too harsh and don't have good semantics
           (e.g. epsilon=0.9 is a pretty bad sensor already).
     """
-    def __init__(self, objclass, fan_params,
+    def __init__(self, objid, fan_params,
                  quality_params, round_to="int"):
         """
-        objclass: the class detected by this model
+        objid: the class detected by this model
         fan_params: initialization params for FanSensor
         quality_params: a (sigma, epsilon) tuple
             See the definition of the 2D MOS sensor model in
@@ -223,7 +147,7 @@ class FanModelYoonseon(DetectionModel):
         """
         self.sensor = FanSensor(**fan_params)
         self.params = quality_params
-        super().__init__(objclass, round_to)
+        super().__init__(objid, round_to)
 
     def _compute_params(self, object_in_sensing_region, epsilon):
         if object_in_sensing_region:
@@ -288,7 +212,7 @@ class FanModelYoonseon(DetectionModel):
             loc = _round(self._round_to, loc_cont)
         else:  # event == C
             loc = None
-        zi = ObjectDetection2D(si.objclass, loc)
+        zi = Loc2D(si.objid, loc)
         if return_event:
             return zi, event_occured
         else:
@@ -303,9 +227,9 @@ class FanModelNoFP(DetectionModel):
     Pros: semantic parameter;
     Cons: no false positives modeled
     """
-    def __init__(self, objclass, fan_params, quality_params, round_to="int"):
+    def __init__(self, objid, fan_params, quality_params, round_to="int"):
         """
-        objclass: the class detected by this model
+        objid: the class detected by this model
         fan_params: initialization params for FanSensor
         quality_params: (detection probability, sigma)
         round_to: Round the sampled observation locations to,
@@ -313,7 +237,7 @@ class FanModelNoFP(DetectionModel):
         """
         self.sensor = FanSensor(**fan_params)
         self.params = quality_params  # calling it self.params to have consistent interface
-        super().__init__(objclass, round_to)
+        super().__init__(objid, round_to)
 
     @property
     def detection_prob(self):
@@ -357,81 +281,103 @@ class FanModelNoFP(DetectionModel):
                                     [[self.sigma**2, 0],
                                      [0, self.sigma**2]])
                 loc = _round(self._round_to, gaussian.random())
-                zi = ObjectDetection2D(si.objclass, loc)
+                zi = Loc2D(si.objid, loc)
                 event = "detected"
 
             else:
-                zi = ObjectDetection2D(si.objclass, None)
+                zi = Loc2D(si.objid, None)
                 event = "missed"
         else:
-            zi = ObjectDetection2D(si.objclass, None)
+            zi = Loc2D(si.objid, None)
             event = "out_of_range"
         if return_event:
             return zi, event
         else:
             return zi
 
-
-class FrustumModelFull(DetectionModelFull):
-    """
-    Pr(zi | s1, ..., sn, srobot');
-    Low-level Frustum Camera Model with full state;
-    considers occlusion. Currently uses mos3d model.
-
-    quality_params: Parameters in the MOS3D observation model.
-    """
-    def __init__(self, objclass, camera_params, quality_params, log=False):
-        self.sensor = FrustumCamera(**camera_params)
-        self.alpha, self.beta, self.gamma = quality_params
-        self.log = log
-        super().__init__(objclass)
-
-    def probability(self, zi, s, a=None):
+class CosObservationModel2D(ObservationModel):
+    def __init__(self, target_id, zi_models):
         """
-        zi: voxel
-        s (JointState3D)
-        a (optional): action taken
+        zi_models: maps from objid to CosObjectObservationModel;
+           each objid is a detectable object
         """
-        if zi.label == Voxel.UNKNOWN:
-            return self.gamma  # not in FOV
-        elif zi.label == self.objclass:
-            return self.alpha  # i
-        else:
-            return self.beta   # not i
-
-    def sample(self, s, a=None):
-        si = s.object_states[self.objclass]
-        srobot = s.robot_state["pose"]
-        voxel = Voxel(si["loc"], Voxel.UNKNOWN)
-        if self.sensor.observable(self.objclass, s):
-            if FrustumCamera.sensor_functioning(self.alpha, self.beta, self.log):
-                voxel.label = self.objclass
-            else:
-                voxel.label = Voxel.OTHER
-            return voxel
-        else:
-            # Object not in FOV. The label is UNKNOWN.
-            return voxel
-
-
-class JointObservationModel(ObservationModel):
-    def __init__(self, target_class, zi_models):
-        """
-        models: maps from objclass to ObservationModel;
-        each objclass is a detectable class
-        """
+        self.target_id = target_id
         self.zi_models = zi_models
-        self.classes = list(sorted(self.zi_models.keys()))
-        self.target_class = target_class
+        self.detectable_objects = list(sorted(self.zi_models.keys()))
 
-    def sample(self, next_state, action):
-        return JointObservation(tuple(self.zi_models[objclass].sample(next_state, action)
-                                      for objclass in self.classes))
+    def sample(self, next_state, *args):
+        """
+        Args:
+            next_state (CosState2D): joint state of target and robot states
+        """
+        return CosObservation2D({objid : self.zi_models[objid].sample(next_state)
+                                 for objid in self.detectable_objects})
+
+    def probability(self, observation, next_state, *args):
+        """
+        Args:
+            observation (CosObservation2D): joint observation of detected
+                object locations (Loc2D)
+            next_state (CosState2D): joint state of target and robot states
+        """
+        return reduce(lambda result_so_far, elm: result_so_far*elm,
+                      [self.zi_models[zi.objid].probability(zi, next_state)
+                       for zi in observation])
+
+# The 3D occlusion stuff is not yet complete
+# class DetectionModelFull:
+#     """Interface for Pr(zi | s1, ..., sn, srobot') """
+#     def __init__(self, objclass, round_to="int"):
+#         self.objclass = objclass
+#         self._round_to = round_to
+
+#     def probability(self, zi, s, a=None):
+#         """
+#         a (optional): action taken
+#         """
+#         raise NotImplementedError
+
+#     def sample(self, s, a=None):
+#         raise NotImplementedError
 
 
-    def probability(self, observation, next_state, action):
-        pr_total = 1.0
-        for zi in observation.detections:
-            pr_zi = self.zi_models[zi.objclass].probability(zi, next_state)
-            pr_total *= pr_zi
-        return pr_total
+# class FrustumModelFull(DetectionModelFull):
+#     """
+#     Pr(zi | s1, ..., sn, srobot');
+#     Low-level Frustum Camera Model with full state;
+#     considers occlusion. Currently uses mos3d model.
+
+#     quality_params: Parameters in the MOS3D observation model.
+#     """
+#     def __init__(self, objclass, camera_params, quality_params, log=False):
+#         self.sensor = FrustumCamera(**camera_params)
+#         self.alpha, self.beta, self.gamma = quality_params
+#         self.log = log
+#         super().__init__(objclass)
+
+#     def probability(self, zi, s, a=None):
+#         """
+#         zi: voxel
+#         s (JointState3D)
+#         a (optional): action taken
+#         """
+#         if zi.label == Voxel.UNKNOWN:
+#             return self.gamma  # not in FOV
+#         elif zi.label == self.objclass:
+#             return self.alpha  # i
+#         else:
+#             return self.beta   # not i
+
+#     def sample(self, s, a=None):
+#         si = s.object_states[self.objclass]
+#         srobot = s.robot_state["pose"]
+#         voxel = Voxel(si["loc"], Voxel.UNKNOWN)
+#         if self.sensor.observable(self.objclass, s):
+#             if FrustumCamera.sensor_functioning(self.alpha, self.beta, self.log):
+#                 voxel.label = self.objclass
+#             else:
+#                 voxel.label = Voxel.OTHER
+#             return voxel
+#         else:
+#             # Object not in FOV. The label is UNKNOWN.
+#             return voxel
