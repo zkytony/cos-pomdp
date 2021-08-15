@@ -11,14 +11,14 @@ class PolicyModel2D(RolloutPolicy):
         self.robot_trans_model = robot_trans_model
         self._legal_moves = {}
         self._reward_model = reward_model
-        self.action_prior = None#PolicyModel2D.ActionPrior(num_visits_init,
-                                 #                     val_init, self)
+        self.action_prior = PolicyModel2D.ActionPrior(num_visits_init,
+                                                     val_init, self)
 
     def sample(self, state):
         return random.sample(self.get_all_actions(state=state), 1)[0]
 
     def get_all_actions(self, state, history=None):
-        return MOVES_2D_GRID + [Done()]# + [Search(), Done()]
+        return self.valid_moves(state) | {Done()}# + [Search(), Done()]
 
     def rollout(self, state, history=None):
         if self.action_prior is not None:
@@ -63,5 +63,6 @@ class PolicyModel2D(RolloutPolicy):
                 else:
                     next_angle_diff = abs(next_robot_state["pose"][2] - target_angle)
                     if next_angle_diff < cur_angle_diff:
-                        preferences.add((move, self.num_visits_init, self.val_init))
+                else:
+                    preferences.add((move, self.num_visits_init, self.val_init / 2))
             return preferences

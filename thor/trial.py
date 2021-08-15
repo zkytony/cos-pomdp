@@ -80,6 +80,7 @@ def build_object_search_trial(scene, target, task_type,
     task_config = {
         "task_type": task_type,
         "target": target,
+        "detectables": {target},
         "nav_config": {
             "goal_distance": constants.GOAL_DISTANCE,
             "v_angles": constants.V_ANGLES,

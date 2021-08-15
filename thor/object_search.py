@@ -5,6 +5,7 @@ from collections import namedtuple
 from pprint import pprint
 
 import pomdp_py
+from pomdp_py.utils import typ
 import ai2thor
 import ai2thor.util.metrics as metrics
 
@@ -203,9 +204,7 @@ class TOS(ThorEnv):
             p = thor_closest_object_of_type(event, object_type)["position"]
             objpos = (p['x'], p['y'], p['z'])
         else:
-            object_id = self.target
-            in_fov = thor_object_in_fov(event, object_id)
-            objpos = thor_object_position(event, object_id, as_tuple=True)
+            raise NotImplementedError("We do not consider this case for now.")
 
         agent_position = thor_agent_pose(event, as_tuple=True)[0]
         object_distance = euclidean_dist(objpos, agent_position)
@@ -234,7 +233,7 @@ class TOS(ThorEnv):
         x, z, pitch, yaw = sp.agent_pose[0][0], sp.agent_pose[0][2], sp.agent_pose[1][0], sp.agent_pose[1][1]
         action = a.name if not a.name.startswith("Open") else "{}({})".format(a.name, a.params)
         return "Step {}: Action: {}, (x={}, z={}, pitch={}, yaw={}), Reward: {}"\
-            .format(step, action, x, z, pitch, yaw, r)
+            .format(step, typ.blue(action), x, z, pitch, yaw, r)
 
     def visualizer(self, **config):
         return ThorObjectSearchViz2D(**config)

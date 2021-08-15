@@ -4,7 +4,7 @@ from setuptools import setup
 from distutils.extension import Extension
 
 setup(name='cos-pomdp',
-      packages=['cosp'],
+      packages=['cospomdp'],
       version='0.1',
       description='COS-POMDP',
       python_requires='>3.6',

@@ -326,6 +326,12 @@ class ThorObjectSearchCOSPOMDPAgent(pomdp_py.Agent, ThorAgent):
         next_robot_belief = pomdp_py.Histogram({next_robot_state : 1.0})
         print(next_robot_state)
 
+        # HACKY: Need a better solution; If the robot steps onto an unreachable place,
+        # then remove that obstacle from the grid map (because the robot is on it)
+        if next_robot_state["pose"][:2] in self.grid_map.obstacles:
+            self.grid_map.obstacles.remove(next_robot_state["pose"][:2])
+            self.grid_map.free_locations.add(next_robot_state["pose"][:2])
+
         # get POMDP observation
         cls_to_loc3d = {}
         for xyxy, conf, cls, loc3d in tos_observation.detections:

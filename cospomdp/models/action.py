@@ -1,5 +1,5 @@
 from pomdp_py import SimpleAction
-# from ..thor.constants import ()
+from ..thor.constants import H_ROTATION
 from thortils.grid_map import GridMap
 
 
@@ -21,8 +21,8 @@ class Move(Action):
 # Note that POMDP planning happens on top of GridMap
 MOVES_2D_GRID = [
     Move("MoveAhead",   (1.0, 0.0)),
-    Move("RotateLeft",  (0.0, 45.0)),#GridMap.to_grid_dyaw(-H_ROTATION))),
-    Move("RotateRight", (0.0, -45.0))#GridMap.to_grid_dyaw(H_ROTATION)))
+    Move("RotateLeft",  (0.0, GridMap.to_grid_dyaw(-H_ROTATION))),
+    Move("RotateRight", (0.0, GridMap.to_grid_dyaw(H_ROTATION)))
 ]
 
 class Interact(Action):

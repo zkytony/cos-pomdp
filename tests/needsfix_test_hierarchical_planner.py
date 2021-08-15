@@ -13,8 +13,8 @@ from cosp.thor import constants
 
 # Hard coded correlation
 CORR_MATRIX = {
-    ("PepperShaker", "StoveBurner"): 0.7,
-    ("PepperShaker", "Fridge"): -1
+    ("Bowl", "Bread"): 0.7,
+    ("Bowl", "Fridge"): -1
 }
 for k in list(CORR_MATRIX.keys()):
     CORR_MATRIX[tuple(reversed(k))] = CORR_MATRIX[k]
@@ -34,17 +34,17 @@ def corr_func(target_pos, object_pos,
     if corr > 0:
         return distance <= 3.0
     else:
-        return distance >= 3.0
+        return distance >= 5.0
 
 def test_create():
     robot_id = "robot0"
     scene = "FloorPlan1"
-    target_class = "PepperShaker"
+    target_class = "Bowl"
 
-    detectables = [("PepperShaker", "FanModelNoFP", [0.7, 0.1])]
-                   # ("CounterTop", "FanModelNoFP", [0.9, 0.1]),
-                   # ("Bread", "FanModelNoFP", [0.7, 0.1]),
-                   # ("Fridge", "FanModelNoFP", [0.9, 0.1])]
+    detectables = [("Bowl", "FanModelNoFP", [0.7, 0.1]),
+                   ("Fridge", "FanModelNoFP", [0.9, 0.1]),
+                   ("Bread", "FanModelNoFP", [0.7, 0.1]),
+                   ("Fridge", "FanModelNoFP", [0.9, 0.1])]
     detector_config = {}
     for cls, model_type, quality_params in detectables:
         if model_type == "FanModelNoFP":
@@ -67,7 +67,7 @@ def test_create():
         "task_type": "class",
         "target": target_class,
         "detectables": set(detector_config.keys()),
-        "prior": "informed",
+        "prior": "uniform",
         "nav_config": {
             "goal_distance": constants.GOAL_DISTANCE,
             "v_angles": constants.V_ANGLES,
@@ -88,9 +88,9 @@ def test_create():
 
 
     planning_configs = {
-        "max_depth": 40,
+        "max_depth": 50,
         "discount_factor": 0.95,
-        "num_sims": 400,
+        "num_sims": 700,
         "exploration_const": constants.TOS_REWARD_HI - constants.TOS_REWARD_LO
     }
 

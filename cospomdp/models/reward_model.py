@@ -21,6 +21,7 @@ class ObjectSearchRewardModel2D(RewardModel):
         target_loc = next_state.target_state["loc"]
         if isinstance(action, Done):
             if self.success2d(robot_pose, target_loc):
+                print("HI")
                 return self._hi
             else:
                 return self._lo
