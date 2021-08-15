@@ -54,7 +54,7 @@ def test_observation_model(search_region, show_plots):
     omodel_other = CosObjectObservationModel2D(other[0], target[0], robot_id, detector_target, corr_dist)
     omodel = CosObservationModel2D(target[0], {0:omodel_target, 1:omodel_other})
 
-    srobot = RobotState2D(robot_id, (4, 5.5, 0), RobotStatus())
+    srobot = RobotState2D(robot_id, (5, 5.5, 0), RobotStatus())
     uniform_belief = pomdp_py.Histogram(normalize({ObjectState2D(target[0], target[1], loc):1.0
                                                    for loc in search_region}))
     new_belief = {}
@@ -87,7 +87,7 @@ def plot_belief(belief, dim, ax):
     for starget in belief:
         x.append(starget['loc'][0])
         y.append(starget['loc'][1])
-        c.append(np.array([0.1, 0.5, 0.1, belief[starget]*100]))
+        c.append(np.array([0.1, 0.5, 0.1, belief[starget]]))
     ax.scatter(x, y, s=100, c=c, marker='s')
     ax.set_xlim(-1, dim[0])
     ax.set_ylim(-1, dim[1])
