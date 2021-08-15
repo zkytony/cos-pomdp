@@ -4,7 +4,7 @@ from pomdp_py.utils import typ
 from pomdp_py import ObservationModel, Gaussian
 
 from .sensors import FanSensor, FrustumCamera
-from ..utils.math import roundany
+from ..utils.math import fround
 from ..domain.observation import Loc2D, CosObservation2D
 
 
@@ -91,16 +91,6 @@ class CosObjectObservationModel2D(ObservationModel):
             si = dist_si.sample()[self.corr_object_id]
             zi = self.detection_model.sample(si, srobot)
         return zi
-
-
-def _round(round_to, loc_cont):
-    if round_to == "int":
-        return tuple(map(lambda x: int(round(x)), loc_cont))
-    elif type(round_to) == float:
-        return tuple(map(lambda x: roundany(x, round_to),
-                         loc_cont))
-    else:
-        return loc_cont
 
 
 class DetectionModel:
@@ -204,12 +194,12 @@ class FanModelYoonseon(DetectionModel):
                                 [[sigma**2, 0],
                                  [0, sigma**2]])
             # Needs to discretize otherwise MCTS tree cannot handle this.
-            loc = _round(self._round_to, gaussian.random())
+            loc = fround(self._round_to, gaussian.random())
 
         elif event_occured == "B":
             # Sample from field of view
             loc_cont = self.sensor.uniform_sample_sensor_region(srobot["pose"])
-            loc = _round(self._round_to, loc_cont)
+            loc = fround(self._round_to, loc_cont)
         else:  # event == C
             loc = None
         zi = Loc2D(si.objid, loc)
@@ -324,7 +314,8 @@ class CosObservationModel2D(ObservationModel):
                       [self.zi_models[zi.objid].probability(zi, next_state)
                        for zi in observation])
 
-# The 3D occlusion stuff is not yet complete
+
+# The 3D occlusion stuff is not yet complete or needed
 # class DetectionModelFull:
 #     """Interface for Pr(zi | s1, ..., sn, srobot') """
 #     def __init__(self, objclass, round_to="int"):

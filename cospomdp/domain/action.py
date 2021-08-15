@@ -21,9 +21,9 @@ class Move2D(pomdp_py.SimpleAction):
         super().__init__(name)
 
 MoveAhead = Move2D("MoveAhead", Move2D.FORWARD)
-MoveLeft = Move2D("MoveLeft", Move2D.LEFT)
-MoveRight = Move2D("MoveRight", Move2D.RIGHT)
-ALL_MOVES_2D = [MoveAhead, MoveLeft, MoveRight]
+RotateLeft = Move2D("RotateLeft", Move2D.LEFT)
+RotateRight = Move2D("RotateRight", Move2D.RIGHT)
+ALL_MOVES_2D = [MoveAhead, RotateLeft, RotateRight]
 
 class Done(pomdp_py.SimpleAction):
     def __init__(self):

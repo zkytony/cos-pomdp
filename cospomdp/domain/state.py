@@ -25,7 +25,7 @@ class RobotStatus:
         return found_status
 
 class RobotState2D(pomdp_py.ObjectState):
-    def __init__(self, robot_id, pose, status):
+    def __init__(self, robot_id, pose, status=RobotStatus()):
         super().__init__("robot",
                          {"id": robot_id,
                           "pose": pose,

@@ -46,6 +46,27 @@ def roundany(x, base):
     """
     return base * round(x / base)
 
+def fround(round_to, loc_cont):
+    """My own 'float'-rounding (hence fround) method.
+
+    round_to can be 'int', 'int-' or any float,
+    and will output a value that is the result of
+    rounding `loc_cont` to integer, or the `round_to` float;
+    (latter uses roundany).
+
+    If 'int-', will floor `loc_cont`
+    """
+    if round_to == "int":
+        return tuple(map(lambda x: int(round(x)), loc_cont))
+    elif round_to == "int-":
+        return tuple(map(lambda x: int(math.floor(x)), loc_cont))
+    elif type(round_to) == float:
+        return tuple(map(lambda x: roundany(x, round_to),
+                         loc_cont))
+    else:
+        return loc_cont
+
+
 def to_radians(th):
     return th*np.pi / 180
 

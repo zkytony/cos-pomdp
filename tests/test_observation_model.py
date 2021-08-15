@@ -37,7 +37,7 @@ def search_region():
 
 @pytest.fixture
 def show_plots():
-    return True
+    return False
 
 def test_observation_model(search_region, show_plots):
     target = (0, "target")
@@ -77,7 +77,7 @@ def test_observation_model(search_region, show_plots):
         plt.scatter([ox], [oy], s=150, color="orange", marker="*")
         plot_pose(ax, srobot['pose'][:2], srobot['pose'][2])
         plt.show(block=False)
-        plt.pause(3)
+        plt.pause(1)
         ax.clear()
 
 def plot_belief(belief, dim, ax):
