@@ -147,3 +147,5 @@ cosp/vision/runs*
 val_yolov5.sh
 train_yolov5.sh
 _desired_results.pkl
+
+.testmondata
