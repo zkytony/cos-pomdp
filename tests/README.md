@@ -1,22 +1,33 @@
 # How to run tests
 
-Simply run
-```
-pytest
-```
-
-Using test-mon
-```
-pytest --testmon
-```
-
-Using pytest-watch
-```
-ptw
-```
-
 ## install these tools
 ```
 pip install pytest-testmon
 pip install pytest-watch
 ```
+
+Then, in the directory containing `test_xxx.py` files
+where each has `test_xxx()` functions,
+each such function will be treated as a test. You just need
+to run  `ptw`. Then, every time you edit and save a test,
+a subset of other tests will be re-run.
+
+Before you run `ptw` for the first time, run
+```
+pytest --testmon
+```
+to build a `.testmondata` file for your project.
+
+Then just run
+```
+ptw
+```
+
+
+### Explanation
+
+`pytest-watch` is a tool that reruns the tests after you
+edit the tests. `testmon` will do the job of selecting a subset
+of tests to test with. So together you get the behavior
+of whenever you save an edit of a test, a relevant subset
+of the tests will be re-run.

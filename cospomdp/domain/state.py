@@ -46,7 +46,7 @@ class RobotState2D(pomdp_py.ObjectState):
         return self.status.target_found
 
 
-class CosOOState2D(pomdp_py.OOState):
+class CosState2D(pomdp_py.OOState):
     def __init__(self, object_states):
         super().__init__(object_states)
 

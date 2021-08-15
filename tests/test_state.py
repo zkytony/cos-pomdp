@@ -9,6 +9,6 @@ def test_state_creation():
     assert object_state.id == 1
     assert object_state.loc == (5,5)
 
-    joint_state = CosOOState2D({0:robot_state, 1:object_state})
+    joint_state = CosState2D({0:robot_state, 1:object_state})
     assert joint_state.s(0) == robot_state
     assert joint_state.s(1) == object_state
