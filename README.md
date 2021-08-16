@@ -10,6 +10,18 @@ Do all the necessary state (e.g. coordinate) conversions.
 You create one or more planner given that POMDP.
 Then, you have a POMDP and a solver for it!
 
+Installation
+```
+pip install -e .
+```
+This will install `cospomdp` which is the core code for the POMDP components,
+and `cospomdp_apps` which contains application to the POMDP to several domains.
+
+Test basic example:
+```
+python -m cospomdp_apps.basic.example
+```
+
 ## Organization
 Contains two packages: `cospomdp` and `cospomdp_apps`.
 The former defines the COS-POMDP (domain, models, agent, planner)
@@ -31,13 +43,14 @@ cosp/vision/data
 
 ## Create data
 ```
-python -m cosp.vision.data.create data/yolov5 --num-train-samples 3 --num-val-samples 1
+python -m cospomdp_apps.thor.data.create data/yolov5 --num-train-samples 3 --num-val-samples 1
 ```
 
 ## Browse generated data
 ```
-python -m cosp.vision.data.browse -m yolo -p path/to/dataset/yaml
+python -m cospomdp_apps.thor.data.browse -m yolo path/to/dataset/yaml
 ```
+Use `a` and `d` to browse back and forth. To quit, press `q`.
 
 ## Train YOLOv5
 

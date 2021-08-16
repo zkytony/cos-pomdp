@@ -6,8 +6,8 @@ import yaml
 import numpy as np
 from PIL import Image
 import time
-from ..utils.general import normalized_xywh_to_xyxy
-from ..utils.plots import plot_one_box
+from thortils.vision.general import normalized_xywh_to_xyxy
+from thortils.vision.plotting import plot_one_box
 
 def yolo_load_info(dataset_yaml_path, for_train=True):
     """
