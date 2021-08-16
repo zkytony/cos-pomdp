@@ -17,11 +17,13 @@ from thortils import (thor_agent_pose,
                       thor_closest_object_of_type,
                       thor_pose_as_dict)
 
-from thortils.vision import thor_img, thor_img_depth, thor_object_bboxes
+from thortils.vision import (thor_img,
+                             thor_img_depth,
+                             thor_object_bboxes,
+                             projection)
 from thortils.utils import (to_degrees, closest,
                             normalize_angles, euclidean_dist)
 
-from cospomdp.vision.utils import projection
 from result_types import PathResult, HistoryResult
 from common import ThorEnv, TOS_Action, TOS_State, TOS_Observation
 from agent import ThorObjectSearchOptimalAgent

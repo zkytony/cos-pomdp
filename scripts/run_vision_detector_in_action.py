@@ -12,8 +12,8 @@ from thortils import (launch_controller,
                       thor_object_position,
                       ithor_scene_names)
 from thortils.constants import KITCHEN_TRAIN_SCENES, KITCHEN_VAL_SCENES
-from cospomdp.vision.detector import Detector
-from cospomdp.vision.utils.metrics import simple_box_iou
+from thortils.vision.metrics import simple_box_iou
+from cospomdp_apps.thor.detector import Detector
 from cospomdp.utils.math import euclidean_dist
 from cospomdp.utils.pandas import flatten_index
 

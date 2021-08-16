@@ -5,8 +5,8 @@ import cv2
 import os
 from PIL import Image
 import yaml
-from .utils.plots import plot_one_box
-from .utils.general import saveimg
+from thortils.vision.plotting import plot_one_box
+from thortils.vision.general import saveimg
 
 VISION_MODULE_PATH = os.path.dirname(__file__)
 PATH_TO_YOLOV5 = os.path.abspath(os.path.join(VISION_MODULE_PATH, "../../external/yolov5"))
