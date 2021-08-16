@@ -26,6 +26,10 @@ class SearchRegion2D(SearchRegion):
         super().__init__(locations)
         self._w = max(locations, key=lambda l: l[0])[0] - min(locations, key=lambda l: l[0])[0] + 1
         self._l = max(locations, key=lambda l: l[1])[1] - min(locations, key=lambda l: l[1])[1] + 1
+        self._obstacles = {(x,y)
+                           for x in range(self._w)
+                           for y in range(self._l)
+                           if (x,y) not in locations}
 
     def object_state(self, objid, objclass, loc):
         return ObjectState2D(objid, objclass, loc)
@@ -41,3 +45,7 @@ class SearchRegion2D(SearchRegion):
     @property
     def length(self):
         return self._l
+
+    @property
+    def obstacles(self):
+        return self._obstacles

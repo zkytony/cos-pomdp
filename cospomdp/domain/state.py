@@ -45,6 +45,10 @@ class RobotState2D(pomdp_py.ObjectState):
     def target_found(self):
         return self.status.target_found
 
+    @property
+    def id(self):
+        return self['id']
+
 
 class CosState2D(pomdp_py.OOState):
     def __init__(self, object_states):

@@ -39,6 +39,12 @@ class CosObservation2D(pomdp_py.Observation):
     def __iter__(self):
         return iter(self.objlocs.values())
 
+    def __getitem__(self, objid):
+        return self.objlocs[objid]
+
+    def z(self, objid):
+        return self[objid]
+
 class Voxel(pomdp_py.SimpleObservation):
     """3D object observation"""
     FREE = "free"

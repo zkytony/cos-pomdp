@@ -1,7 +1,7 @@
 from ..probability import JointDist, Event, TabularDistribution
 
 class CorrelationDist(JointDist):
-    def __init__(self, corr_object, target, search_region, corr_func_or_dict):
+    def __init__(self, corr_object, target, search_region, corr_func_or_dict, corr_func_args={}):
         """
         Models Pr(Si | Starget) = Pr(corr_object_id | target_id)
         Args:
@@ -32,7 +32,8 @@ class CorrelationDist(JointDist):
                 else:
                     # it's a function
                     prob = corr_func_or_dict(target_loc, object_loc,
-                                             self.target_id, self.corr_object_id)
+                                             self.target_id, self.corr_object_id,
+                                             **corr_func_args)
                 weights[Event({self.corr_object_id: object_state})] = prob
             self.dists[target_state] =\
                 TabularDistribution([self.corr_object_id], weights, normalize=True)

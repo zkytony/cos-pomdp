@@ -84,7 +84,7 @@ class CosObjectObservationModel2D(ObservationModel):
         # action doesn't matter here
         starget = snext.s(self.target_id)
         srobot = snext.s(self.robot_id)
-        if self.corr_object_id == self.target_class:
+        if self.corr_object_id == self.target_id:
             zi = self.detection_model.sample(starget, srobot)
         else:
             dist_si = self._cond_dists[starget]  # Pr(Si | S_target = starget)
@@ -270,15 +270,15 @@ class FanModelNoFP(DetectionModel):
                 gaussian = Gaussian(list(si["loc"]),
                                     [[self.sigma**2, 0],
                                      [0, self.sigma**2]])
-                loc = _round(self._round_to, gaussian.random())
-                zi = Loc2D(si.objid, loc)
+                loc = tuple(fround(self._round_to, gaussian.random()))
+                zi = Loc2D(si.id, loc)
                 event = "detected"
 
             else:
-                zi = Loc2D(si.objid, None)
+                zi = Loc2D(si.id, None)
                 event = "missed"
         else:
-            zi = Loc2D(si.objid, None)
+            zi = Loc2D(si.id, None)
             event = "out_of_range"
         if return_event:
             return zi, event
@@ -300,8 +300,16 @@ class CosObservationModel2D(ObservationModel):
         Args:
             next_state (CosState2D): joint state of target and robot states
         """
-        return CosObservation2D({objid : self.zi_models[objid].sample(next_state)
-                                 for objid in self.detectable_objects})
+        zz = {}
+        for objid in self.detectable_objects:
+            zz[objid] = self.zi_models[objid].sample(next_state)
+        try:
+            return CosObservation2D(zz)
+        except:
+            import pdb; pdb.set_trace()
+
+             # {objid : self.zi_models[objid].sample(next_state)
+             #                     for objid in self.detectable_objects})
 
     def probability(self, observation, next_state, *args):
         """

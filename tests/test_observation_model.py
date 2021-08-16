@@ -1,4 +1,5 @@
 import pomdp_py
+import random
 import pytest
 import matplotlib.pyplot as plt
 from cospomdp.models.observation_model import (CosObjectObservationModel2D,
@@ -16,17 +17,17 @@ import numpy as np
 
 CORR = {
     (0, 1): 0.7,
-    (0, 2): -0.6,
-    (0, 3): 0.2,
 }
+
+DIST = 2.0
 
 def corr_func(target_loc, object_loc, target_id, object_id):
     corr = CORR[(target_id, object_id)]
     dist = euclidean_dist(target_loc, object_loc)
     if corr > 0:
-        return dist <= 2.0
+        return dist <= DIST
     else:
-        return dist >= 2.0
+        return dist >= DIST
 
 @pytest.fixture
 def search_region():
@@ -55,6 +56,17 @@ def test_observation_model(search_region, show_plots):
     omodel = CosObservationModel2D(target[0], {0:omodel_target, 1:omodel_other})
 
     srobot = RobotState2D(robot_id, (5, 5.5, 0), RobotStatus())
+
+    # sampling
+    for i in range(200):
+        loc = random.sample(search_region.locations, 1)[0]
+        state = CosState2D({target[0]: ObjectState2D(target[0], target[1], loc),
+                            robot_id: srobot})
+        z = omodel.sample(state)
+        if z[target[0]].loc is not None and z[other[0]].loc is not None:
+            assert euclidean_dist(z[target[0]].loc, z[other[0]].loc) <= DIST
+
+    # belief update
     uniform_belief = pomdp_py.Histogram(normalize({ObjectState2D(target[0], target[1], loc):1.0
                                                    for loc in search_region}))
     new_belief = {}
