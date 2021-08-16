@@ -33,8 +33,13 @@ class ObjectSearchRewardModel2D(RewardModel):
         return False
 
 class NavRewardModel2D(RewardModel):
-    def __init__(self, goal_pose, hi=100, lo=-100, step=-1):
+    def __init__(self, goal_pose, robot_id,
+                 hi=100, lo=-100, step=-1):
         self.goal_pose = goal_pose
+        self.robot_id = robot_id
+        self._hi = hi
+        self._lo = lo
+        self._step = step
 
     def sample(self, state, action, next_state):
         robot_pose = next_state.s(self.robot_id)["pose"]
