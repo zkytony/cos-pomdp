@@ -1,15 +1,17 @@
 from ..probability import JointDist, Event, TabularDistribution
 
 class CorrelationDist(JointDist):
-    def __init__(self, corr_object, target, search_region, corr_func):
+    def __init__(self, corr_object, target, search_region, corr_func_or_dict):
         """
         Models Pr(Si | Starget) = Pr(corr_object_id | target_id)
         Args:
             corr_object (tuple): (ID, class) of correlated object
             target (tuple): (ID, class) of target object
             search_region (SearchRegion): where the objects can be located.
-            corr_func: can take in a target location, and an object location,
-                and return a value, the greater, the more correlated.
+            corr_func_or_dict: Either: a function that can take in a target location,
+                and an object location, and return a value, the greater, the more correlated.
+                Or: a dictionary that maps (target_loc, corr_object_loc) to a float,
+                by default 1e-12.
         """
         self.corr_object_id, self.corr_object_class = corr_object
         self.target_id, self.target_class = target
@@ -25,8 +27,12 @@ class CorrelationDist(JointDist):
             for object_loc in search_region:
                 object_state = search_region.object_state(
                     self.corr_object_id, self.corr_object_class, object_loc)
-                prob = corr_func(target_loc, object_loc,
-                                 self.target_id, self.corr_object_id)
+                if type(corr_func_or_dict) == dict:
+                    prob = corr_func_or_dict.get((target_loc, object_loc), 1e-12)
+                else:
+                    # it's a function
+                    prob = corr_func_or_dict(target_loc, object_loc,
+                                             self.target_id, self.corr_object_id)
                 weights[Event({self.corr_object_id: object_state})] = prob
             self.dists[target_state] =\
                 TabularDistribution([self.corr_object_id], weights, normalize=True)

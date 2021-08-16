@@ -14,8 +14,7 @@ def robot_pose_transition2d(robot_pose, action):
 
     Args:
         robot_pose (x, y, th)
-        action (MoveAction)
-        see transform_pose for kwargs [grid_size, diagonal_ok]
+        action (Move2D)
     """
     rx, ry, rth = robot_pose
     forward, angle = action.delta
@@ -26,7 +25,8 @@ def robot_pose_transition2d(robot_pose, action):
 
 class RobotTransition2D(TransitionModel):
     def __init__(self, robot_id, reachable_positions, round_to='int'):
-        """Snap to grid if `grid_size` is None. Otherwise, continuous."""
+        """round_to: round the x, y coordinates to integer, floor integer,
+        or not rounding, when computing the next robot pose."""
         self.robot_id = robot_id
         self.reachable_positions = reachable_positions
         self._round_to = round_to

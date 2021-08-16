@@ -65,7 +65,6 @@ def test_observation_model(search_region, show_plots):
     for starget in uniform_belief:
         s = CosState2D({target[0]: starget, robot_id:srobot})
         new_belief[starget] = omodel.probability(z, s) * uniform_belief[starget]
-        print(omodel.probability(z, s))
     new_belief = pomdp_py.Histogram(normalize(new_belief))
     assert euclidean_dist(new_belief.mpe()['loc'], z_other.loc)\
         < euclidean_dist(uniform_belief.mpe()["loc"], z_other.loc)
