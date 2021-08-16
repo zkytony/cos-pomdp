@@ -5,7 +5,7 @@ from pomdp_py import ObservationModel, Gaussian
 
 from .sensors import FanSensor, FrustumCamera
 from ..utils.math import fround
-from ..domain.observation import Loc2D, CosObservation2D
+from ..domain.observation import Loc2D, CosObservation2D, RobotObservation2D
 
 
 ### Observation models
@@ -286,11 +286,12 @@ class FanModelNoFP(DetectionModel):
             return zi
 
 class CosObservationModel2D(ObservationModel):
-    def __init__(self, target_id, zi_models):
+    def __init__(self, robot_id, target_id, zi_models):
         """
         zi_models: maps from objid to CosObjectObservationModel;
            each objid is a detectable object
         """
+        self.robot_id = robot_id
         self.target_id = target_id
         self.zi_models = zi_models
         self.detectable_objects = list(sorted(self.zi_models.keys()))
@@ -300,16 +301,12 @@ class CosObservationModel2D(ObservationModel):
         Args:
             next_state (CosState2D): joint state of target and robot states
         """
-        zz = {}
-        for objid in self.detectable_objects:
-            zz[objid] = self.zi_models[objid].sample(next_state)
-        try:
-            return CosObservation2D(zz)
-        except:
-            import pdb; pdb.set_trace()
-
-             # {objid : self.zi_models[objid].sample(next_state)
-             #                     for objid in self.detectable_objects})
+        objobzs = {objid : self.zi_models[objid].sample(next_state)
+                  for objid in self.detectable_objects}
+        robotobz = RobotObservation2D(self.robot_id,
+                                      next_state.s(self.robot_id)['pose'],
+                                      next_state.s(self.robot_id)['status'].copy())
+        return CosObservation2D(robotobz, objobzs)
 
     def probability(self, observation, next_state, *args):
         """
@@ -318,6 +315,11 @@ class CosObservationModel2D(ObservationModel):
                 object locations (Loc2D)
             next_state (CosState2D): joint state of target and robot states
         """
+        if observation.z(self.robot_id).pose != next_state.s(self.robot_id)['pose']:
+            return 1e-12
+        if observation.z(self.robot_id).status != next_state.s(self.robot_id)['status']:
+            return 1e-12
+
         return reduce(lambda result_so_far, elm: result_so_far*elm,
                       [self.zi_models[zi.objid].probability(zi, next_state)
                        for zi in observation])

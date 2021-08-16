@@ -7,5 +7,5 @@ def test_observation():
     assert o1 == o2
     assert hash(o1) == hash(o2)
 
-    o = CosObservation2D({o1.id:o1, o2.id:o2})
+    o = CosObservation2D(None, {o1.id:o1, o2.id:o2})
     assert len(o) == 1

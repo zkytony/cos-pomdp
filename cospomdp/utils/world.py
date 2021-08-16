@@ -35,6 +35,10 @@ def parse_worldstr(worldstr):
     ### goal
     find: T, 2.0
 
+    ### colors
+    T: [225, 20, 20]
+    G: [0, 210, 20]
+
     ### END
 
     Notes:
@@ -50,7 +54,8 @@ def parse_worldstr(worldstr):
         "corr": [],
         "detectors": [],
         "goal": [],
-        "robotconfig": []
+        "robotconfig": [],
+        "colors": []
     }
     sofar = {
         'robot_id': 'R'
@@ -76,7 +81,9 @@ def parse_worldstr(worldstr):
 def create_instance(worldstr):
     """Given worldstr (see parse_worldstr for format), parse it
     and then construct a CosAgent accordingly with uniform prior,
-    then return that agent"""
+    then return that agent.
+
+    Returns: CosAgent, {objid: (x,y)}"""
     spec = parse_worldstr(worldstr)
 
     robot_id = spec["robot_id"]
@@ -115,7 +122,10 @@ def create_instance(worldstr):
                      corr_dists,
                      detectors,
                      reward_model)
-    return agent, spec['objectlocs']
+    if "colors" in spec:
+        return agent, spec['objectlocs'], spec["colors"]
+    else:
+        return agent, spec['objectlocs']
 
 
 def _handle_map(lines, *args):
@@ -195,3 +205,11 @@ def _handle_goal(lines, sofar):
                                                  sofar['robot_id'],
                                                  target_obj)
     return dict(reward_model=reward_model)
+
+def _handle_colors(lines, *args):
+    colors = {}
+    for line in lines:
+        line = line.strip()
+        obj, color = line.split(":")
+        colors[obj.strip()] = eval(color.strip())
+    return dict(colors=colors)

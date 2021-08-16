@@ -60,3 +60,20 @@ class CosTransitionModel2D(TransitionModel):
         robot_id = self.robot_trans_model.robot_id
         return CosState2D({robot_id: next_robot_state,
                            self.target_id: next_target_state})
+
+
+class FullTransitionModel2D(TransitionModel):
+    def __init__(self, robot_trans_model):
+        self.robot_trans_model = robot_trans_model
+
+    def sample(self, state, action):
+        next_robot_state = self.robot_trans_model.sample(state, action)
+        objstates = {next_robot_state.id:next_robot_state}
+        for objid in state.object_states:
+            if objid == next_robot_state.id:
+                continue
+            next_object_state = ObjectState2D(objid,
+                                              state.s(objid).objclass,
+                                              state.s(objid)['loc'])
+            objstates[objid] = next_object_state
+        return CosState2D(objstates)

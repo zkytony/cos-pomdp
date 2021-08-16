@@ -67,11 +67,20 @@ class Visualizer:
     def render(self):
         return self._make_gridworld_image(self._res)
 
-    def highlight(self, img, locations, color=(128,128,128)):
+    def highlight(self, img, locations, color=(128,128,128), shape="rectangle"):
         r = self._res
         for loc in locations:
             x, y = loc
-            cv2.rectangle(img, (y*r, x*r), (y*r+r, x*r+r),color, -1)
+            if shape == 'rectangle':
+                cv2.rectangle(img, (y*r, x*r), (y*r+r, x*r+r), color, -1)
+            elif shape == 'circle':
+                size = r // 2
+                radius = int(round(size / 2))
+                shift = int(round(r / 2))
+                cv2.circle(img, (y*r+shift, x*r+shift), radius,
+                           color, -1)
+            else:
+                raise ValueError(f"Unknown shape {shape}")
         return img
 
     def show_img(self, img):
@@ -115,15 +124,16 @@ class Visualizer:
         return img
 
     def draw_object_belief(self, img, belief, color,
-                           circle_drawn=None):
+                           circle_drawn=None, shape="circle"):
         """
         circle_drawn: map from pose to number of times drawn;
             Used to determine size of circle to draw at a location
         """
         if circle_drawn is None:
             circle_drawn = {}
-        radius = int(round(self._res / 2))
-        size = self._res // 3
+        size = self._res * 0.85
+        radius = int(round(size / 2))
+        shift = int(round(self._res / 2))
         last_val = -1
         hist = belief.get_histogram()
         for state in reversed(sorted(hist, key=hist.get)):
@@ -141,12 +151,19 @@ class Visualizer:
                     circle_drawn[(tx,ty)] = 0
                 circle_drawn[(tx,ty)] += 1
 
-                img = cv2shape(img, cv2.rectangle,
-                               (ty*self._res,
-                                tx*self._res),
-                               (ty*self._res+self._res,
-                                tx*self._res+self._res),
-                               color, thickness=-1, alpha=color[3]/255)
+                if shape == "rectangle":
+                    img = cv2shape(img, cv2.rectangle,
+                                   (ty*self._res,
+                                    tx*self._res),
+                                   (ty*self._res+self._res,
+                                    tx*self._res+self._res),
+                                   color, thickness=-1, alpha=color[3]/255)
+                elif shape == "circle":
+                    img = cv2shape(img, cv2.circle, (ty*self._res + shift,
+                                                     tx*self._res + shift), radius, color,
+                                   thickness=-1, alpha=color[3]/255)
+                else:
+                    raise ValueError(f"Unknown shape {shape}")
                 last_val = hist[state]
                 if last_val <= 0:
                     break

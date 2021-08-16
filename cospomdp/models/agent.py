@@ -1,5 +1,5 @@
 import pomdp_py
-from ..domain.state import ObjectState2D, RobotState2D
+from ..domain.state import ObjectState2D, RobotState2D, CosState2D
 from ..utils.math import normalize
 from .belief import CosJointBelief
 from .transition_model import RobotTransition2D, CosTransitionModel2D
@@ -28,6 +28,7 @@ class CosAgent(pomdp_py.Agent):
             belief_type: type of belief representation.
             prior: Maps from search region location to a float.
         """
+        self.search_region = search_region
         target_id, target_class = target
         init_btarget = initialize_target_belief(target, search_region,
                                                 belief_type, prior)
@@ -49,13 +50,28 @@ class CosAgent(pomdp_py.Agent):
                     objid, target_id,
                     robot_id, detectors[objid], corr_dist=corr_dists[objid])
             omodels[objid] = omodel_i
-        observation_model = CosObservationModel2D(target_id, omodels)
+        observation_model = CosObservationModel2D(robot_id, target_id, omodels)
 
         policy_model = PolicyModel2D(robot_trans_model, reward_model)
         super().__init__(init_belief, policy_model,
                          transition_model, observation_model, reward_model)
 
+    @property
+    def target_id(self):
+        return self.observation_model.target_id
 
+    @property
+    def robot_id(self):
+        return self.observation_model.robot_id
+
+    def update(self, action, observation):
+        robotobz = observation.z(self.robot_id)
+        new_brobot = pomdp_py.Histogram({robotobz.to_state(): 1.0})
+        new_btarget = update_target_belief(
+            self.target_id, self.belief.b(self.target_id), observation, self.observation_model)
+        new_belief = CosJointBelief({self.robot_id: new_brobot,
+                                     self.target_id: new_btarget})
+        self.set_belief(new_belief)
 
 def initialize_robot_belief(robot_id, init_robot_pose):
     init_robot_state = RobotState2D(robot_id, init_robot_pose)
@@ -75,3 +91,19 @@ def initialize_target_belief(target, search_region, belief_type, prior):
 
     else:
         raise NotImplementedError("belief_type {} is not yet implemented".format(belief_type))
+
+def update_target_belief(target_id, current_btarget, observation, observation_model):
+    """
+    current_btarget: current target belief
+    """
+    srobot = observation.z_robot.to_state()
+
+    if isinstance(current_btarget, pomdp_py.Histogram):
+        new_btarget_hist = {}
+        for starget in current_btarget:
+            state = CosState2D({target_id: starget,
+                                srobot.id: srobot})
+            new_btarget_hist[starget] =\
+                observation_model.probability(observation, state) * current_btarget[starget]
+        new_btarget = pomdp_py.Histogram(normalize(new_btarget_hist))
+    return new_btarget

@@ -53,7 +53,7 @@ def test_observation_model(search_region, show_plots):
     omodel_target = CosObjectObservationModel2D(target[0], target[0], robot_id, detector_target)
     corr_dist = CorrelationDist(other, target, search_region, corr_func)
     omodel_other = CosObjectObservationModel2D(other[0], target[0], robot_id, detector_target, corr_dist)
-    omodel = CosObservationModel2D(target[0], {0:omodel_target, 1:omodel_other})
+    omodel = CosObservationModel2D(robot_id, target[0], {0:omodel_target, 1:omodel_other})
 
     srobot = RobotState2D(robot_id, (5, 5.5, 0), RobotStatus())
 
@@ -73,7 +73,7 @@ def test_observation_model(search_region, show_plots):
     other_loc = (7, 5)
     z_other = Loc2D(other[0], other_loc)
     z_target = Loc2D(other[0], None)
-    z = CosObservation2D({target[0]: z_target, other[0]: z_other})
+    z = CosObservation2D(srobot, {target[0]: z_target, other[0]: z_other})
     for starget in uniform_belief:
         s = CosState2D({target[0]: starget, robot_id:srobot})
         new_belief[starget] = omodel.probability(z, s) * uniform_belief[starget]
