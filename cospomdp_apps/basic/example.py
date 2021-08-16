@@ -10,9 +10,9 @@ from cospomdp.models.basic_env import BasicEnv2D
 WORLD =\
 """
 ### map
-R....
+R.G..
 .x.Tx
-.xG.x
+.x..x
 
 ### robotconfig
 th: 0
