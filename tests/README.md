@@ -22,7 +22,7 @@ to build a `.testmondata` file for your project.
 
 Then just run
 ```
-ptw
+ptw --runner "pytest --testmon"
 ```
 
 ### Explanation
@@ -32,3 +32,6 @@ edit the tests. `testmon` will do the job of selecting a subset
 of tests to test with. So together you get the behavior
 of whenever you save an edit of a test, a relevant subset
 of the tests will be re-run.
+
+Of course you can't just run `ptw` because it
+ignores testmon stuff.
