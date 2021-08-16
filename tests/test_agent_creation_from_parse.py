@@ -2,7 +2,6 @@
 import pytest
 import pomdp_py
 import numpy as np
-from cospomdp.utils.visual import Visualizer
 from cospomdp.utils.world import create_instance
 from cospomdp.domain.action import ALL_MOVES_2D
 

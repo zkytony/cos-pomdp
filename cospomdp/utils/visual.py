@@ -4,10 +4,10 @@ import numpy as np
 import pygame
 
 from .images import overlay, cv2shape
-from .colors import lighter, lighter_with_alpha
+from .colors import lighter, lighter_with_alpha, inverse_color_rgb
 from .math import to_rad
 
-class Visualizer:
+class Visualizer2D:
 
     def __init__(self, **config):
         self._res = config.get("res", 30)   # resolution
@@ -168,3 +168,53 @@ class Visualizer:
                 if last_val <= 0:
                     break
         return img
+
+    def draw_fov(self, img, sensor, robot_pose, color=[233, 233, 8]):
+        size = self._res // 2
+        radius = int(round(size / 2))
+        shift = int(round(self._res / 2))
+        for x in range(self._region.width):
+            for y in range(self._region.length):
+                if sensor.in_range((x,y), robot_pose):
+                    img = cv2shape(img, cv2.circle,
+                                   (y*self._res+shift, x*self._res+shift),
+                                   radius, color, thickness=-1, alpha=0.7)
+        return img
+
+
+
+class BasicViz2D(Visualizer2D):
+    def visualize(self, agent, objlocs, colors,
+                  robot_state=None, draw_fov=None):
+        """
+        Args:
+            agent (CosAgent)
+            robot_state (RobotState2D)
+            target_belief (Histogram) target belief
+            objlocs (dict): maps from object id to true object (x,y) location tuple
+            colors (dict): maps from objid to [R,G,B]
+        """
+        if robot_state is None:
+            robot_state = agent.belief.mpe().s(agent.robot_id)
+        target_belief = agent.belief.b(agent.target_id)
+
+        img = self._make_gridworld_image(self._res)
+        x, y, th = robot_state["pose"]
+        for objid in objlocs:
+            img = self.highlight(img, [objlocs[objid]], colors[objid])
+        target_id = agent.target_id
+        img = self.draw_object_belief(img, target_belief, list(colors[target_id]) + [250])
+        img = self.draw_robot(img, x, y, th, (255, 20, 20))
+        if draw_fov is not None:
+            if draw_fov is True:
+                img = self.draw_fov(img,
+                                    agent.sensor(agent.target_id),
+                                    robot_state['pose'],
+                                    inverse_color_rgb(colors[target_id]))
+            elif hasattr(draw_fov, "__len__"):
+                for objid in draw_fov:
+                    img = self.draw_fov(img,
+                                        agent.sensor(objid),
+                                        robot_state['pose'],
+                                        inverse_color_rgb(colors[objid]))
+        self.show_img(img)

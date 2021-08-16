@@ -56,6 +56,9 @@ class CosAgent(pomdp_py.Agent):
         super().__init__(init_belief, policy_model,
                          transition_model, observation_model, reward_model)
 
+    def sensor(self, objid):
+        return self.observation_model.zi_models[objid].detection_model.sensor
+
     @property
     def target_id(self):
         return self.observation_model.target_id

@@ -11,29 +11,10 @@ You create one or more planner given that POMDP.
 Then, you have a POMDP and a solver for it!
 
 ## Organization
-```
-  cos-pomdp/
-     tests/
-         # code for tests
-     experiments/  # Right now there is nothing here
-         # code for experiments
-     results
-         # experiment / test results
-     data/
-         # actual data
-     external/
-         # external repositories (e.g. yolov5, savn, etc.)
-     models/
-         # actual models
-     cosp/
-         # core code of COS-POMDP & our algorithm.
-         thor/
-             code related to thor object search
-         vision/
-             code related to vision
-         utils/
-             utilities
-```
+Contains two packages: `cospomdp` and `cospomdp_apps`.
+The former defines the COS-POMDP (domain, models, agent, planner)
+and the latter applies COS-POMDP to specific applications
+such as ai2thor.
 
 ## YOLOv5 data organization
 ```
