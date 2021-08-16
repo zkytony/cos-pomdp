@@ -8,7 +8,7 @@ from cospomdp.utils.math import to_rad
 
 @pytest.fixture
 def show_plots():
-    return True
+    return False
 
 @pytest.fixture
 def init_srobot():
