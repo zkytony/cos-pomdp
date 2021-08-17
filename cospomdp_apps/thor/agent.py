@@ -194,11 +194,10 @@ class ThorObjectSearchCosAgent(ThorAgent):
                  detector_specs):
 
         robot_id = task_config['robot_id']
-        thor_config = task_config['thor']
-        scene = thor_config['scene']
         grid_map = convert_scene_to_grid_map(
-            controller, scene,
-            thor_config["GRID_SIZE"])
+            controller,
+            thor_scene_from_controller(controller),
+            thor_grid_size_from_controller(controller))
 
         search_region = GridMapSearchRegion(grid_map)
         reachable_positions = grid_map.free_locations
@@ -209,19 +208,21 @@ class ThorObjectSearchCosAgent(ThorAgent):
         )
 
         if task_config["task_type"] == 'class':
-            target_id = target
-            target_class = target
+            target_id = task_config['target']
+            target_class = task_config['target']
             target = (target_id, target_class)
         else:
             target = task_config['target']  # (target_id, target_class)
 
-        detectable_objects = task_config["detectables"]  # [(object_id, object_class)]
+        objects = {}  # objects we care about are detectable objects
         detectors = {}
-        for obj in detectable_objects:
+        for obj in task_config["detectables"]:
             if len(obj) == 2:
                 object_id, object_class = obj
             else:
                 object_id = object_class = obj
+            objects[object_id] = (object_id, object_class)
+
             detector_type, sensor_params, quality_params = detector_specs[object_id]
             if detector_type.strip() == "fan-nofp":
                 if type(sensor_params) == str:
@@ -242,13 +243,19 @@ class ThorObjectSearchCosAgent(ThorAgent):
                 continue
 
             if other not in corr_dists:
-                corr_func = eval(corr_specs[key][0])
-                corr_func_args = corr_specs[key][1]
-                corr_dists[other] = CorrelationDist(detectable_objects[other],
-                                                    detectable_objects[target_id])
+                corr_func, corr_func_args = corr_specs[key]
+                if type(corr_func) == str:
+                    corr_func = eval(corr_func)
+                corr_dists[other] = CorrelationDist(objects[other],
+                                                    objects[target_id],
+                                                    search_region,
+                                                    corr_func,
+                                                    corr_func_args=corr_func_args)
 
         reward_model = ObjectSearchRewardModel2D(
-            detectors[target_id].sensor, thor_config["GOAL_DISTANCE"], robot_id, target)
+            detectors[target_id].sensor,
+            task_config["nav_config"]["goal_distance"],
+            robot_id, target)
 
         self.cos_agent = CosAgent(robot_id, init_robot_pose, target,
                                   search_region, reachable_positions,

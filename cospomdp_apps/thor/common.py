@@ -13,7 +13,7 @@ class TOS_State:
     agent_pose: tuple
     horizon: float
 
-@dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
+@dataclass(init=True, frozen=True)
 class TOS_Observation:
     img: np.ndarray
     img_depth: np.ndarray
@@ -67,12 +67,14 @@ class ThorEnv:
         raise NotImplementedError
 
 
-@dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
+@dataclass(init=True, frozen=True)
 class TaskArgs:
     detectables: set
-    target: str
-    max_steps: int
+    target: str = "Apple"
+    max_steps: int = 100
     scene: str = 'FloorPlan1'
+    task_env: str = "ThorObjectSearch"
+    agent_class: str = "ThorObjectSearchOptimalAgent"
 
 
 # Make configs
@@ -80,6 +82,7 @@ def make_config(args):
     thor_config = {**constants.CONFIG, **{"scene": args.scene}}
 
     task_config = {
+        "robot_id": "robot",
         "task_type": 'class',
         "target": args.target,
         "detectables": args.detectables,
@@ -90,15 +93,15 @@ def make_config(args):
             "diagonal_ok": constants.DIAG_MOVE,
             "movement_params": thor_config["MOVEMENT_PARAMS"]
         },
-        "discount_factor": 0.99
+        "discount_factor": 0.99,
     }
 
     config = {
         "thor": thor_config,
         "max_steps": args.max_steps,
-        "task_env": "ThorObjectSearch",
+        "task_env": args.task_env,
         "task_env_config": {"task_config": task_config},
-        "agent_class": "ThorObjectSearchOptimalAgent",
+        "agent_class": args.agent_class,
         "agent_config": {"task_config": task_config}
     }
 
