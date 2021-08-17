@@ -4,7 +4,7 @@ from thortils.utils import getch
 import argparse
 import time
 
-from visual import GridMapVizualizer
+from cospomdp_apps.thor.visual import GridMapVizualizer
 
 
 def main():

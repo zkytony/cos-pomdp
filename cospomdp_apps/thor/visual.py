@@ -11,7 +11,7 @@ from cospomdp.utils.visual import Visualizer2D
 from cospomdp.utils.math import to_rad
 from cospomdp.utils.images import overlay, cv2shape
 from cospomdp.utils.colors import lighter, lighter_with_alpha
-import constants
+from . import constants
 
 class GridMapVizualizer(Visualizer2D):
     def __init__(self, **config):

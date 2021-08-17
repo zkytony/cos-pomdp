@@ -3,7 +3,7 @@ import random
 from pprint import pprint
 import thortils
 from thortils import compute_spl
-from trial import build_object_search_trial
+from cospomdp_apps.thor.trial import build_object_search_trial
 from cospomdp.utils.math import mean_ci_normal
 
 
@@ -43,11 +43,11 @@ TARGETS_CONTAINED = {
 #     "FloorPlan409": ["ToiletPaper"]
 # }
 
-def test_many(targets):
+def _test_many(targets):
     all_results = []
     for floorplan in targets:
         for target in targets[floorplan]:
-            all_results.append(collect(test_singe(floorplan, target)))
+            all_results.append(collect(_test_singe(floorplan, target)))
             print(floorplan, target, all_results[-1]["path"].to_tuple())
     spl, sr, failed_objects, disc_return = gather(all_results)
     print("********* RESULTS ***********")
@@ -58,12 +58,12 @@ def test_many(targets):
     pprint(failed_objects)
 
 
-def test_singe_by_id(floorplan, object_id):
+def _test_singe_by_id(floorplan, object_id):
     print("** Searching for {} in {}".format(object_id, floorplan))
     trial = build_object_search_trial(floorplan, object_id, "object")
     return trial.run(logging=True)
 
-def test_singe(floorplan, object_type):
+def _test_singe(floorplan, object_type):
     print("** Searching for {} in {}".format(object_type, floorplan))
     trial = build_object_search_trial(floorplan, object_type, "class")
     return trial.run(logging=True)
@@ -86,10 +86,10 @@ def gather(all_results):
     return spl, success_rate, failed_objects, (mean, ci)
 
 def _debug_pitch():
-    test_singe_by_id("FloorPlan1", "Cabinet|+00.68|+02.02|-02.46")
-    test_singe_by_id("FloorPlan1", "Cabinet|+00.68|+00.50|-02.20")
+    _test_singe_by_id("FloorPlan1", "Cabinet|+00.68|+02.02|-02.46")
+    _test_singe_by_id("FloorPlan1", "Cabinet|+00.68|+00.50|-02.20")
 
 
 if __name__ == "__main__":
-    # test_out_optimal_agent()
-    test_many(TARGETS_EXPOSED)
+    # _test_out_optimal_agent()
+    _test_many(TARGETS_EXPOSED)

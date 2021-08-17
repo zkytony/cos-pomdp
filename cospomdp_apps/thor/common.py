@@ -1,10 +1,25 @@
-from collections import namedtuple
-import constants
+import numpy as np
+from dataclasses import dataclass
+from . import constants
 
 # State, Action, Observation used in object search task
-TOS_Action = namedtuple("Action", ['name', 'params'])
-TOS_State = namedtuple("State", ['agent_pose', 'horizon'])
-TOS_Observation = namedtuple("Observation", ["img", "img_depth", "detections", "robot_pose"])
+@dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
+class TOS_Action:
+    name: str
+    params: dict
+
+@dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
+class TOS_State:
+    agent_pose: tuple
+    horizon: float
+
+@dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
+class TOS_Observation:
+    img: np.ndarray
+    img_depth: np.ndarray
+    detections: list
+    robot_pose: tuple
+
 
 # Generic classes for task and agent in Thor environments.
 class ThorEnv:
@@ -50,3 +65,41 @@ class ThorEnv:
 
     def visualizer(self, **config):
         raise NotImplementedError
+
+
+@dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
+class TaskArgs:
+    detectables: set
+    target: str
+    max_steps: int
+    scene: str = 'FloorPlan1'
+
+
+# Make configs
+def make_config(args):
+    thor_config = {**constants.CONFIG, **{"scene": args.scene}}
+
+    task_config = {
+        "task_type": 'class',
+        "target": args.target,
+        "detectables": args.detectables,
+        "nav_config": {
+            "goal_distance": constants.GOAL_DISTANCE,
+            "v_angles": constants.V_ANGLES,
+            "h_angles": constants.H_ANGLES,
+            "diagonal_ok": constants.DIAG_MOVE,
+            "movement_params": thor_config["MOVEMENT_PARAMS"]
+        },
+        "discount_factor": 0.99
+    }
+
+    config = {
+        "thor": thor_config,
+        "max_steps": args.max_steps,
+        "task_env": "ThorObjectSearch",
+        "task_env_config": {"task_config": task_config},
+        "agent_class": "ThorObjectSearchOptimalAgent",
+        "agent_config": {"task_config": task_config}
+    }
+
+    return config

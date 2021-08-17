@@ -24,11 +24,11 @@ from thortils.vision import (thor_img,
 from thortils.utils import (to_degrees, closest,
                             normalize_angles, euclidean_dist)
 
-from result_types import PathResult, HistoryResult
-from common import ThorEnv, TOS_Action, TOS_State, TOS_Observation
-from agent import ThorObjectSearchOptimalAgent
-from visual import ThorObjectSearchViz2D
-import constants
+from .result_types import PathResult, HistoryResult
+from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation
+from .agent import ThorObjectSearchOptimalAgent
+from .visual import ThorObjectSearchViz2D
+from . import constants
 
 
 # ------------- Task ------------- #

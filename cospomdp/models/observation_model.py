@@ -285,6 +285,7 @@ class FanModelNoFP(DetectionModel):
         else:
             return zi
 
+
 class CosObservationModel2D(ObservationModel):
     def __init__(self, robot_id, target_id, zi_models):
         """

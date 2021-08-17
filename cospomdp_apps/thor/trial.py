@@ -7,10 +7,11 @@ from cospomdp.utils.misc import _debug
 from cospomdp.utils import cfg
 cfg.DEBUG_LEVEL = 1
 
-from object_search import ThorObjectSearch
-from agent import ThorObjectSearchOptimalAgent#, ThorObjectSearchCOSPOMDPAgent
-from result_types import PathResult, HistoryResult
-import constants
+from .object_search import ThorObjectSearch
+from .agent import ThorObjectSearchOptimalAgent#, ThorObjectSearchCOSPOMDPAgent
+from .result_types import PathResult, HistoryResult
+from . import constants
+from .common import make_config, TaskArgs
 
 class ThorTrial(Trial):
 
@@ -75,40 +76,8 @@ def build_object_search_trial(scene, target, task_type,
     """
     Returns a ThorTrial for object search.
     """
-    thor_config = {**constants.CONFIG, **{"scene": scene}}
-
-    task_config = {
-        "task_type": task_type,
-        "target": target,
-        "detectables": {target},
-        "nav_config": {
-            "goal_distance": constants.GOAL_DISTANCE,
-            "v_angles": constants.V_ANGLES,
-            "h_angles": constants.H_ANGLES,
-            "diagonal_ok": constants.DIAG_MOVE,
-            "movement_params": thor_config["MOVEMENT_PARAMS"]
-        },
-        "discount_factor": 0.99
-    }
-
-    config = {
-        "thor": thor_config,
-        "max_steps": max_steps,
-        "task_env": "ThorObjectSearch",
-        "task_env_config": {"task_config": task_config},
-        "agent_class": "ThorObjectSearchOptimalAgent",
-        "agent_config": {"task_config": task_config}
-    }
-
+    args = TaskArgs(scene=scene, target=target, detectables={target},
+                    max_steps=max_steps)
+    config = make_config(args)
     trial = ThorObjectSearchTrial("test_optimal", config, verbose=True)
     return trial
-
-
-def build_object_search_movements():
-    """
-    Returns a list of object search movement actions
-    """
-    actions = []
-    for move_name in constants.MOVEMENT_PARAMS:
-        actions.append(ThorAction(move_name, constants.MOVEMENT_PARAMS[move_name]))
-    return actions
