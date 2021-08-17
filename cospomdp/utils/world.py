@@ -7,7 +7,7 @@ from ..models.agent import CosAgent
 from ..models.search_region import SearchRegion2D
 from ..models.observation_model import FanModelNoFP
 from ..models.correlation import CorrelationDist
-from ..models.reward_model import ObjectSearchRewardModel2D
+from ..models.reward_model import ObjectSearchRewardModel2D, NavRewardModel2D
 from .math import euclidean_dist
 
 from .corr_funcs import *
@@ -89,7 +89,12 @@ def create_instance(worldstr):
     robot_id = spec["robot_id"]
     init_robot_pose = (*spec["init_robot_loc"], spec["robotconfig"]["th"])
     objects = spec["objects"]
-    target_id = spec["reward_model"].target_id
+    if isinstance(spec["reward_model"], ObjectSearchRewardModel2D):
+        target_id = spec["reward_model"].target_id
+    elif isinstance(spec["reward_model"], NavRewardModel2D):
+        target_id = spec["dest_symbol"]
+    else:
+        raise ValueError("Cannot deal with reward model {}".format(type(spec["reward_model"])))
     search_region = spec["search_region"]
     reachable_positions = search_region.locations
 
@@ -197,6 +202,7 @@ def _handle_goal(lines, sofar):
     assert len(lines) == 1, "only one goal."
     line = lines[0].strip()
     verb, args = line.split(":")
+    adds = {}
     if verb.strip() == "find":
         target_obj = args.split(",")[0].strip()
         goal_dist = float(args.split(",")[1].strip())
@@ -204,7 +210,18 @@ def _handle_goal(lines, sofar):
         reward_model = ObjectSearchRewardModel2D(sensor, goal_dist,
                                                  sofar['robot_id'],
                                                  target_obj)
-    return dict(reward_model=reward_model)
+    elif verb.strip() == "nav":
+        parts = args.split(",")
+        dest_symbol = parts[0].strip()
+        # recognize destination specified by an object id,
+        if dest_symbol in sofar["objects"]:
+            th = 0
+            if len(parts) == 2:
+                th = eval(parts[1].strip())
+            goal_pose = (*sofar["objectlocs"][dest_symbol], th)
+        reward_model = NavRewardModel2D(goal_pose, sofar['robot_id'])
+        adds["dest_symbol"] = dest_symbol
+    return dict(reward_model=reward_model, **adds)
 
 def _handle_colors(lines, *args):
     colors = {}

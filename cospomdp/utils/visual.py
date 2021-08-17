@@ -185,7 +185,7 @@ class Visualizer2D:
 
 class BasicViz2D(Visualizer2D):
     def visualize(self, agent, objlocs, colors,
-                  robot_state=None, draw_fov=None):
+                  robot_state=None, draw_fov=None, draw_belief=True):
         """
         Args:
             agent (CosAgent)
@@ -203,7 +203,8 @@ class BasicViz2D(Visualizer2D):
         for objid in objlocs:
             img = self.highlight(img, [objlocs[objid]], colors[objid])
         target_id = agent.target_id
-        img = self.draw_object_belief(img, target_belief, list(colors[target_id]) + [250])
+        if draw_belief:
+            img = self.draw_object_belief(img, target_belief, list(colors[target_id]) + [250])
         img = self.draw_robot(img, x, y, th, (255, 20, 20))
         if draw_fov is not None:
             if draw_fov is True:
