@@ -22,16 +22,21 @@ def solve(worldstr, nsteps=50, solver="pomdp_py.POUCT", solver_args={}):
     viz = BasicViz2D(region=agent.search_region)
     viz.on_init()
     viz.visualize(agent, objlocs, colors, draw_fov=True,
-                      draw_belief=is_search_task)
+                  draw_belief=is_search_task)
 
     for i in range(nsteps):
         action = planner.plan(agent)
         observation, reward = env.execute(action, agent.observation_model)
-        print(f"Step {i} | a: {action}   r: {reward}    z: {observation}")
+
+        planner_info = ""
+        if isinstance(planner, pomdp_py.POUCT):
+            planner_info += "   NumSims: %d" % planner.last_num_sims
+            planner_info += "   PlanTime: %.5f" % planner.last_planning_time
+            pomdp_py.print_preferred_actions(agent.tree)
+        print(f"Step {i} | a: {action}   r: {reward}    z: {observation}   | {planner_info}")
 
         agent.update(action, observation)
         planner.update(agent, action, observation)
-
         viz.visualize(agent, objlocs, colors, draw_fov=True,
                       draw_belief=is_search_task)
         if action.name == "done":

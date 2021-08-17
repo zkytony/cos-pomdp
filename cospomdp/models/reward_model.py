@@ -1,10 +1,11 @@
 import math
 import numpy as np
+import pomdp_py
 from pomdp_py import RewardModel
 from ..utils.math import euclidean_dist, to_rad
 from ..domain.action import Done
 
-class ObjectSearchRewardModel2D(RewardModel):
+class ObjectSearchRewardModel2D(pomdp_py.RewardModel):
     def __init__(self, sensor, goal_dist, robot_id, target_id,
                  hi=100, lo=-100, step=-1):
         self.sensor = sensor
@@ -16,7 +17,10 @@ class ObjectSearchRewardModel2D(RewardModel):
         self._step = step
 
     def sample(self, state, action, next_state):
-        robot_pose = next_state.s(self.robot_id)["pose"]
+        srobot = state.s(self.robot_id)
+        if srobot.done:
+            return 0  # the robot is already done.
+        robot_pose = srobot["pose"]
         target_loc = next_state.s(self.target_id)["loc"]
         if isinstance(action, Done):
             if self.success2d(robot_pose, target_loc):
@@ -32,7 +36,7 @@ class ObjectSearchRewardModel2D(RewardModel):
                 return True
         return False
 
-class NavRewardModel2D(RewardModel):
+class NavRewardModel2D(pomdp_py.RewardModel):
     def __init__(self, goal_pose, robot_id,
                  hi=100, lo=-100, step=-1):
         self.goal_pose = goal_pose
@@ -42,6 +46,9 @@ class NavRewardModel2D(RewardModel):
         self._step = step
 
     def sample(self, state, action, next_state):
+        srobot = state.s(self.robot_id)
+        if srobot.done:
+            return 0  # the robot is already done.
         robot_pose = next_state.s(self.robot_id)["pose"]
         rx, ry, rth = robot_pose
         gx, gy, gth = self.goal_pose

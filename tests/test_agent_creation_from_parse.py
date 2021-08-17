@@ -3,7 +3,7 @@ import pytest
 import pomdp_py
 import numpy as np
 from cospomdp.utils.world import create_instance
-from cospomdp.domain.action import ALL_MOVES_2D
+from cospomdp.domain.action import ALL_MOVES_2D, Done
 
 @pytest.fixture
 def world():
@@ -37,4 +37,4 @@ def test_agent_creation_and_plan_from_parse(world):
                              planning_time=.2, exploration_const=100,
                              rollout_policy=agent.policy_model)
     action = planner.plan(agent)
-    assert action in ALL_MOVES_2D
+    assert action in ALL_MOVES_2D | {Done()}

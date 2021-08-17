@@ -4,9 +4,9 @@ from cospomdp_apps.basic.common import solve
 WORLD =\
 """
 ### map
-R.G..
-.x.Tx
-.x..x
+R........
+.x..xG...
+.x.Tx....
 
 ### robotconfig
 th: 0
@@ -19,7 +19,7 @@ T: fan-nofp | fov=45, min_range=0, max_range=2 | (0.6, 0.1)
 G: fan-nofp | fov=45, min_range=0, max_range=3 | (0.8, 0.1)
 
 ### goal
-nav: T
+nav: G
 
 ### colors
 T: [0, 22, 120]
@@ -31,7 +31,7 @@ G: [0, 210, 20]
 if __name__ == "__main__":
     solve(WORLD, nsteps=50,
           solver="pomdp_py.POUCT",
-          solver_args=dict(max_depth=15,
-                           planning_time=1.,
+          solver_args=dict(max_depth=50,
+                           num_sims=1000,
                            discount_factor=0.95,
                            exploration_const=100))

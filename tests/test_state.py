@@ -3,7 +3,7 @@ from cospomdp.domain.state import *
 def test_state_creation():
     robot_state = RobotState2D(0, (0, 1, 90), RobotStatus(False))
     assert robot_state.pose[2] == 90
-    assert robot_state.status.target_found == robot_state.target_found
+    assert robot_state.status.done == robot_state.done
 
     object_state = ObjectState2D(1, "vase", (5,5))
     assert object_state.id == 1

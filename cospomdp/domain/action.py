@@ -20,6 +20,9 @@ class Move2D(pomdp_py.SimpleAction):
         self.delta = delta
         super().__init__(name)
 
+    def __repr__(self):
+        return str(self)
+
 MoveAhead = Move2D("MoveAhead", Move2D.FORWARD)
 RotateLeft = Move2D("RotateLeft", Move2D.LEFT)
 RotateRight = Move2D("RotateRight", Move2D.RIGHT)
@@ -28,3 +31,6 @@ ALL_MOVES_2D = {MoveAhead, RotateLeft, RotateRight}
 class Done(pomdp_py.SimpleAction):
     def __init__(self):
         super().__init__("done")
+
+    def __repr__(self):
+        return str(self)

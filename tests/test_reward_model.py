@@ -33,7 +33,6 @@ def test_reward_model_object_search(fansensor, init_srobot, search_region):
     starget = ObjectState2D(target_id, "target", (4, 5))
     state = CosState2D({robot_id: init_srobot,
                         target_id: starget})
-
     assert R.sample(state, Done(), T.sample(state, Done())) == R._hi
     assert R.sample(state, MoveAhead, T.sample(state, MoveAhead)) == R._step
 

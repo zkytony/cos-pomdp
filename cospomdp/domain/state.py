@@ -20,13 +20,13 @@ class ObjectState2D(pomdp_py.ObjectState):
 @dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
 class RobotStatus:
     # One feature of dataclass frozen is the fields cannot be reassigned
-    target_found: bool = False
+    done: bool = False
     def __str__(self):
-        found_status = "found" if self.target_found else "not found"
-        return found_status
+        done_status = "done" if self.done else "in prorgess"
+        return done_status
 
     def copy(self):
-        return RobotStatus(self.target_found)
+        return RobotStatus(self.done)
 
 class RobotState2D(pomdp_py.ObjectState):
     def __init__(self, robot_id, pose, status=RobotStatus()):
@@ -46,8 +46,8 @@ class RobotState2D(pomdp_py.ObjectState):
         return self["status"]
 
     @property
-    def target_found(self):
-        return self.status.target_found
+    def done(self):
+        return self.status.done
 
     @property
     def id(self):

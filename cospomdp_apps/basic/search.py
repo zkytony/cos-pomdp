@@ -4,9 +4,9 @@ from cospomdp_apps.basic.common import solve
 WORLD =\
 """
 ### map
-R.G..
-.x.Tx
-.x..x
+R........
+.x..xG...
+.x.Tx....
 
 ### robotconfig
 th: 0

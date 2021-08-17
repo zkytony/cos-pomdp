@@ -2,8 +2,8 @@ import math
 from pomdp_py import TransitionModel
 
 from ..utils.math import indicator, to_rad, fround
-from ..domain.action import Move2D
-from ..domain.state import RobotState2D, CosState2D, ObjectState2D
+from ..domain.action import Move2D, Done
+from ..domain.state import RobotState2D, CosState2D, ObjectState2D, RobotStatus
 
 def robot_pose_transition2d(robot_pose, action):
     """
@@ -39,14 +39,17 @@ class RobotTransition2D(TransitionModel):
         srobot = state.s(self.robot_id)
         current_robot_pose = srobot["pose"]
         next_robot_pose = current_robot_pose
+        next_robot_status = srobot.status.copy()
         if isinstance(action, Move2D):
             np = robot_pose_transition2d(current_robot_pose, action)
             next_robot_pose = fround(self._round_to, np)
+        elif isinstance(action, Done):
+            next_robot_status = RobotStatus(done=True)
 
         if next_robot_pose[:2] not in self.reachable_positions:
-            return RobotState2D(self.robot_id, current_robot_pose, srobot.status)
+            return RobotState2D(self.robot_id, current_robot_pose, next_robot_status)
         else:
-            return RobotState2D(self.robot_id, next_robot_pose, srobot.status)
+            return RobotState2D(self.robot_id, next_robot_pose, next_robot_status)
 
 class CosTransitionModel2D(TransitionModel):
     def __init__(self, target_id, robot_trans_model):
