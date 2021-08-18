@@ -43,16 +43,16 @@ class TOS(ThorEnv):
         If task_type is "class", then target is an object type.
         If task_type is "object", then target is an object ID.
         """
+        self.task_config = task_config
         task_type = task_config["task_type"]
         target = task_config["target"]
-        if task_type not in {"class", "object"}:
-            raise ValueError("Invalid target type: {}".format(task_type))
-        super().__init__(controller)
         self.scene = controller.scene.split("_")[0]
         self.target = target
         self.task_type = task_type
         self.goal_distance = task_config["nav_config"]["goal_distance"]
-        self.task_config = task_config
+        if task_type not in {"class", "object"}:
+            raise ValueError("Invalid target type: {}".format(task_type))
+        super().__init__(controller)
 
     @property
     def target_id(self):
@@ -94,7 +94,7 @@ class TOS(ThorEnv):
                         + [p[0] for p in poses]
 
         actual_path = self.get_current_path()
-        last_reward = self._history[-1][-1]
+        last_reward = self._history[-1]['reward']
         success = last_reward == constants.TOS_REWARD_HI
         return [PathResult(self.scene, self.target, shortest_path, actual_path, success),
                 HistoryResult(self._history, self.task_config["discount_factor"])]
@@ -104,7 +104,7 @@ class TOS(ThorEnv):
         using the history up to now, for computing results"""
         path = []
         for tup in self._history:
-            state = tup[0]
+            state = tup['state']
             x, y, z = state.agent_pose[0]
             agent_position = dict(x=x, y=y, z=z)
             path.append(agent_position)
@@ -165,14 +165,17 @@ class TOS(ThorEnv):
             event = self.controller.step(action="Pass")
         agent_pose = thor_agent_pose(event, as_tuple=True)
         horizon = thor_camera_horizon(event)
-        return TOS_State(agent_pose, horizon)
+        objlocs = {}
+        for cls in self.task_config["detectables"]:
+            objlocs[cls] = self.get_object_loc(cls)
+        return TOS_State(agent_pose, horizon, objlocs)
 
     def get_reward(self, state, action, next_state):
         """We will use a sparse reward."""
         if self.done(action):
             if self.success(action,
                             agent_pose=state.agent_pose,
-                            horizon=state.horizon):
+                            horizon=state.horizon)[0]:
                 return constants.TOS_REWARD_HI
             else:
                 return constants.TOS_REWARD_LO
@@ -186,13 +189,19 @@ class TOS(ThorEnv):
         return action.name.lower() == "done"
 
     def success(self, action, agent_pose=None, horizon=None):
-        """Returns True if the task is a success.
+        """Returns (bool, str). For the bool:
+
+        it is  True if the task is a success.
         The task is success if the agent takes 'Done' and
         (1) the target object is within the field of view.
         (2) the robot is close enough to the target.
-        Note: uses self.controller to retrieve target object position."""
+        Note: uses self.controller to retrieve target object position.
+
+        For the str, it is a message that explains failure,
+        or 'Task success'"""
+
         if action.name.lower() != "done":
-            return False
+            return False, "action is not done"
 
         event = self.controller.step(action="Pass")
         backup_state = self.get_state(event)
@@ -230,23 +239,47 @@ class TOS(ThorEnv):
                                  position=position,
                                  rotation=rotation,
                                  horizon=horizon)
+        msg = "Task success"
         if not success:
             if not in_fov:
-                print(typ.red("Object not in field of view!"))
+                msg = "Object not in field of view!"
             if not close_enough:
-                print(typ.red("Object not close enough! Minimum distance: {}; Actual distance: {}".\
-                              format(self.goal_distance, object_distance)))
-        return success
+                msg = "Object not close enough! Minimum distance: {}; Actual distance: {}".\
+                    format(self.goal_distance, object_distance)
+        return success, msg
+
+    def update_history(self, next_state, action, observation, reward):
+        # Instead of just storing everything which takes a lot of space,
+        # store the important stuff; The images in the observation don't
+        # need to be saved because the image can be determined in ai2thor
+        # through the actions the agent has taken. But we do want to store
+        # detections in the observation.
+        info = dict(state=next_state,    # the state where observation is generated
+                    action=action,  # the action that lead to the state
+                    detections=observation.detections if observation is not None else None,
+                    observed_robot_pose=observation.robot_pose if observation is not None else None,
+                    reward=reward)
+        self._history.append(info)
 
     def get_step_info(self, step):
-        sp, a, o, r = self._history[step]
-        x, z, pitch, yaw = sp.agent_pose[0][0], sp.agent_pose[0][2], sp.agent_pose[1][0], sp.agent_pose[1][1]
+        info = self._history[step]
+        s = info['state']
+        a = info['action']
+        o = {cls: None for cls in self.task_config["detectables"]}
+        for detection in info['detections']:
+            cls = detection[2]
+            loc3d = detection[3]
+            o[cls] = list(map(lambda l: "{:.3f}".format(l), loc3d))
+        o = list(sorted(o.items()))
+        r = info['reward']
+        x, z, pitch, yaw = s.agent_pose[0][0], s.agent_pose[0][2], s.agent_pose[1][0], s.agent_pose[1][1]
         action = a.name if not a.name.startswith("Open") else "{}({})".format(a.name, a.params)
-        return "Step {}: Action: {}, (x={}, z={}, pitch={}, yaw={}), Reward: {}"\
-            .format(step, typ.blue(action), x, z, pitch, yaw, r)
+        return "Step {}: Action: {}; Reward: {}; Observation: {}; pose: (x={:.3f}, z={:.3f}, pitch={:.3f}, yaw={:.3f})"\
+            .format(step, action, r, o, x, z, pitch, yaw)
 
     def visualizer(self, **config):
         return ThorObjectSearchViz2D(**config)
+
 
 
 # Class naming aliases

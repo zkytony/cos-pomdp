@@ -14,6 +14,7 @@ def _test_basic_search():
                     task_env="ThorObjectSearch",
                     prior='uniform')
     config = make_config(args)
+    config["agent_config"]["prior"] = prior
     config["agent_config"]["corr_specs"] = {
         ("Bowl", "Book"): (around, dict(d=3))
     }

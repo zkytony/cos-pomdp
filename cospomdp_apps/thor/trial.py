@@ -5,7 +5,7 @@ import thortils
 
 from cospomdp.utils.misc import _debug
 from cospomdp.utils import cfg
-cfg.DEBUG_LEVEL = 1
+cfg.DEBUG_LEVEL = 0
 
 from .object_search import ThorObjectSearch
 from .agent import ThorObjectSearchOptimalAgent, ThorObjectSearchCosAgent
@@ -56,8 +56,11 @@ class ThorTrial(Trial):
                 viz.visualize(task_env, agent, step=i)
 
             if task_env.done(action):
-                success = task_env.success(action)
-                print("Task success:", success)
+                success, msg = task_env.success(action)
+                if logging:
+                    self.log_event(Event("Trial %s | %s" % (self.name, msg)))
+                else:
+                    print(msg)
                 break
         results = task_env.compute_results()
         controller.stop()
@@ -70,7 +73,7 @@ class ThorTrial(Trial):
 
 # ------------- Object search trial ------------- #
 class ThorObjectSearchTrial(ThorTrial):
-    RESULT_TYPES = [PathResult]#, HistoryResult]
+    RESULT_TYPES = [PathResult, HistoryResult]
 
 
 def build_object_search_trial(scene, target, task_type,

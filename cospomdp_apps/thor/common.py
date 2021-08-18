@@ -10,8 +10,10 @@ class TOS_Action:
 
 @dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
 class TOS_State:
-    agent_pose: tuple
+    agent_pose: tuple  # position, rotation, in thor coordinates
     horizon: float
+    objectlocs: dict   # maps from object class (thor) to (x,y) in thor coordinates;
+                       # the instance of this class is the closest one to where the robot is.
 
 @dataclass(init=True, frozen=True)
 class TOS_Observation:
@@ -27,7 +29,7 @@ class ThorEnv:
         self.controller = controller
         self._history = []  # stores the (s', a, o, r) tuples so far
         self._init_state = self.get_state(self.controller)
-        self._history.append((self._init_state, None, None, 0))
+        self.update_history(self._init_state, None, None, 0)
 
     @property
     def init_state(self):
@@ -46,8 +48,11 @@ class ThorEnv:
         next_state = self.get_state(event)
         observation = self.get_observation(event, detector=agent.detector)
         reward = self.get_reward(state, action, next_state)
-        self._history.append((next_state, action, observation, reward))
+        self.update_history(next_state, action, observation, reward)
         return (observation, reward)
+
+    def update_history(self, next_state, action, observation, reward):
+        raise NotImplementedError
 
     def done(self):
         raise NotImplementedError
@@ -103,8 +108,9 @@ def make_config(args):
         "task_env": args.task_env,
         "task_env_config": {"task_config": task_config},
         "agent_class": args.agent_class,
-        "agent_config": {"task_config": task_config,
-                         "prior": args.prior}
+        "agent_config": {"task_config": task_config}
     }
 
+    # You are expected to modify config['agent_config']
+    # afterwards to tailor to your agent.
     return config
