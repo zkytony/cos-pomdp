@@ -320,7 +320,6 @@ class CosObservationModel2D(ObservationModel):
             return 1e-12
         if observation.z(self.robot_id).status != next_state.s(self.robot_id)['status']:
             return 1e-12
-
         return reduce(lambda result_so_far, elm: result_so_far*elm,
                       [self.zi_models[zi.objid].probability(zi, next_state)
                        for zi in observation])

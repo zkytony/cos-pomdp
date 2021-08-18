@@ -152,6 +152,13 @@ class TOS(ThorEnv):
                 # pos = projection.inverse_perspective(np.mean(xyxy), ..) # TODO
         return TOS_Observation(img, img_depth, detections, thor_agent_pose(event))
 
+    def get_object_loc(self, object_class):
+        """Returns object location (note: in thor coordinates) for given
+        object class, for the closest instance to the robot."""
+        obj = thor_closest_object_of_type(self.controller, object_class)
+        return thor_object_position(self.controller, obj["objectId"], as_tuple=True)
+
+
     def get_state(self, event=None):
         # stores agent pose as tuple, for convenience.
         if event is None:
@@ -239,6 +246,7 @@ class TOS(ThorEnv):
 
     def visualizer(self, **config):
         return ThorObjectSearchViz2D(**config)
+
 
 # Class naming aliases
 ThorObjectSearch = TOS

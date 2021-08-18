@@ -45,7 +45,21 @@ def inverse_color_hex(hx):
     """hx is a string, begins with #. ASSUME len(hx)=7."""
     return inverse_color_rgb(hex_to_rgb(hx))
 
-def random_unique_color(colors, ctype=1):
+def random_unique_color(colors, ctype=1, rnd=random, fmt="rgb"):
+    colors_hex = []
+    for c in colors:
+        if not c.startswith("#"):
+            colors_hex.append(rgb_to_hex(c))
+        else:
+            colors_hex.append(c)
+    color = _random_unique_color_hex(colors, ctype=ctype, rnd=rnd)
+    if fmt == "rgb":
+        return hex_to_rgb(color)
+    else:
+        return color
+
+
+def _random_unique_color_hex(colors, ctype=1, rnd=random):
     """
     ctype=1: completely random
     ctype=2: red random
@@ -54,26 +68,26 @@ def random_unique_color(colors, ctype=1):
     ctype=5: yellow random
     """
     if ctype == 1:
-        color = "#%06x" % random.randint(0x444444, 0x999999)
+        color = "#%06x" % rnd.randint(0x444444, 0x999999)
         while color in colors:
-            color = "#%06x" % random.randint(0x444444, 0x999999)
+            color = "#%06x" % rnd.randint(0x444444, 0x999999)
     elif ctype == 2:
-        color = "#%02x0000" % random.randint(0xAA, 0xFF)
+        color = "#%02x0000" % rnd.randint(0xAA, 0xFF)
         while color in colors:
-            color = "#%02x0000" % random.randint(0xAA, 0xFF)
+            color = "#%02x0000" % rnd.randint(0xAA, 0xFF)
     elif ctype == 4:  # green
-        color = "#00%02x00" % random.randint(0xAA, 0xFF)
+        color = "#00%02x00" % rnd.randint(0xAA, 0xFF)
         while color in colors:
-            color = "#00%02x00" % random.randint(0xAA, 0xFF)
+            color = "#00%02x00" % rnd.randint(0xAA, 0xFF)
     elif ctype == 3:  # blue
-        color = "#0000%02x" % random.randint(0xAA, 0xFF)
+        color = "#0000%02x" % rnd.randint(0xAA, 0xFF)
         while color in colors:
-            color = "#0000%02x" % random.randint(0xAA, 0xFF)
+            color = "#0000%02x" % rnd.randint(0xAA, 0xFF)
     elif ctype == 5:  # yellow
-        h = random.randint(0xAA, 0xFF)
+        h = rnd.randint(0xAA, 0xFF)
         color = "#%02x%02x00" % (h, h)
         while color in colors:
-            h = random.randint(0xAA, 0xFF)
+            h = rnd.randint(0xAA, 0xFF)
             color = "#%02x%02x00" % (h, h)
     else:
         raise ValueError("Unrecognized color type %s" % (str(ctype)))

@@ -1,5 +1,6 @@
 import random
 import math
+import pomdp_py
 from thortils import (thor_closest_object_of_type,
                       thor_reachable_positions,
                       thor_agent_pose,
@@ -21,7 +22,9 @@ from cospomdp.utils.math import indicator, normalize, euclidean_dist
 import time
 from thortils.navigation import (get_shortest_path_to_object,
                                  get_shortest_path_to_object_type)
-from cospomdp.domain.action import Move2D
+from cospomdp.domain.state import RobotStatus
+from cospomdp.domain.action import Move2D, ALL_MOVES_2D, Done
+from cospomdp.domain.observation import Loc2D, CosObservation2D, RobotObservation2D
 from cospomdp import *
 
 class ThorAgent:
@@ -187,20 +190,35 @@ class GridMapSearchRegion(SearchRegion2D):
         self._obstacles = grid_map.obstacles
 
 class ThorObjectSearchCosAgent(ThorAgent):
+    AGENT_USES_CONTROLLER = True
     def __init__(self,
                  controller,
                  task_config,
                  corr_specs,
-                 detector_specs):
+                 detector_specs,
+                 solver="pomdp_py.POUCT",
+                 solver_args=dict(max_depth=10,
+                                  num_sims=200,
+                                  discount_factor=0.95,
+                                  exploration_const=100)):
+        """
+        controller (ai2thor Controller)
+        task_config (dict) configuration; see make_config
+        corr_specs (dict): Maps from (target_id, object_id) to (corr_func, corr_func_args)
+        detector_specs (dict): Maps from object_id to (detector_type, sensor_params, quality_params)
+        solver (str): name of solver
+        solver_args (dict): arguments for the solver
+        """
 
         robot_id = task_config['robot_id']
         grid_map = convert_scene_to_grid_map(
             controller,
             thor_scene_from_controller(controller),
             thor_grid_size_from_controller(controller))
-
         search_region = GridMapSearchRegion(grid_map)
         reachable_positions = grid_map.free_locations
+        self.grid_map = grid_map
+        self.search_region = search_region
 
         thor_robot_pose = thor_agent_pose(controller.last_event)
         init_robot_pose = grid_map.to_grid_pose(
@@ -213,15 +231,35 @@ class ThorObjectSearchCosAgent(ThorAgent):
             target = (target_id, target_class)
         else:
             target = task_config['target']  # (target_id, target_class)
+            target_id = target[0]
+        self.task_config = task_config
+        self.target = target
 
-        objects = {}  # objects we care about are detectable objects
+        detectors, detectable_objects = self._build_detectors(detector_specs)
+        corr_dists = self._build_corr_dists(corr_specs, detectable_objects)
+
+        reward_model = ObjectSearchRewardModel2D(
+            detectors[target_id].sensor,
+            task_config["nav_config"]["goal_distance"],
+            robot_id, target_id)
+        # Construct CosAgent, the actual POMDP
+        self.cos_agent = CosAgent(robot_id, init_robot_pose, target,
+                                  search_region, reachable_positions,
+                                  corr_dists, detectors, reward_model)
+        # construct solver
+        if solver == "pomdp_py.POUCT":
+            self.solver = pomdp_py.POUCT(**solver_args,
+                                         rollout_policy=self.cos_agent.policy_model)
+
+    def _build_detectors(self, detector_specs):
+        detectable_objects = {}  # objects we care about are detectable objects
         detectors = {}
-        for obj in task_config["detectables"]:
+        for obj in self.task_config["detectables"]:
             if len(obj) == 2:
                 object_id, object_class = obj
             else:
                 object_id = object_class = obj
-            objects[object_id] = (object_id, object_class)
+            detectable_objects[object_id] = (object_id, object_class)
 
             detector_type, sensor_params, quality_params = detector_specs[object_id]
             if detector_type.strip() == "fan-nofp":
@@ -231,7 +269,10 @@ class ThorObjectSearchCosAgent(ThorAgent):
                     quality_params = eval(quality_params.strip())
                 detector = FanModelNoFP(object_id, sensor_params, quality_params)
                 detectors[object_id] = detector
+        return detectors, detectable_objects
 
+    def _build_corr_dists(self, corr_specs, objects):
+        target_id = self.target[0]
         corr_dists = {}
         for key in corr_specs:
             obj1, obj2 = key
@@ -248,15 +289,79 @@ class ThorObjectSearchCosAgent(ThorAgent):
                     corr_func = eval(corr_func)
                 corr_dists[other] = CorrelationDist(objects[other],
                                                     objects[target_id],
-                                                    search_region,
+                                                    self.search_region,
                                                     corr_func,
                                                     corr_func_args=corr_func_args)
+        return corr_dists
 
-        reward_model = ObjectSearchRewardModel2D(
-            detectors[target_id].sensor,
-            task_config["nav_config"]["goal_distance"],
-            robot_id, target)
+    @property
+    def belief(self):
+        return self.cos_agent.belief
 
-        self.cos_agent = CosAgent(robot_id, init_robot_pose, target,
-                                  search_region, reachable_positions,
-                                  corr_dists, detectors, reward_model)
+    @property
+    def robot_id(self):
+        return self.cos_agent.robot_id
+
+    @property
+    def target_id(self):
+        return self.cos_agent.target_id
+
+    def sensor(self, objid):
+        return self.cos_agent.sensor(objid)
+
+    @property
+    def detectable_objects(self):
+        return self.cos_agent.detectable_objects
+
+    def movement_params(self, move_name):
+        """Returns the parameter dict used for ai2thor Controller.step
+        for the given move_name"""
+        return self.task_config["nav_config"]["movement_params"][move_name]
+
+    def act(self):
+        """
+        Output a TOS_Action
+        """
+        action = self.solver.plan(self.cos_agent)
+
+        # Need to return TOS_Action
+        if isinstance(action, Move2D):
+            name = action.name
+            params = self.movement_params(name)
+        elif isinstance(action, Done):
+            name = "done"
+            params = {}
+        return TOS_Action(name, params)
+
+    def update(self, tos_action, tos_observation):
+        """
+        Given TOS_Action and TOS_Observation, update the agent's belief, etc.
+        """
+        action_names = {a.name: a for a in ALL_MOVES_2D | {Done()}}
+        if tos_action.name in action_names:
+            action = action_names[tos_action.name]
+        else:
+            raise ValueError("Cannot understand action {}".format(action))
+
+        objobzs = {}
+        for cls in self.detectable_objects:
+            objobzs[cls] = Loc2D(cls, None)
+
+        for detection in tos_observation.detections:
+            xyxy, conf, cls, loc3d = detection
+            thor_x, _, thor_z = loc3d
+            x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
+            objobzs[cls] = Loc2D(cls, (x, z))
+
+        thor_robot_pose = tos_observation.robot_pose
+        thor_robot_pose2d = (thor_robot_pose[0]['x'], thor_robot_pose[0]['z'], thor_robot_pose[1]['y'])
+        robot_pose = self.grid_map.to_grid_pose(*thor_robot_pose2d)
+        # TODO: properly set status - right now there is only 'done' and it
+        # doesn't affect behavior if this is always false because task success
+        # depends on taking the done action, not the done status.
+        status = RobotStatus()
+        robotobz = RobotObservation2D(self.robot_id, robot_pose, status)
+        observation = CosObservation2D(robotobz, objobzs)
+        print(observation)
+        self.cos_agent.update(action, observation)
+        self.solver.update(self.cos_agent, action, observation)

@@ -1,10 +1,11 @@
 import math
+import random
 import cv2
 import numpy as np
 import pygame
 
 from .images import overlay, cv2shape
-from .colors import lighter, lighter_with_alpha, inverse_color_rgb
+from .colors import lighter, lighter_with_alpha, inverse_color_rgb, random_unique_color
 from .math import to_rad
 
 class Visualizer2D:
@@ -16,6 +17,7 @@ class Visualizer2D:
         self._bg_path = config.get("bg_path", None)
         self._colors = config.get("colors", {})
         self._initialized = False
+        self._rnd = random.Random(100) # sudo random for generating color
 
     @property
     def img_width(self):
@@ -98,9 +100,20 @@ class Visualizer2D:
         pygame.surfarray.blit_array(self._display_surf, img)
         pygame.display.flip()
 
-    def get_color(self, objid, default=(220, 150, 10, 255), alpha=1.0):
-        color = self._colors.get(objid, default)
-        if len(color) == 3:
+    def get_color(self, objid, colors=None, alpha=1.0):
+        """
+        colors: maps frmo objid to [r,g,b]. If None, then the
+            self._colors will be used instead. If objid not in
+            colors, then a pseudo-random color will be generated.
+        """
+        if colors is None:
+            colors = self._colors
+        if objid not in colors:
+            color = random_unique_color(self._colors.values(), rnd=self._rnd, fmt='rgb')
+            colors[objid] = color
+        else:
+            color = colors[objid]
+        if len(color) == 3 and alpha is not None:
             color = color + [int(round(alpha*255))]
         color = tuple(color)
         return color
@@ -184,7 +197,7 @@ class Visualizer2D:
 
 
 class BasicViz2D(Visualizer2D):
-    def visualize(self, agent, objlocs, colors,
+    def visualize(self, agent, objlocs, colors={},
                   robot_state=None, draw_fov=None, draw_belief=True):
         """
         Args:
@@ -200,22 +213,23 @@ class BasicViz2D(Visualizer2D):
 
         img = self._make_gridworld_image(self._res)
         x, y, th = robot_state["pose"]
-        for objid in objlocs:
-            img = self.highlight(img, [objlocs[objid]], colors[objid])
+        for objid in sorted(objlocs):
+            img = self.highlight(img, [objlocs[objid]], self.get_color(objid, colors, alpha=None))
         target_id = agent.target_id
+        target_color = self.get_color(target_id, colors, alpha=None)
         if draw_belief:
-            img = self.draw_object_belief(img, target_belief, list(colors[target_id]) + [250])
+            img = self.draw_object_belief(img, target_belief, list(target_color) + [250])
         img = self.draw_robot(img, x, y, th, (255, 20, 20))
         if draw_fov is not None:
             if draw_fov is True:
                 img = self.draw_fov(img,
                                     agent.sensor(agent.target_id),
                                     robot_state['pose'],
-                                    inverse_color_rgb(colors[target_id]))
+                                    inverse_color_rgb(target_color))
             elif hasattr(draw_fov, "__len__"):
-                for objid in draw_fov:
+                for objid in sorted(draw_fov):
                     img = self.draw_fov(img,
                                         agent.sensor(objid),
                                         robot_state['pose'],
-                                        inverse_color_rgb(colors[objid]))
+                                        inverse_color_rgb(self.get_color(objid, colors, alpha=None)))
         self.show_img(img)

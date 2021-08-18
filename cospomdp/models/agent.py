@@ -60,6 +60,10 @@ class CosAgent(pomdp_py.Agent):
         return self.observation_model.zi_models[objid].detection_model.sensor
 
     @property
+    def detectable_objects(self):
+        return set(self.observation_model.zi_models.keys())
+
+    @property
     def target_id(self):
         return self.observation_model.target_id
 

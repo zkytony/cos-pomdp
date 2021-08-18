@@ -8,7 +8,7 @@ from cospomdp.utils import cfg
 cfg.DEBUG_LEVEL = 1
 
 from .object_search import ThorObjectSearch
-from .agent import ThorObjectSearchOptimalAgent#, ThorObjectSearchCOSPOMDPAgent
+from .agent import ThorObjectSearchOptimalAgent, ThorObjectSearchCosAgent
 from .result_types import PathResult, HistoryResult
 from . import constants
 from .common import make_config, TaskArgs
@@ -44,7 +44,7 @@ class ThorTrial(Trial):
         for i in range(1, max_steps+1):
             _debug(f"====== Step: {i} ======", "bold-white")
             action = agent.act()
-            observation = task_env.execute(agent, action)
+            observation, reward = task_env.execute(agent, action)
             agent.update(action, observation)
 
             _step_info = task_env.get_step_info(step=i)
