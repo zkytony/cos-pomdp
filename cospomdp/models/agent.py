@@ -80,6 +80,7 @@ class CosAgent(pomdp_py.Agent):
                                      self.target_id: new_btarget})
         self.set_belief(new_belief)
 
+
 def initialize_robot_belief(robot_id, init_robot_pose):
     init_robot_state = RobotState2D(robot_id, init_robot_pose)
     return pomdp_py.Histogram({init_robot_state: 1.0})

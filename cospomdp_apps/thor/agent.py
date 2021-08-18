@@ -186,8 +186,8 @@ class ThorObjectSearchOptimalAgent(ThorAgent):
 
 class GridMapSearchRegion(SearchRegion2D):
     def __init__(self, grid_map):
-        super().__init__(grid_map.free_locations)
-        self._obstacles = grid_map.obstacles
+        super().__init__(grid_map.obstacles)
+        # self._obstacles = grid_map.obstacles
 
 class ThorObjectSearchCosAgent(ThorAgent):
     AGENT_USES_CONTROLLER = True

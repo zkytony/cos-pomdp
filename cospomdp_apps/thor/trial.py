@@ -38,7 +38,7 @@ class ThorTrial(Trial):
 
         if self.config.get("visualize", False):
             viz = task_env.visualizer(**self.config["viz_config"])
-            viz.visualize(task_env, agent)
+            viz.visualize(task_env, agent, step=0)
 
         max_steps = self.config["max_steps"]
         for i in range(1, max_steps+1):
@@ -53,7 +53,7 @@ class ThorTrial(Trial):
             else:
                 print(_step_info)
             if self.config.get("visualize", False):
-                viz.visualize(task_env, agent)
+                viz.visualize(task_env, agent, step=i)
 
             if task_env.done(action):
                 break
