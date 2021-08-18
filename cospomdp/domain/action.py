@@ -9,8 +9,8 @@ class Move2D(pomdp_py.SimpleAction):
     LEFT_90 = (0, 90.0)
     RIGHT_45 = (0, -45.0)
     RIGHT_90 = (0, -90.0)
-    LEFT = LEFT_45
-    RIGHT = RIGHT_45
+    LEFT = LEFT_90
+    RIGHT = RIGHT_90
 
     def __init__(self, name, delta):
         """

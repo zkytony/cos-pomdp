@@ -245,7 +245,8 @@ class ThorObjectSearchCosAgent(ThorAgent):
         # Construct CosAgent, the actual POMDP
         self.cos_agent = CosAgent(robot_id, init_robot_pose, target,
                                   search_region, reachable_positions,
-                                  corr_dists, detectors, reward_model)
+                                  corr_dists, detectors, reward_model,
+                                  prior=prior)
         # construct solver
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,

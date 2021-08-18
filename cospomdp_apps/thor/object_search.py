@@ -15,6 +15,7 @@ from thortils import (thor_agent_pose,
                       thor_object_of_type_in_fov,
                       thor_object_position,
                       thor_closest_object_of_type,
+                      thor_closest_object_of_type_position,
                       thor_pose_as_dict)
 
 from thortils.vision import (thor_img,
@@ -155,9 +156,8 @@ class TOS(ThorEnv):
     def get_object_loc(self, object_class):
         """Returns object location (note: in thor coordinates) for given
         object class, for the closest instance to the robot."""
-        obj = thor_closest_object_of_type(self.controller, object_class)
-        return thor_object_position(self.controller, obj["objectId"], as_tuple=True)
-
+        return thor_closest_object_of_type_position(self.controller, object_class,
+                                                    as_tuple=True)
 
     def get_state(self, event=None):
         # stores agent pose as tuple, for convenience.
@@ -191,7 +191,7 @@ class TOS(ThorEnv):
         (1) the target object is within the field of view.
         (2) the robot is close enough to the target.
         Note: uses self.controller to retrieve target object position."""
-        if action.name != "Done":
+        if action.name.lower() != "done":
             return False
 
         event = self.controller.step(action="Pass")
@@ -211,12 +211,13 @@ class TOS(ThorEnv):
             object_type = self.target
             in_fov = thor_object_of_type_in_fov(event, object_type)
             p = thor_closest_object_of_type(event, object_type)["position"]
-            objpos = (p['x'], p['y'], p['z'])
+            objpos = (p['x'], p['z'])
         else:
             raise NotImplementedError("We do not consider this case for now.")
 
-        agent_position = thor_agent_pose(event, as_tuple=True)[0]
-        object_distance = euclidean_dist(objpos, agent_position)
+        agent_position = thor_agent_pose(event)[0]
+        object_distance = euclidean_dist(objpos, (agent_position['x'],
+                                                  agent_position['z']))
         # allows 0.1 to account for small difference due to floating point instability
         close_enough = (object_distance - self.goal_distance) <= 2e-1
         success = in_fov and close_enough
@@ -231,10 +232,10 @@ class TOS(ThorEnv):
                                  horizon=horizon)
         if not success:
             if not in_fov:
-                print("Object not in field of view!")
+                print(typ.red("Object not in field of view!"))
             if not close_enough:
-                print("Object not close enough! Minimum distance: {}; Actual distance: {}".\
-                      format(self.goal_distance, object_distance))
+                print(typ.red("Object not close enough! Minimum distance: {}; Actual distance: {}".\
+                              format(self.goal_distance, object_distance)))
         return success
 
     def get_step_info(self, step):

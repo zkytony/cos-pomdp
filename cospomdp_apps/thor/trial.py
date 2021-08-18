@@ -56,6 +56,8 @@ class ThorTrial(Trial):
                 viz.visualize(task_env, agent, step=i)
 
             if task_env.done(action):
+                success = task_env.success(action)
+                print("Task success:", success)
                 break
         results = task_env.compute_results()
         controller.stop()
