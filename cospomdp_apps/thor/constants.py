@@ -7,7 +7,7 @@
 GRID_SIZE = 0.25
 MOVE_STEP_SIZE = GRID_SIZE
 
-H_ROTATION = 90   # Yaw; body rotation. Only 90 won't stuck
+H_ROTATION = 45   # Yaw; body rotation. Only 90 won't stuck
 V_ROTATION = 30   # Pitch; camera up and down
 
 H_ANGLES = [i*H_ROTATION for i in range(int(360/H_ROTATION))]
@@ -97,15 +97,18 @@ BATHROOM_VAL_SCENES   = ithor_scene_names("bathroom", range(21,31))
 #-------------------------------------------------------------------------------
 # Defines what objects the agent is able to interact with, and the corresponding
 # actions to interact with those objects.
+def func_pickupable(obj):
+    return ["PickupObject"] if not obj["isPickedUp"] else ["DropObject"]
+def func_openable(obj):
+    return ["OpenObject"] if not obj["isOpen"] else ["CloseObject"]
+
 INTERACTION_PROPERTIES = [
 
     # can interact with pickupable objects
-    ("pickupable",
-     lambda obj: ["PickupObject"] if not obj["isPickedUp"] else ["DropObject"]),
+    ("pickupable", func_pickupable),
 
     # can interact with openable objects
-    ("openable",
-     lambda obj: ["OpenObject"] if not obj["isOpen"] else ["CloseObject"])
+    ("openable", func_openable)
 
 ]
 
