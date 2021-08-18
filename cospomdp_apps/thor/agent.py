@@ -18,6 +18,7 @@ from thortils import (thor_closest_object_of_type,
 from .common import TOS_Action
 from . import constants
 from cospomdp.utils.math import indicator, normalize, euclidean_dist
+from cospomdp_apps.thor.replay import ReplaySolver
 
 # Used by optimal agent
 import time
@@ -256,6 +257,9 @@ class ThorObjectSearchCosAgent(ThorAgent):
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,
                                          rollout_policy=self.cos_agent.policy_model)
+        else:
+            self.solver = eval(solver)(**solver_args)
+
 
     def _build_detectors(self, detector_specs):
         detectable_objects = {}  # objects we care about are detectable objects
@@ -331,13 +335,16 @@ class ThorObjectSearchCosAgent(ThorAgent):
         action = self.solver.plan(self.cos_agent)
 
         # Need to return TOS_Action
-        if isinstance(action, Move2D):
-            name = action.name
-            params = self.movement_params(name)
-        elif isinstance(action, Done):
-            name = "done"
-            params = {}
-        return TOS_Action(name, params)
+        if not isinstance(action, TOS_Action):
+            if isinstance(action, Move2D):
+                name = action.name
+                params = self.movement_params(name)
+            elif isinstance(action, Done):
+                name = "done"
+                params = {}
+            return TOS_Action(name, params)
+        else:
+            return action
 
     def update(self, tos_action, tos_observation):
         """

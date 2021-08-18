@@ -85,8 +85,9 @@ class PathResult(PklResult):
                 episode_results.append(path_result.to_tuple())
                 if path_result.success:
                     success_count += 1
-            spl = compute_spl(episode_results)
-            rows.append([baseline, spl, success_count, len(results[baseline])])
+            if len(episode_results) != 0:
+                spl = compute_spl(episode_results)
+                rows.append([baseline, spl, success_count, len(results[baseline])])
         cls.sharedheader = ["baseline", "spl", "success", "total"]
         return rows
 
@@ -95,18 +96,23 @@ class PathResult(PklResult):
         # Gathered results maps from global name to what is returned by gather()
         all_rows = []
         for global_name in gathered_results:
-            target, other = global_name.split("--")
+            scene, target, other = global_name.split("-")
             for row in gathered_results[global_name]:
                 success_rate = row[2] / max(1, row[3])
-                all_rows.append([target, other] + row + [success_rate])
-        df = pd.DataFrame(all_rows,
-                          columns=["target_class", "other_class"] + cls.sharedheader + ["success_rate"])
+                all_rows.append([scene, target, other] + row + [success_rate])
+        columns = ["scene", "target_class", "other_class"] + cls.sharedheader + ["success_rate"]
+        df = pd.DataFrame(all_rows, columns=columns)
         summary = df.groupby(['baseline'])\
                     .agg([("avg", "mean"),
                           "std",
                           ("ci95", lambda x: ci_normal(x, confidence_interval=0.95))])
+        summary_by_scene = df.groupby(['scene', 'baseline'])\
+                             .agg([("avg", "mean"),
+                                   "std",
+                                   ("ci95", lambda x: ci_normal(x, confidence_interval=0.95))])
         df.to_csv(os.path.join(path, "path_result.csv"))
         summary.to_csv(os.path.join(path, "path_result_summary.csv"))
+        summary_by_scene.to_csv(os.path.join(path, "path_result_summary-by-scene.csv"))
 
 
 class HistoryResult(YamlResult):
@@ -119,7 +125,7 @@ class HistoryResult(YamlResult):
 
     @classmethod
     def FILENAME(cls):
-        return "history.pkl"
+        return "history.yaml"
 
     def discounted_return(self):
         discount = 1.0

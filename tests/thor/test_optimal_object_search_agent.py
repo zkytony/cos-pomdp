@@ -11,20 +11,20 @@ from cospomdp.utils.math import mean_ci_normal
 # # Notes:
 # # Fork in FloorPlan2 doesn't work because it'll be blocked by wall
 TARGETS_EXPOSED = {
-    "FloorPlan1": ["Vase", "Book", "Lettuce"],  # Book pitch wrong (due to height)
-    "FloorPlan2": ["Bowl", "Pan", "Ladle"],      # Ladle pitch wrong (due to height)
-    "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
-    "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
-    "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
+    # "FloorPlan1": ["Vase", "Book", "Lettuce"],  # Book pitch wrong (due to height)
+    # "FloorPlan2": ["Bowl", "Pan", "Ladle"],      # Ladle pitch wrong (due to height)
+    "FloorPlan3": ["DishSponge"],#["Bread", "SoapBottle", "Spatula"],
+    # "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
+    # "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
 }
 
-TARGETS_CONTAINED = {
-    "FloorPlan1": ["Knife", "Egg", "WineBottle"],  # All works
-    "FloorPlan2": ["Plate", "Apple", "ButterKnife"],  # Plate works, Apple: Blocked by door.
-    "FloorPlan3": ["Pan", "Tomato"],   # Pan: view blocked by table; Tomato: Fridge open blocked
-    "FloorPlan4": ["Egg", "Lettuce"],  # Fridge and Lettuce: fridge open blocked
-    "FloorPlan5": ["Apple"]  # Fridge open blocked
-}
+# TARGETS_CONTAINED = {
+#     "FloorPlan1": ["Knife", "Egg", "WineBottle"],  # All works
+#     "FloorPlan2": ["Plate", "Apple", "ButterKnife"],  # Plate works, Apple: Blocked by door.
+#     "FloorPlan3": ["Pan", "Tomato"],   # Pan: view blocked by table; Tomato: Fridge open blocked
+#     "FloorPlan4": ["Egg", "Lettuce"],  # Fridge and Lettuce: fridge open blocked
+#     "FloorPlan5": ["Apple"]  # Fridge open blocked
+# }
 
 # ####### BATHROOM ##########
 # TARGETS_EXPOSED = {
