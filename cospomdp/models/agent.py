@@ -87,7 +87,7 @@ def initialize_robot_belief(robot_id, init_robot_pose):
 
 def initialize_target_belief(target, search_region, belief_type, prior):
     def _prob(prior, loc):
-        return prior.get("loc", 1.0)
+        return prior.get(loc, 1.0)
 
     target_id, target_class = target
     if belief_type == "histogram":

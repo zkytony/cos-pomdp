@@ -10,6 +10,7 @@ from thortils import (thor_closest_object_of_type,
                       thor_object_position,
                       thor_scene_from_controller,
                       thor_grid_size_from_controller,
+                      thor_closest_object_of_type_position,
                       thor_pose_as_tuple,
                       thor_pose_as_dict,
                       convert_scene_to_grid_map)
@@ -196,11 +197,9 @@ class ThorObjectSearchCosAgent(ThorAgent):
                  task_config,
                  corr_specs,
                  detector_specs,
-                 solver="pomdp_py.POUCT",
-                 solver_args=dict(max_depth=10,
-                                  num_sims=200,
-                                  discount_factor=0.95,
-                                  exploration_const=100)):
+                 solver,
+                 solver_args,
+                 prior="uniform"):
         """
         controller (ai2thor Controller)
         task_config (dict) configuration; see make_config
@@ -211,10 +210,9 @@ class ThorObjectSearchCosAgent(ThorAgent):
         """
 
         robot_id = task_config['robot_id']
+        grid_size = thor_grid_size_from_controller(controller)
         grid_map = convert_scene_to_grid_map(
-            controller,
-            thor_scene_from_controller(controller),
-            thor_grid_size_from_controller(controller))
+            controller, thor_scene_from_controller(controller), grid_size)
         search_region = GridMapSearchRegion(grid_map)
         reachable_positions = grid_map.free_locations
         self.grid_map = grid_map
@@ -240,13 +238,20 @@ class ThorObjectSearchCosAgent(ThorAgent):
 
         reward_model = ObjectSearchRewardModel2D(
             detectors[target_id].sensor,
-            task_config["nav_config"]["goal_distance"],
+            task_config["nav_config"]["goal_distance"] / grid_size,
             robot_id, target_id)
+
+        prior_dist = {}
+        if prior == "informed":
+            thor_x, _, thor_z = thor_closest_object_of_type_position(controller, target_class, as_tuple=True)
+            x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
+            prior_dist = {(x,z): 1e5}
+
         # Construct CosAgent, the actual POMDP
         self.cos_agent = CosAgent(robot_id, init_robot_pose, target,
                                   search_region, reachable_positions,
                                   corr_dists, detectors, reward_model,
-                                  prior=prior)
+                                  prior=prior_dist)
         # construct solver
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,

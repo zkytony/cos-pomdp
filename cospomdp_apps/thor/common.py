@@ -75,6 +75,7 @@ class TaskArgs:
     scene: str = 'FloorPlan1'
     task_env: str = "ThorObjectSearch"
     agent_class: str = "ThorObjectSearchOptimalAgent"
+    prior: str = 'uniform'
 
 
 # Make configs
@@ -102,7 +103,8 @@ def make_config(args):
         "task_env": args.task_env,
         "task_env_config": {"task_config": task_config},
         "agent_class": args.agent_class,
-        "agent_config": {"task_config": task_config}
+        "agent_config": {"task_config": task_config,
+                         "prior": args.prior}
     }
 
     return config
