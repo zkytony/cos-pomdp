@@ -70,7 +70,7 @@ class ThorTrial(Trial):
 
 # ------------- Object search trial ------------- #
 class ThorObjectSearchTrial(ThorTrial):
-    RESULT_TYPES = [PathResult, HistoryResult]
+    RESULT_TYPES = [PathResult]#, HistoryResult]
 
 
 def build_object_search_trial(scene, target, task_type,

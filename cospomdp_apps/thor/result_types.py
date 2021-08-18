@@ -1,5 +1,11 @@
+from thortils import compute_spl
+from cospomdp.utils.math import ci_normal
 from sciex import Result, PklResult, YamlResult
 import ai2thor.util.metrics as metrics
+import pandas as pd
+import seaborn as sns
+import pickle
+import os
 
 # Note: For PklResult, it is not recommended to save the object directly
 # if it is of a custom class; Use it if you only save generic python objects
@@ -38,14 +44,69 @@ class PathResult(PklResult):
         })
 
     @classmethod
+    def from_dict(cls, dd):
+        """Not sure why but some times the pickle file is loaded as a dict"""
+        return PathResult(dd['scene'],
+                          dd['target'],
+                          dd['shortest_path'],
+                          dd['actual_path'],
+                          dd['success'])
+
+    @classmethod
     def FILENAME(cls):
-        return "paths.yaml"
+        return "paths.pkl"
 
     def to_tuple(self):
         """Returns (shortest_path_distance, actual_path_distance, success) tuples"""
         return (self.shortest_path_distance,
                 self.actual_path_distance,
                 self.success)
+
+    @classmethod
+    def collect(cls, path):
+        # This should be standardized.
+        with open(path, 'rb') as f:
+            path_result = pickle.load(f)
+        return path_result
+
+
+    @classmethod
+    def gather(cls, results):
+        """`results` is a mapping from specific_name to a dictionary {seed: actual_result}.
+        Returns a more understandable interpretation of these results"""
+        rows = []
+        for baseline in results:
+            episode_results = []
+            success_count = 0
+            for seed in results[baseline]:
+                path_result = results[baseline][seed]
+                if type(path_result) == dict:
+                    path_result = PathResult.from_dict(path_result)
+                episode_results.append(path_result.to_tuple())
+                if path_result.success:
+                    success_count += 1
+            spl = compute_spl(episode_results)
+            rows.append([baseline, spl, success_count, len(results[baseline])])
+        cls.sharedheader = ["baseline", "spl", "success", "total"]
+        return rows
+
+    @classmethod
+    def save_gathered_results(cls, gathered_results, path):
+        # Gathered results maps from global name to what is returned by gather()
+        all_rows = []
+        for global_name in gathered_results:
+            target, other = global_name.split("--")
+            for row in gathered_results[global_name]:
+                success_rate = row[2] / max(1, row[3])
+                all_rows.append([target, other] + row + [success_rate])
+        df = pd.DataFrame(all_rows,
+                          columns=["target_class", "other_class"] + cls.sharedheader + ["success_rate"])
+        summary = df.groupby(['baseline'])\
+                    .agg([("avg", "mean"),
+                          "std",
+                          ("ci95", lambda x: ci_normal(x, confidence_interval=0.95))])
+        df.to_csv(os.path.join(path, "path_result.csv"))
+        summary.to_csv(os.path.join(path, "path_result_summary.csv"))
 
 
 class HistoryResult(YamlResult):
@@ -55,6 +116,7 @@ class HistoryResult(YamlResult):
         self.discount_factor = discount_factor
         self.history = history
         super().__init__({"history": history, "discount_factor": discount_factor})
+
     @classmethod
     def FILENAME(cls):
         return "history.pkl"

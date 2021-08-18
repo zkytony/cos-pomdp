@@ -33,6 +33,7 @@ def make_trial(run_num, scene, target, other, detectors, corr=None):
     args = TaskArgs(detectables=detectables,
                     scene=scene,
                     target=target,
+                    max_steps=200,
                     agent_class="ThorObjectSearchCosAgent",
                     task_env="ThorObjectSearch")
     config = make_config(args)
