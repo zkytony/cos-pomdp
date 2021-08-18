@@ -7,12 +7,13 @@ from cospomdp_apps.thor.trial import ThorObjectSearchTrial
 
 
 def _test_basic_search():
+    prior = 'uniform'
     args = TaskArgs(detectables={"Bowl", "Book"},
                     scene='FloorPlan1',
                     target="Bowl",
                     agent_class="ThorObjectSearchCosAgent",
                     task_env="ThorObjectSearch",
-                    prior='uniform')
+                    prior=prior)
     config = make_config(args)
     config["agent_config"]["prior"] = prior
     config["agent_config"]["corr_specs"] = {
