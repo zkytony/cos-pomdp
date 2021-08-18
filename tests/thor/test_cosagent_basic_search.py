@@ -7,18 +7,18 @@ from cospomdp_apps.thor.trial import ThorObjectSearchTrial
 
 
 def _test_basic_search():
-    args = TaskArgs(detectables={"Apple", "Book"},
+    args = TaskArgs(detectables={"Bowl", "Book"},
                     scene='FloorPlan1',
-                    target="Apple",
+                    target="Bowl",
                     agent_class="ThorObjectSearchCosAgent",
                     task_env="ThorObjectSearch",
-                    prior='informed')
+                    prior='uniform')
     config = make_config(args)
     config["agent_config"]["corr_specs"] = {
-        ("Apple", "Book"): (around, dict(d=3))
+        ("Bowl", "Book"): (around, dict(d=3))
     }
     config["agent_config"]["detector_specs"] = {
-        "Apple": ("fan-nofp", dict(fov=90, min_range=1, max_range=5), (0.7, 0.1)),
+        "Bowl": ("fan-nofp", dict(fov=90, min_range=1, max_range=5), (0.7, 0.1)),
         "Book": ("fan-nofp", dict(fov=90, min_range=1, max_range=6), (0.8, 0.1))
     }
     config["agent_config"]["solver"] = "pomdp_py.POUCT"
