@@ -3,9 +3,10 @@ import os
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # just so we can import mjolnir stuff
-sys.path.append(os.path.abspath('../../external/mjolnir/'))
-from datasets.glove import Glove
-from utils.class_finder import model_class, agent_class
+sys.path.append(os.path.join(ABS_PATH, '../../external/mjolnir/'))
+from .mjolnir.datasets.glove import Glove
+from .mjolnir.utils.class_finder import model_class, agent_class
+from .mjolnir.models.model_io import ModelInput, ModelOptions
 
 import torch
 
@@ -23,7 +24,6 @@ def MJOLNIR_O_args(gpu_ids=-1):
     args.dropout_rate = 0.25
     args.glove_file = os.path.join(ABS_PATH, "mjolnir", "data/thor_glove/glove_thorv1_300.hdf5")
     args.gpu_ids = gpu_ids
-    args.gpu_id = gpu_ids  # not sure why but MJOLNIR's code uses both and both mean ints.
 
     args.max_episode_length = 30
     args.episode_type = "BasicEpisode"
@@ -83,10 +83,15 @@ class ThorObjectSearchExternalAgent(ThorAgent):
         agent_type = "NavigationAgent"
         agent_create_fn = agent_class("NavigationAgent")
         player = agent_create_fn(model_create_fn,
-                                 args, args.rank, args.gpu_id)
+                                 args, args.rank, args.gpu_ids[0])
+        player.sync_with_shared(shared_model)
+        model_options = ModelOptions()  # this is meant to be nothing
+        import pdb; pdb.set_trace()
+
 
 
 if __name__ == "__main__":
+    #python -m cospomdp_apps.thor.external
     print("HELLO.")
     agent = ThorObjectSearchExternalAgent(
         None, "MJOLNIR_O",
