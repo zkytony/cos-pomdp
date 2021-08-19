@@ -276,18 +276,23 @@ class TOS(ThorEnv):
             cls = detection[2]
             loc3d = detection[3]
             o[cls] = list(map(lambda l: "{:.3f}".format(l), loc3d))
-        o = list(sorted(o.items()))
+        clses = list(sorted(o.keys()))
+        o_str = ",".join(clses)
         r = info['reward']
-        x, z, pitch, yaw = s.agent_pose[0][0], s.agent_pose[0][2], s.agent_pose[1][0], s.agent_pose[1][1]
-        action = a.name if not a.name.startswith("Open") else "{}({})".format(a.name, a.params)
-        return "Step {}: Action: {}; Reward: {}; Observation: {}; pose: (x={:.3f}, z={:.3f}, pitch={:.3f}, yaw={:.3f})"\
-            .format(step, action, r, o, x, z, pitch, yaw)
+
+        pose_str = "(x={:.3f}, z={:.3f}, pitch={:.3f}, yaw={:.3f}"\
+            .format(s.agent_pose[0][0], s.agent_pose[0][2], s.agent_pose[1][0], s.agent_pose[1][1])
+
+        action = a.name if not a.name.startswith("Open")\
+            else "{}({})".format(a.name, a.params)
+        return "Step {}: Action: {}; Reward: {}; Observation: {}; {}"\
+            .format(step, action, r, o_str, pose_str)
 
     def visualizer(self, **config):
         return ThorObjectSearchViz2D(**config)
 
     def detectable(self, cls):
-        if self._detectables.lower() == "any":
+        if type(self._detectables) == str and self._detectables.lower() == "any":
             return True
         else:
             return cls in self._detectables
@@ -295,7 +300,7 @@ class TOS(ThorEnv):
     @property
     def detectables(self):
         # If self._detectables is 'any', will return all thor classes in the scene.
-        if self._detectables.lower() == "any":
+        if type(self._detectables) == str and self._detectables.lower() == "any":
             return self._all_classes
         else:
             return self._detectables

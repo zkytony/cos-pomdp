@@ -1,4 +1,5 @@
 # Generic class for experiment trial in thor
+import sys
 from sciex import Trial, Event
 from ai2thor.controller import Controller
 import thortils
@@ -45,16 +46,21 @@ class ThorTrial(Trial):
 
         max_steps = self.config["max_steps"]
         for i in range(1, max_steps+1):
-            _debug(f"====== Step: {i} ======", "bold-white")
             action = agent.act()
+            if not logging:
+                a_str = action.name if not action.name.startswith("Open")\
+                    else "{}({})".format(action.name, action.params)
+                print(f"Step {i} | Action: {a_str}", end=" ")
+
             observation, reward = task_env.execute(agent, action)
             agent.update(action, observation)
 
-            _step_info = task_env.get_step_info(step=i)
             if logging:
+                _step_info = task_env.get_step_info(step=i)
                 self.log_event(Event("Trial %s | %s" % (self.name, _step_info)))
             else:
-                print(_step_info)
+                print("Observation: {}, Reward: {}".format(observation, reward))
+
             if self.config.get("visualize", False):
                 viz.visualize(task_env, agent, step=i)
 

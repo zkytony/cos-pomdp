@@ -22,6 +22,8 @@ class TOS_Observation:
     detections: list    # list of (xyxy, conf, cls, loc3d)
     robot_pose: tuple
 
+    def __str__(self):
+        return ",".join(list(sorted([d[2] for d in self.detections])))
 
 # Generic classes for task and agent in Thor environments.
 class ThorEnv:

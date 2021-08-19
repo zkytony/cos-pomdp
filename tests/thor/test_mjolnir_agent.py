@@ -12,7 +12,7 @@ LOAD_MODEL_PATH = os.path.join(TRAINED_MODELS_DIR, "mjolnir_o_pretrain.dat")#tra
 
 def _test_mjolnir_agent():
     args = TaskArgs(detectables='any',
-                    scene='FloorPlan2',
+                    scene='FloorPlan22',
                     target="Apple",
                     agent_class="ThorObjectSearchExternalAgent",
                     task_env="ThorObjectSearch")
