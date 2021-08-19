@@ -44,9 +44,9 @@ class ThorEnv:
     def execute(self, agent, action):
         state = self.get_state(self.controller)
         if action.name in constants.get_acceptable_thor_actions():
-            event = self.controller.step(action=action.name, **action.params)
+            event = self.controller.step(dict(action=action.name, **action.params))
         else:
-            event = self.controller.step(action="Pass")
+            event = self.controller.step(dict(action="Pass"))
 
         next_state = self.get_state(event)
         observation = self.get_observation(event, vision_detector=agent.vision_detector)

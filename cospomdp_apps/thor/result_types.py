@@ -1,7 +1,7 @@
 from thortils import compute_spl
 from cospomdp.utils.math import ci_normal
 from sciex import Result, PklResult, YamlResult
-import ai2thor.util.metrics as metrics
+# import ai2thor.util.metrics as metrics
 import pandas as pd
 import seaborn as sns
 import pickle

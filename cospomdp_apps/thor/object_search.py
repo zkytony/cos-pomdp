@@ -7,7 +7,6 @@ from pprint import pprint
 import pomdp_py
 from pomdp_py.utils import typ
 import ai2thor
-import ai2thor.util.metrics as metrics
 
 from thortils import (thor_all_object_types,
                       thor_agent_pose,
@@ -17,7 +16,9 @@ from thortils import (thor_all_object_types,
                       thor_object_position,
                       thor_closest_object_of_type,
                       thor_closest_object_of_type_position,
-                      thor_pose_as_dict)
+                      thor_pose_as_dict,
+                      thor_pass,
+                      thor_teleport)
 
 from thortils.vision import (thor_img,
                              thor_img_depth,
@@ -130,7 +131,7 @@ class TOS(ThorEnv):
                     'pos' is the 3D position of the detected object.
         """
         if event is None:
-            event = self.controller.step(action="Pass")
+            event = thor_pass(self.controller)
         img = thor_img(event)
         img_depth = thor_img_depth(event)
         if vision_detector is None:
@@ -168,7 +169,7 @@ class TOS(ThorEnv):
     def get_state(self, event=None):
         # stores agent pose as tuple, for convenience.
         if event is None:
-            event = self.controller.step(action="Pass")
+            event = thor_pass(self.controller)
         agent_pose = thor_agent_pose(event, as_tuple=True)
         horizon = thor_camera_horizon(event)
         objlocs = {}
@@ -209,19 +210,19 @@ class TOS(ThorEnv):
         if action.name.lower() != "done":
             return False, "action is not done"
 
-        event = self.controller.step(action="Pass")
+        event = thor_pass(self.controller)
         backup_state = self.get_state(event)
 
         if agent_pose is not None:
             # Teleport to the given agent pose then evaluate
             position, rotation = agent_pose
-            self.controller.step(action="Teleport",
-                                 position=position,
-                                 rotation=rotation,
-                                 horizon=horizon)
+            thor_teleport(self.controller,
+                          position,
+                          rotation,
+                          horizon)
 
         # Check if the target object is within the field of view
-        event = self.controller.step(action="Pass")
+        event = thor_pass(self.controller)
         if self.task_type == "class":
             object_type = self.target
             in_fov = thor_object_of_type_in_fov(event, object_type)
@@ -241,10 +242,11 @@ class TOS(ThorEnv):
         if agent_pose is not None:
             position, rotation = backup_state.agent_pose
             horizon = backup_state.horizon
-            self.controller.step(action="Teleport",
-                                 position=position,
-                                 rotation=rotation,
-                                 horizon=horizon)
+            thor_teleport(self.controller,
+                          position,
+                          rotation,
+                          horizon)
+
         msg = "Task success"
         if not success:
             if not in_fov:

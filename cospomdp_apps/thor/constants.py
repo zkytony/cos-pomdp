@@ -120,7 +120,7 @@ INTERACTIONS = ["PickupObject",
 
 # Defines navigation actions, with parameters
 def get_movement_params(step_size, v_rot, h_rot):
-    return {"MoveAhead"  :  {"moveMagnitude": step_size},
+    return {"MoveAhead"  :  {"gridSize": step_size},
             "LookUp"     :  {"degrees": v_rot},
             "LookDown"   :  {"degrees": v_rot},
             "RotateLeft" :  {"degrees": h_rot},
