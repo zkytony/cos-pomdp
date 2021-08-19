@@ -50,7 +50,8 @@ class ThorTrial(Trial):
             if not logging:
                 a_str = action.name if not action.name.startswith("Open")\
                     else "{}({})".format(action.name, action.params)
-                print(f"Step {i} | Action: {a_str}", end=" ")
+                sys.stdout.write(f"Step {i} | Action: {a_str}; ")
+                sys.stdout.flush()
 
             observation, reward = task_env.execute(agent, action)
             agent.update(action, observation)
@@ -59,7 +60,8 @@ class ThorTrial(Trial):
                 _step_info = task_env.get_step_info(step=i)
                 self.log_event(Event("Trial %s | %s" % (self.name, _step_info)))
             else:
-                print("Observation: {}, Reward: {}".format(observation, reward))
+                sys.stdout.write("Observation: {}; Reward: {}\n".format(observation, reward))
+                sys.stdout.flush()
 
             if self.config.get("visualize", False):
                 viz.visualize(task_env, agent, step=i)
