@@ -3,6 +3,7 @@ import sys
 from sciex import Trial, Event
 from ai2thor.controller import Controller
 import thortils
+import time
 
 from cospomdp.utils.misc import _debug
 from cospomdp.utils import cfg

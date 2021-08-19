@@ -162,7 +162,7 @@ class TOS(ThorEnv):
     def get_object_loc(self, object_class):
         """Returns object location (note: in thor coordinates) for given
         object class, for the closest instance to the robot."""
-        return thor_closest_object_of_type_position(self.controller, object_class,
+        return thor_closest_object_of_type_position(self.controller.last_event, object_class,
                                                     as_tuple=True)
 
     def get_state(self, event=None):
