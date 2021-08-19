@@ -8,7 +8,9 @@ from cospomdp.utils import cfg
 cfg.DEBUG_LEVEL = 0
 
 from .object_search import ThorObjectSearch
-from .agent import ThorObjectSearchOptimalAgent, ThorObjectSearchCosAgent
+from .agent import (ThorObjectSearchOptimalAgent,
+                    ThorObjectSearchCosAgent)
+from .external import ThorObjectSearchExternalAgent
 from .replay import ReplaySolver
 from .result_types import PathResult, HistoryResult
 from . import constants

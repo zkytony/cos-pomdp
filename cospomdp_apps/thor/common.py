@@ -19,7 +19,7 @@ class TOS_State:
 class TOS_Observation:
     img: np.ndarray
     img_depth: np.ndarray
-    detections: list
+    detections: list    # list of (xyxy, conf, cls, loc3d)
     robot_pose: tuple
 
 
@@ -46,7 +46,7 @@ class ThorEnv:
             event = self.controller.step(action="Pass")
 
         next_state = self.get_state(event)
-        observation = self.get_observation(event, detector=agent.detector)
+        observation = self.get_observation(event, vision_detector=agent.vision_detector)
         reward = self.get_reward(state, action, next_state)
         self.update_history(next_state, action, observation, reward)
         return (observation, reward)

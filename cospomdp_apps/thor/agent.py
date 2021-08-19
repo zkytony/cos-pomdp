@@ -31,14 +31,15 @@ from cospomdp import *
 
 class ThorAgent:
     AGENT_USES_CONTROLLER = False
-    @property
-    def detector(self):
-        return None
 
-class ThorPOMDPAgent(ThorAgent):
-    def __init__(self, grid_map):
-        # the grid map used to define POMDP state space
-        self.grid_map
+    def movement_params(self, move_name):
+        """Returns the parameter dict used for ai2thor Controller.step
+        for the given move_name"""
+        return self.task_config["nav_config"]["movement_params"][move_name]
+
+    @property
+    def vision_detector(self):
+        return None
 
 
 ######################### Optimal Agent ##################################
@@ -224,6 +225,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
             thor_robot_pose[0]['x'], thor_robot_pose[0]['z'], thor_robot_pose[1]['y']
         )
 
+        # TODO: SIMPLIFY - just use target_class
         if task_config["task_type"] == 'class':
             target_id = task_config['target']
             target_class = task_config['target']
@@ -322,11 +324,6 @@ class ThorObjectSearchCosAgent(ThorAgent):
     @property
     def detectable_objects(self):
         return self.cos_agent.detectable_objects
-
-    def movement_params(self, move_name):
-        """Returns the parameter dict used for ai2thor Controller.step
-        for the given move_name"""
-        return self.task_config["nav_config"]["movement_params"][move_name]
 
     def act(self):
         """
