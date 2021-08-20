@@ -102,17 +102,24 @@ class PathResult(PklResult):
                 all_rows.append([scene, target, other] + row + [success_rate])
         columns = ["scene", "target_class", "other_class"] + cls.sharedheader + ["success_rate"]
         df = pd.DataFrame(all_rows, columns=columns)
+
+        ci_func = lambda x: ci_normal(x, confidence_interval=0.95)
         summary = df.groupby(['baseline'])\
                     .agg([("avg", "mean"),
                           "std",
-                          ("ci95", lambda x: ci_normal(x, confidence_interval=0.95))])
+                          ("ci95", ci_func)])
         summary_by_scene = df.groupby(['scene', 'baseline'])\
                              .agg([("avg", "mean"),
                                    "std",
-                                   ("ci95", lambda x: ci_normal(x, confidence_interval=0.95))])
+                                   ("ci95", ci_func)])
+        summary_by_target = df.groupby(['target_class', 'baseline'])\
+                              .agg([("avg", "mean"),
+                                    "std",
+                                    ("ci95", ci_func)])
         df.to_csv(os.path.join(path, "path_result.csv"))
         summary.to_csv(os.path.join(path, "path_result_summary.csv"))
         summary_by_scene.to_csv(os.path.join(path, "path_result_summary-by-scene.csv"))
+        summary_by_target.to_csv(os.path.join(path, "path_result_summary-by-target.csv"))
 
 
 class HistoryResult(YamlResult):
