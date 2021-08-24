@@ -21,6 +21,11 @@ def _test_direct_create():
         "CounterTop": ("fan-nofp", dict(fov=90, min_range=1, max_range=5), (0.8, 0.1)),
         "Bread": ("fan-nofp", dict(fov=90, min_range=1, max_range=4), (0.7, 0.1))
     }
+    config["agent_config"]["solver"] = "pomdp_py.POUCT"
+    config["agent_config"]["solver_args"] = dict(max_depth=30,
+                                                 num_sims=500,
+                                                 discount_factor=0.95,
+                                                 exploration_const=100)
     agent = ThorObjectSearchCosAgent(
         controller,
         **config["agent_config"])
