@@ -30,7 +30,7 @@ def main():
     trial.config['agent_config']['solver'] = "ReplaySolver"
     trial.config['agent_config']['solver_args'] = {"history": history['history']}
     trial.config['visualize'] = True
-    trial.config['viz_config'] = {"res": 20}
+    trial.config['viz_config'] = {"res": 30}
     trial.run()
 
 
