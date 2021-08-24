@@ -5,8 +5,8 @@ from scipy.spatial.transform import Rotation as R
 
 from ..utils.math import (to_rad, to_deg, R2d,
                           euclidean_dist, pol2cart,
-                          vec, R_quat, R_euler, T)
-from ..utils.misc import in_range_inclusive
+                          vec, R_quat, R_euler, T,
+                          in_range_inclusive)
 
 class SensorModel:
     def in_range(self, point, sensor_pose):
