@@ -6,7 +6,7 @@ ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(ABS_PATH, '../../external/mjolnir/'))
 from .mjolnir.datasets.glove import Glove
 from .mjolnir.utils.class_finder import model_class, agent_class
-from .mjolnir.utils.net_util import toFloatTensor
+from .mjolnir.utils.net_util import toFloatTensor, resnet_input_transform
 from .mjolnir.models.model_io import ModelInput, ModelOptions
 from .mjolnir.datasets.offline_controller_with_small_rotation import ACTIONS_LIST
 
@@ -122,9 +122,19 @@ class ThorObjectSearchExternalAgent(ThorAgent):
             state_info.objbb = {}
             for detection in self._last_observation.detections:
                 xyxy = detection[0]
-                cls = detection[1]
-                state_info.objbb[cls] = xyxy
-            state_info.frame = self._last_observation.img
+                cls = detection[2]
+                if cls in state_info.objbb:
+                    state_info.objbb[cls].extend(xyxy.tolist())
+                else:
+                    state_info.objbb[cls] = xyxy.tolist()
+
+            # The setting of im_size=224 comes from this issue:
+            # https://github.com/allenai/savn/issues/3
+            # Note that this feature vector is not used by MJOLNIR_O,
+            # which uses object bounding boxes directly instead.
+            state_info.resnet_features =\
+                resnet_input_transform(self._last_observation.img,
+                                       224)
             action_int, log_prob = self.player.action(
                 model_options, False,
                 state_info=state_info,

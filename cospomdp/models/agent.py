@@ -6,6 +6,7 @@ from .transition_model import RobotTransition2D, CosTransitionModel2D
 from .observation_model import (CosObjectObservationModel2D,
                                 CosObservationModel2D)
 from .policy_model import PolicyModel2D
+from tqdm import tqdm
 
 class CosAgent(pomdp_py.Agent):
 
@@ -108,7 +109,7 @@ def update_target_belief(target_id, current_btarget, observation, observation_mo
 
     if isinstance(current_btarget, pomdp_py.Histogram):
         new_btarget_hist = {}
-        for starget in current_btarget:
+        for starget in tqdm(current_btarget):
             state = CosState2D({target_id: starget,
                                 srobot.id: srobot})
             new_btarget_hist[starget] =\
