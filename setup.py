@@ -9,7 +9,7 @@ setup(name='cos-pomdp',
       description='COS-POMDP',
       python_requires='>3.6',
       install_requires=[
-          'ai2thor==3.3.4',
+          'ai2thor==1.0.1',
           'pomdp_py',
           'tqdm',
           'torch>=1.8.0',
