@@ -5,6 +5,30 @@ from pytz import reference as pytz_reference
 from pomdp_py.utils import typ
 from . import cfg
 
+__all__ = ['_debug',
+           'resolve_robot_target_args',
+           'discounted_cumulative_reward']
+
+def _debug(content, p="yellow", lev=1, c=None):
+    """p: a string making function (e.g. typ.blue),
+    or more conveniently, just a string 'blue'.
+    If you want to bold, then do 'bold-blue'.
+    """
+    if c is not None:
+        p = c
+    bold = False
+    if type(p) == str:
+        if p.startswith("bold"):
+            bold = True
+            p = p.split("-")[1]
+        p = eval(f"typ.{p}")
+    if cfg.DEBUG_LEVEL >= lev:
+        if bold:
+            print(typ.bold(p(content)))
+        else:
+            print(p(content))
+
+
 # COS-POMDP specific
 def resolve_robot_target_args(robot_id, target_id, *args):
     """
@@ -34,46 +58,6 @@ def resolve_robot_target_args(robot_id, target_id, *args):
 
 
 
-# Printing
-def json_safe(obj):
-    if isinstance(obj, bool):
-        return str(obj).lower()
-    elif isinstance(obj, (list, tuple)):
-        return [json_safe(item) for item in obj]
-    elif isinstance(obj, dict):
-        return {json_safe(key):json_safe(value) for key, value in obj.items()}
-    else:
-        return str(obj)
-    return obj
-
-
-def diff(rang):
-    return rang[1] - rang[0]
-
-def in_range(x, rang):
-    return x >= rang[0] and x < rang[1]
-
-def in_range_inclusive(x, rang):
-    return x >= rang[0] and x <= rang[1]
-
-def in_region(p, ranges):
-    return in_range(p[0], ranges[0]) and in_range(p[1], ranges[1]) and in_range(p[2], ranges[2])
-
-def remap(oldval, oldmin, oldmax, newmin, newmax, enforce=False):
-    newval = (((oldval - oldmin) * (newmax - newmin)) / (oldmax - oldmin)) + newmin
-    if enforce:
-        return min(max(newval, newmin), newmax)
-    else:
-        return newval
-
-
-# Others
-def safe_slice(arr, start, end):
-    true_start = max(0, min(len(arr)-1, start))
-    true_end = max(0, min(len(arr)-1, end))
-    return arr[true_start:true_end]
-
-# Others
 def discounted_cumulative_reward(rewards, discount_factor):
     total = 0
     d = 1.0
@@ -81,36 +65,3 @@ def discounted_cumulative_reward(rewards, discount_factor):
         total += r*d
         d *= discount_factor
     return total
-
-
-
-########## Python utils
-def nice_timestr(dtobj=None):
-    """pass in a datetime.datetime object `dt`
-    and get a nice time string. If None is passed in,
-    then get string for the current time"""
-    if dtobj is None:
-        dtobj = datetime.datetime.now()
-
-    localtime = pytz_reference.LocalTimezone()
-    return dtobj.strftime("%a, %d-%b-%Y %I:%M:%S, " + localtime.tzname(dtobj))
-
-
-def _debug(content, p="yellow", lev=1, c=None):
-    """p: a string making function (e.g. typ.blue),
-    or more conveniently, just a string 'blue'.
-    If you want to bold, then do 'bold-blue'.
-    """
-    if c is not None:
-        p = c
-    bold = False
-    if type(p) == str:
-        if p.startswith("bold"):
-            bold = True
-            p = p.split("-")[1]
-        p = eval(f"typ.{p}")
-    if cfg.DEBUG_LEVEL >= lev:
-        if bold:
-            print(typ.bold(p(content)))
-        else:
-            print(p(content))

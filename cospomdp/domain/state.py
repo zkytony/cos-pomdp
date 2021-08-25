@@ -2,7 +2,6 @@
 
 import pomdp_py
 from dataclasses import dataclass  #https://stackoverflow.com/questions/34269772/type-hints-in-namedtuple/34269877
-from frozendict import frozendict
 
 class ObjectState2D(pomdp_py.ObjectState):
     """2D Object state, specified by object ID, class and its 2D location (x,y)"""

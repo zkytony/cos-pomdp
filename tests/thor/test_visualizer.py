@@ -20,30 +20,41 @@ def main():
     grid_map = thortils.convert_scene_to_grid_map(controller, args.scene, constants.GRID_SIZE)
     print(thortils.thor_agent_pose(controller))
 
+    print("Start at (2,12)")
     viz = GridMapVizualizer(grid_map=grid_map)
     img = viz.render()
     img = viz.highlight(img, [(2,12)], color=(128,128,128))
+    viz.show_img(img)
 
     pos, rot = thortils.thor_agent_pose(controller)
 
-    # Translate -x by 0.25
+    print("Translate -x by 0.25")
     img = viz.highlight(img, [(pos['x'], pos['z'])], color=(10,150,150), thor=True)
     img = viz.highlight(img, [(pos['x']-0.25, pos['z'])], color=(10,180,180), thor=True)
     thortils.thor_teleport2d(controller, (pos['x']-0.25, pos['z'], rot['y']))
-    # Translate +z by 0.25
+    viz.show_img(img)
+    time.sleep(0.8)
+
+    print("Translate +z by 0.25")
     img = viz.highlight(img, [(pos['x']-0.25, pos['z']+0.25)], color=(10,180,180), thor=True)
     thortils.thor_teleport2d(controller, (pos['x']-0.25, pos['z']+0.25, rot['y']))
+    viz.show_img(img)
+    time.sleep(0.8)
 
     # What about angle?
+    print("rotate to yaw = 0")
     gx, gy, gth = grid_map.to_grid_pose(pos['x'], pos['z'], 0)
     img = viz.draw_robot(img, gx, gy, gth, color=(200, 140, 194))
     thortils.thor_teleport2d(controller, (pos['x'], pos['z'], 0))
+    viz.show_img(img)
+    time.sleep(0.8)
 
+    print("rotate to yaw = 90")
     gx, gy, gth = grid_map.to_grid_pose(pos['x']+0.5, pos['z']+0.5, 90)
     img = viz.draw_robot(img, gx, gy, gth, color=(200, 140, 194))
     thortils.thor_teleport2d(controller, (pos['x']+0.5, pos['z']+0.5, 90))
-
     viz.show_img(img)
+
     time.sleep(15)
 
 if __name__ == "__main__":
