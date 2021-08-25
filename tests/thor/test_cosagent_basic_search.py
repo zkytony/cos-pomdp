@@ -6,27 +6,37 @@ from cospomdp_apps.thor.agent import ThorObjectSearchCosAgent
 from cospomdp_apps.thor.trial import ThorObjectSearchTrial
 
 
-def _test_basic_search():
-    prior = 'uniform'
-    args = TaskArgs(detectables={"Bowl", "Book"},
+def _test_basic_search(target,
+                       other,
+                       prior='uniform',
+                       scene="FloorPlan1",
+                       dist=3,
+                       target_range=5,
+                       other_range=6,
+                       target_accuracy=0.7,
+                       other_accuracy=0.8,
+                       max_depth=30,
+                       num_sims=500,
+                       discount_factor=0.95):
+    args = TaskArgs(detectables=[target, other],
                     scene='FloorPlan1',
-                    target="Bowl",
+                    target=target,
                     agent_class="ThorObjectSearchCosAgent",
                     task_env="ThorObjectSearch",
                     prior=prior)
     config = make_config(args)
     config["agent_config"]["prior"] = prior
     config["agent_config"]["corr_specs"] = {
-        ("Bowl", "Book"): (around, dict(d=3))
+        (target, other): (around, dict(d=dist))
     }
     config["agent_config"]["detector_specs"] = {
-        "Bowl": ("fan-nofp", dict(fov=90, min_range=1, max_range=5), (0.7, 0.1)),
-        "Book": ("fan-nofp", dict(fov=90, min_range=1, max_range=6), (0.8, 0.1))
+        target: ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1)),
+        other: ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
     }
     config["agent_config"]["solver"] = "pomdp_py.POUCT"
-    config["agent_config"]["solver_args"] = dict(max_depth=30,
-                                                 num_sims=500,
-                                                 discount_factor=0.95,
+    config["agent_config"]["solver_args"] = dict(max_depth=max_depth,
+                                                 num_sims=num_sims,
+                                                 discount_factor=discount_factor,
                                                  exploration_const=100)
     config["visualize"] = True
     config["viz_config"] = {
@@ -38,4 +48,4 @@ def _test_basic_search():
 
 
 if __name__ == "__main__":
-    _test_basic_search()
+    _test_basic_search('Bowl', 'Book')
