@@ -278,3 +278,6 @@ def entropy(p, base=2):
         p: A sequence of probabilities
     """
     return scipy.stats.entropy(p, base=base)
+
+def euclidean_dist(p1, p2):
+    return math.sqrt(sum([(a - b)** 2 for a, b in zip(p1, p2)]))
