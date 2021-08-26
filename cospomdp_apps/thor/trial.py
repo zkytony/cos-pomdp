@@ -32,7 +32,13 @@ class ThorTrial(Trial):
         controller = thortils.launch_controller(self.config["thor"])
         return controller
 
-    def run(self, logging=False):
+    def run(self, logging=False, step_act_cb=None, step_update_cb=None):
+        """
+        Functions intended for debugging purposes:
+            step_act_cb: Called after the agent has determined its action
+            step_update_cb: Called after the agent has executed the action and updated
+                given environment observation.
+        """
         controller = self._start_controller()
         task_env = eval(self.config["task_env"])(controller, **self.config["task_env_config"])
         agent_class = eval(self.config["agent_class"])
@@ -53,6 +59,8 @@ class ThorTrial(Trial):
                     else "{}({})".format(action.name, action.params)
                 sys.stdout.write(f"Step {i} | Action: {a_str}; ")
                 sys.stdout.flush()
+            if step_act_cb is not None:
+                step_act_cb(task_env, agent)
 
             observation, reward = task_env.execute(agent, action)
             agent.update(action, observation)
@@ -66,6 +74,9 @@ class ThorTrial(Trial):
 
             if self.config.get("visualize", False):
                 viz.visualize(task_env, agent, step=i)
+
+            if step_update_cb is not None:
+                step_act_cb(task_env, agent)
 
             if task_env.done(action):
                 success, msg = task_env.success(action)

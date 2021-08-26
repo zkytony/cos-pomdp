@@ -34,12 +34,12 @@ class CosObservation2D(pomdp_py.Observation):
         return self._objobzs == other._objobzs
 
     def __str__(self):
-        parts = []
+        robotstr = ",".join(map(str, self._robotobz.pose))
+        objzstr = ""
         for objid in self._objobzs:
-            parts.append(self._objobzs[objid])
-        return "{ R:%s | %s }" % (
-            self._robotobz.pose,
-            ",".join(list(map(str, sorted(parts, key=lambda zi: zi.objid)))))
+            if self._objobzs[objid].loc is not None:
+                objzstr += "{}{}".format(objid, self._objobzs[objid].loc)
+        return "CosObservation(r:{};o:{})".format(robotstr, objzstr)
 
     def __repr__(self):
         return f"{self.__class__}, {self._objobzs}"

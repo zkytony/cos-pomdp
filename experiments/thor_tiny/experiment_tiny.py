@@ -74,7 +74,7 @@ def EXPERIMENT_tiny(split=3, num_trials=5):
                 all_trials.append(target_only_trial)
                 all_trials.append(corr_trial)
 
-    exp_name = "ExperimentTiny-BB"
+    exp_name = "ExperimentTiny-CC"
     exp = Experiment(exp_name,
                      all_trials,
                      OUTPUT_DIR,

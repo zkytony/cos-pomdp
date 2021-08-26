@@ -17,7 +17,10 @@ def _test_basic_search(target,
                        other_accuracy=0.8,
                        max_depth=30,
                        num_sims=500,
-                       discount_factor=0.95):
+                       discount_factor=0.95,
+                       show_progress=True,
+                       step_act_cb=None,
+                       step_update_cb=None):
     args = TaskArgs(detectables=[target, other],
                     scene='FloorPlan1',
                     target=target,
@@ -37,14 +40,16 @@ def _test_basic_search(target,
     config["agent_config"]["solver_args"] = dict(max_depth=max_depth,
                                                  num_sims=num_sims,
                                                  discount_factor=discount_factor,
-                                                 exploration_const=100)
+                                                 exploration_const=100,
+                                                 show_progress=show_progress)
     config["visualize"] = True
     config["viz_config"] = {
         'res': 30
     }
     trial = ThorObjectSearchTrial("test_cosagent", config, verbose=True)
     print("Trial created")
-    trial.run()
+    trial.run(step_act_cb=step_act_cb,
+              step_update_cb=step_update_cb)
 
 
 if __name__ == "__main__":
