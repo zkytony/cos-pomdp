@@ -18,10 +18,14 @@ def _test_basic_search(target,
                        max_depth=30,
                        num_sims=500,
                        discount_factor=0.95,
+                       exploration_const=100,
                        show_progress=True,
                        step_act_cb=None,
                        step_update_cb=None):
-    args = TaskArgs(detectables=[target, other],
+    detectables = [target]
+    if other is not None:
+        detectables.append(other)
+    args = TaskArgs(detectables=detectables,
                     scene='FloorPlan1',
                     target=target,
                     agent_class="ThorObjectSearchCosAgent",
@@ -29,18 +33,21 @@ def _test_basic_search(target,
                     prior=prior)
     config = make_config(args)
     config["agent_config"]["prior"] = prior
-    config["agent_config"]["corr_specs"] = {
-        (target, other): (around, dict(d=dist))
-    }
+
+    config["agent_config"]["corr_specs"] = {}
     config["agent_config"]["detector_specs"] = {
-        target: ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1)),
-        other: ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
+        target: ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))
     }
+    if other is not None:
+        config["agent_config"]["corr_specs"][(target, other)] = (around, dict(d=dist))
+        config["agent_config"]["detector_specs"][other] =\
+            ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
+
     config["agent_config"]["solver"] = "pomdp_py.POUCT"
     config["agent_config"]["solver_args"] = dict(max_depth=max_depth,
                                                  num_sims=num_sims,
                                                  discount_factor=discount_factor,
-                                                 exploration_const=100,
+                                                 exploration_const=exploration_const,
                                                  show_progress=show_progress)
     config["visualize"] = True
     config["viz_config"] = {
