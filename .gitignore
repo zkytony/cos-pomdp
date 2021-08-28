@@ -149,3 +149,5 @@ train_yolov5.sh
 _desired_results.pkl
 
 .testmondata
+
+videos/

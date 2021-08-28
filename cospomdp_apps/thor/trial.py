@@ -60,7 +60,7 @@ class ThorTrial(Trial):
                 sys.stdout.write(f"Step {i} | Action: {a_str}; ")
                 sys.stdout.flush()
             if step_act_cb is not None:
-                step_act_cb(task_env, agent)
+                step_act_cb(task_env, agent, viz=viz)
 
             observation, reward = task_env.execute(agent, action)
             agent.update(action, observation)

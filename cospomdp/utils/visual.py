@@ -2,8 +2,8 @@ from thortils.utils.visual import Visualizer2D, GridMapVizualizer
 from thortils.utils.colors import inverse_color_rgb
 
 class BasicViz2D(Visualizer2D):
-    def visualize(self, agent, objlocs, colors={},
-                  robot_state=None, draw_fov=None, draw_belief=True):
+    def render(self, agent, objlocs, colors={},
+               robot_state=None, draw_fov=None, draw_belief=True):
         """
         Args:
             agent (CosAgent)
@@ -37,4 +37,4 @@ class BasicViz2D(Visualizer2D):
                                         agent.sensor(objid),
                                         robot_state['pose'],
                                         inverse_color_rgb(self.get_color(objid, colors, alpha=None)))
-        self.show_img(img)
+        return img
