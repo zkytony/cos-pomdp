@@ -22,6 +22,17 @@ Test basic example:
 python -m cospomdp_apps.basic.example
 ```
 
+### Caveats
+The external methods, e.g. SAVN, MJOLNIR, are placed under `cos-pomdp/external`.
+However, for importability, a symbolic link to the `cos-pomdp/external/mjolnir`
+directory is created under `cos-pomdp/cospomdp_apps/thor/mjolnir`. Please
+make sure that link points to the right absolute path on your computer.
+For example, you can directly create a new one by:
+```
+cd repo/cos-pomdp/cospomdp_apps/thor
+ln -sf $HOME/repo/cos-pomdp/external/mjolnir/ mjolnir
+```
+
 ## Organization
 Contains two packages: `cospomdp` and `cospomdp_apps`.
 The former defines the COS-POMDP (domain, models, agent, planner)
