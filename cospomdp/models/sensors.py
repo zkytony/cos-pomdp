@@ -43,7 +43,7 @@ class FanSensor(SensorModel):
         r = random.uniform(self.min_range, self.max_range)
         x, y = pol2cart(r, th)
         # transform to robot pose
-        x, y = np.matmul(R2d(to_rad(sensor_pose[2])), np.array([x,y])) # rotation
+        x, y = np.matmul(R2d(sensor_pose[2]), np.array([x,y])) # rotation
         x += sensor_pose[0]  # translation dx
         y += sensor_pose[1]  # translation dy
         point = (x, y)
