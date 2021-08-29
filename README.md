@@ -19,7 +19,7 @@ and `cospomdp_apps` which contains application to the POMDP to several domains.
 
 Test basic example:
 ```
-python -m cospomdp_apps.basic.example
+python -m cospomdp_apps.basic.search
 ```
 
 ### Caveats

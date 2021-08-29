@@ -32,7 +32,7 @@ def solve(worldstr, nsteps=50, solver="pomdp_py.POUCT", solver_args={}):
         if isinstance(planner, pomdp_py.POUCT):
             planner_info += "   NumSims: %d" % planner.last_num_sims
             planner_info += "   PlanTime: %.5f" % planner.last_planning_time
-            pomdp_py.print_preferred_actions(agent.tree)
+            pomdp_py.utils.TreeDebugger(agent.tree).mbp
         print(f"Step {i} | a: {action}   r: {reward}    z: {observation}   | {planner_info}")
 
         agent.update(action, observation)
