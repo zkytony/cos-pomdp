@@ -10,11 +10,13 @@ from .action import ALL_MOVES_2D, Done
 ############################
 class PolicyModel2D(RolloutPolicy):
     def __init__(self, robot_trans_model, reward_model,
-                 num_visits_init=10, val_init=100):
+                 num_visits_init=10, val_init=100,
+                 movements=ALL_MOVES_2D):
         self.robot_trans_model = robot_trans_model
         self._legal_moves = {}
         self._reward_model = reward_model
         self.action_prior = None
+        self.movements = movements
         # PolicyModel2D.ActionPrior(num_visits_init,
         #                                              val_init, self)
 
@@ -45,7 +47,8 @@ class PolicyModel2D(RolloutPolicy):
             return self._legal_moves[srobot]
         else:
             robot_pose = srobot["pose"]
-            valid_moves = set(a for a in ALL_MOVES_2D
+            # TODO: technically, the action set should be passed in instead of hard-coded
+            valid_moves = set(a for a in self.movements
                 if self.robot_trans_model.sample(state, a)["pose"] != robot_pose)
             self._legal_moves[srobot] = valid_moves
             return valid_moves

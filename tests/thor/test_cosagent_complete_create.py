@@ -1,15 +1,22 @@
-import thortils
-
 from cospomdp.utils.corr_funcs import around
+from cospomdp_apps.thor.agent.cospomdp_complete\
+    import _sample_places, ThorObjectSearchCompleteCosAgent
 from cospomdp_apps.thor.common import TaskArgs, make_config
-from cospomdp_apps.thor.agent import ThorObjectSearchBasicCosAgent
 from cospomdp_apps.thor.trial import ThorObjectSearchTrial
+from pomdp_py.utils import TreeDebugger
 
-def _test_create_trial():
+def step_act_cb(task_env, agent, **kwargs):
+    dd = TreeDebugger(agent.cos_agent.tree)
+    if kwargs.get("block", True):
+        import ipdb; ipdb.set_trace()
+    else:
+        dd.mbp
+
+def _test_sampling_topo_map():
     args = TaskArgs(detectables={"Apple", "CounterTop", "Bread"},
                     scene='FloorPlan1',
                     target="Apple",
-                    agent_class="ThorObjectSearchBasicCosAgent",
+                    agent_class="ThorObjectSearchCompleteCosAgent",
                     task_env="ThorObjectSearch",
                     agent_init_inputs=['grid_map', 'agent_pose'])
     config = make_config(args)
@@ -25,9 +32,9 @@ def _test_create_trial():
     trial = ThorObjectSearchTrial("test_cosagent", config)
     print("Trial created")
 
-def _test_cosagent_basic_creation():
-    print("Test cosagent creation")
-    _test_create_trial()
+
+
+    trial.run()
 
 if __name__ == "__main__":
-    _test_cosagent_basic_creation()
+    _test_sampling_topo_map()

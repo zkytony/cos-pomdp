@@ -9,6 +9,8 @@ from cospomdp import *
 from cospomdp_apps.basic import PolicyModel2D, RobotTransition2D
 from cospomdp_apps.basic.action import Move2D, ALL_MOVES_2D, Done
 
+from .components.action import thor_action_params, navigation_actions2d
+
 from ..common import TOS_Action, ThorAgent
 from .. import constants
 
@@ -27,6 +29,9 @@ class ThorObjectSearchBasicCosAgent(ThorAgent):
     low-level movement actions such as MoveAhead; Therefore, there is
     no need for "goal interpretation" and the output is directly
     wrapped by a TOS_Action for execution.
+
+    Note that this agent does not make use of LookUp / LookDown actions.
+    That's why it is basic!
     """
     AGENT_USES_CONTROLLER = False
     def __init__(self,
@@ -35,7 +40,6 @@ class ThorObjectSearchBasicCosAgent(ThorAgent):
                  detector_specs,
                  solver,
                  solver_args,
-                 grid_size,
                  grid_map,
                  thor_agent_pose,
                  thor_prior={}):
@@ -77,13 +81,16 @@ class ThorObjectSearchBasicCosAgent(ThorAgent):
 
         reward_model = ObjectSearchRewardModel(
             detectors[target_id].sensor,
-            task_config["nav_config"]["goal_distance"] / grid_size,
+            task_config["nav_config"]["goal_distance"] / grid_map.grid_size,
             robot_id, target_id)
 
         # Construct CosAgent, the actual POMDP
         init_robot_state = RobotState2D(robot_id, init_robot_pose)
         robot_trans_model = RobotTransition2D(robot_id, reachable_positions)
-        policy_model = PolicyModel2D(robot_trans_model, reward_model)
+        movement_params = self.task_config["nav_config"]["movement_params"]
+        policy_model = PolicyModel2D(robot_trans_model, reward_model,
+                                     movements=navigation_actions2d(movement_params,
+                                                                    grid_map.grid_size))
         prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
                  for p in thor_prior}
         self.cos_agent = CosAgent(target, init_robot_state,
@@ -170,7 +177,7 @@ class ThorObjectSearchBasicCosAgent(ThorAgent):
         if not isinstance(action, TOS_Action):
             if isinstance(action, Move2D):
                 name = action.name
-                params = self.movement_params(name)
+                params = self.movement_params(action)
             elif isinstance(action, Done):
                 name = "done"
                 params = {}
@@ -178,11 +185,23 @@ class ThorObjectSearchBasicCosAgent(ThorAgent):
         else:
             return action
 
+    def movement_params(self, action):
+        """Different from external agents, which uses deep learning models that
+        are trained with fixed rotation sizes, here we are able to set the parameters
+        of ai2thor movements based on POMDP action's parameters. So we make sure
+        they are in sync - i.e. we convert parameters in `action` to parameters
+        that can be used for ai2thor.
+        """
+        return thor_action_params(action, self.grid_map.grid_size)
+
+
     def update(self, tos_action, tos_observation):
         """
         Given TOS_Action and TOS_Observation, update the agent's belief, etc.
         """
-        action_names = {a.name: a for a in ALL_MOVES_2D | {Done()}}
+        # Because policy_model's movements are already in sync with task movements,
+        # we can directly get the POMDP action from there.
+        action_names = {a.name: a for a in set(self.cos_agent.policy_model.movements) | {Done()}}
         if tos_action.name in action_names:
             action = action_names[tos_action.name]
         else:

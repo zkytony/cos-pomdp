@@ -13,7 +13,8 @@ from . import constants
 from .object_search import ThorObjectSearch
 from .agent import (ThorObjectSearchOptimalAgent,
                     ThorObjectSearchBasicCosAgent,
-                    ThorObjectSearchExternalAgent)
+                    ThorObjectSearchExternalAgent,
+                    ThorObjectSearchCompleteCosAgent)
 from .replay import ReplaySolver
 from .result_types import PathResult, HistoryResult
 from .common import make_config, TaskArgs

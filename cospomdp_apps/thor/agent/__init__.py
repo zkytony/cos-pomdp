@@ -1,3 +1,4 @@
 from .cospomdp_basic import ThorObjectSearchBasicCosAgent
+from .cospomdp_complete import ThorObjectSearchCompleteCosAgent
 from .optimal import ThorObjectSearchOptimalAgent
 from .external import ThorObjectSearchExternalAgent
