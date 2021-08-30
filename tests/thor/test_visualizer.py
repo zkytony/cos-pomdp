@@ -6,14 +6,17 @@ import time
 
 from cospomdp_apps.thor.visual import GridMapVizualizer
 
+def _test_visualizer(args=None, sleep=15):
+    if args is None:
+        parser = argparse.ArgumentParser(
+            description="Keyboard control of agent in ai2thor")
+        parser.add_argument("-s", "--scene",
+                            type=str, help="scene. E.g. FloorPlan1",
+                            default="FloorPlan1")
+        args = parser.parse_args()
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Keyboard control of agent in ai2thor")
-    parser.add_argument("-s", "--scene",
-                        type=str, help="scene. E.g. FloorPlan1",
-                        default="FloorPlan1")
-    args = parser.parse_args()
+    print("Testing visualizer")
+
     controller = thortils.launch_controller({**constants.CONFIG, **{"scene": args.scene}})
 
     reachable_positions = thortils.thor_reachable_positions(controller)
@@ -55,7 +58,10 @@ def main():
     thortils.thor_teleport2d(controller, (pos['x']+0.5, pos['z']+0.5, 90))
     viz.show_img(img)
 
-    time.sleep(15)
+    time.sleep(sleep)
+    controller.stop()
+    viz.on_cleanup()
+
 
 if __name__ == "__main__":
-    main()
+    _test_visualizer()

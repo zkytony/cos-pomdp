@@ -1,4 +1,4 @@
-from cospomdp.domain.state import RobotStatus, RobotState, CosState
+from cospomdp.domain.state import RobotStatus, RobotState, RobotState2D, CosState
 from cospomdp.domain.action import Motion, Done
 from cospomdp.domain.observation import (Loc, CosObservation,
                                          RobotObservation, Voxel)

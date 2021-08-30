@@ -3,17 +3,16 @@ import os
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # just so we can import mjolnir stuff
-sys.path.append(os.path.join(ABS_PATH, '../../external/mjolnir/'))
-from .mjolnir.datasets.glove import Glove
-from .mjolnir.utils.class_finder import model_class, agent_class
-from .mjolnir.utils.net_util import toFloatTensor, resnet_input_transform
-from .mjolnir.models.model_io import ModelInput, ModelOptions
-from .mjolnir.datasets.offline_controller_with_small_rotation import ACTIONS_LIST
+sys.path.append(os.path.join(ABS_PATH, '../../../external/mjolnir/'))
+from ..mjolnir.datasets.glove import Glove
+from ..mjolnir.utils.class_finder import model_class, agent_class
+from ..mjolnir.utils.net_util import toFloatTensor, resnet_input_transform
+from ..mjolnir.models.model_io import ModelInput, ModelOptions
+from ..mjolnir.datasets.offline_controller_with_small_rotation import ACTIONS_LIST
 
 import torch
 
-from .agent import ThorAgent
-from .common import TOS_Action
+from ..common import TOS_Action, ThorAgent
 from cospomdp_apps.basic.action import ALL_MOVES_2D
 
 class Args(object):
@@ -31,7 +30,7 @@ def MJOLNIR_O_args(gpu_ids=[-1]):
     args.action_space = 6
     args.hidden_state_sz = 512
     args.dropout_rate = 0.25
-    args.glove_file = os.path.join(ABS_PATH, "mjolnir", "data/thor_glove/glove_thorv1_300.hdf5")
+    args.glove_file = os.path.join(ABS_PATH, "../mjolnir", "data/thor_glove/glove_thorv1_300.hdf5")
     args.gpu_ids = gpu_ids
     args.gpu_id = gpu_ids[0]
 
@@ -54,6 +53,9 @@ def MJOLNIR_O_args(gpu_ids=[-1]):
     return args
 
 class ThorObjectSearchExternalAgent(ThorAgent):
+    """The external agent uses an external model (e.g. MJOLNIR) that
+    directly outputs low-level actions (e.g. MoveAhead) given visual
+    input (images, bounding boxes)."""
     AGENT_USES_CONTROLLER = True
 
     def __init__(self,

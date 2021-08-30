@@ -2,7 +2,7 @@ import thortils
 
 from cospomdp.utils.corr_funcs import around
 from cospomdp_apps.thor.common import TaskArgs, make_config
-from cospomdp_apps.thor.agent import ThorObjectSearchCosAgent
+from cospomdp_apps.thor.agent import ThorObjectSearchBasicCosAgent
 from cospomdp_apps.thor.trial import ThorObjectSearchTrial
 
 def _test_direct_create():
@@ -26,7 +26,7 @@ def _test_direct_create():
                                                  num_sims=500,
                                                  discount_factor=0.95,
                                                  exploration_const=100)
-    agent = ThorObjectSearchCosAgent(
+    agent = ThorObjectSearchBasicCosAgent(
         controller,
         **config["agent_config"])
     print("CosAgent created.")
@@ -35,7 +35,7 @@ def _test_create_trial():
     args = TaskArgs(detectables={"Apple", "CounterTop", "Bread"},
                     scene='FloorPlan1',
                     target="Apple",
-                    agent_class="ThorObjectSearchCosAgent",
+                    agent_class="ThorObjectSearchBasicCosAgent",
                     task_env="ThorObjectSearch")
     config = make_config(args)
     config["agent_config"]["corr_specs"] = {
@@ -50,7 +50,10 @@ def _test_create_trial():
     trial = ThorObjectSearchTrial("test_cosagent", config)
     print("Trial created")
 
-
-if __name__ == "__main__":
+def _test_cosagent_basic_creation():
+    print("Test cosagent creation")
     _test_direct_create()
     _test_create_trial()
+
+if __name__ == "__main__":
+    _test_cosagent_basic_creation()

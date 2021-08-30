@@ -75,6 +75,32 @@ class ThorEnv:
         raise NotImplementedError
 
 
+class ThorAgent:
+    """
+    ThorAgent's act() function outputs a TOS_Action,
+    and its update() function takes in a TOS_Action and a TOS_Observation.
+    This can be thought of as a wrapper for the low-level interaction
+    with ai2thor; Each TOS_Action is a low-level action (e.g. MoveAhead),
+    and each TOS_Observation is a low-level observation (e.g. image, object detections etc.)
+    """
+    AGENT_USES_CONTROLLER = False
+
+    def act(self):
+        raise NotImplementedError
+
+    def update(self, tos_action, tos_observation):
+        raise NotImplementedError
+
+    def movement_params(self, move_name):
+        """Returns the parameter dict used for ai2thor Controller.step
+        for the given move_name"""
+        return self.task_config["nav_config"]["movement_params"][move_name]
+
+    @property
+    def vision_detector(self):
+        return None
+
+
 @dataclass(init=True, frozen=True)
 class TaskArgs:
     detectables: set

@@ -41,7 +41,7 @@ def _draw_robot_traj(viz, task_env, agent, robot_states, actions, img=None, show
             time.sleep(0.2)
     return img
 
-def interactive_show_robot_trajs(viz, task_env, agent, depth=None, num=100, show_each=False):
+def interactive_show_robot_trajs(viz, task_env, agent, depth=None, num_trajs=100, show_each=False, interactive=True):
     """num: Number of trajectories to be able to iterate trough"""
     dd = TreeDebugger(agent.cos_agent.tree)
     if depth is None:
@@ -51,7 +51,7 @@ def interactive_show_robot_trajs(viz, task_env, agent, depth=None, num=100, show
 
     random.shuffle(nodes)
     outputs = []
-    for i, node in enumerate(tqdm(nodes[:num])):
+    for i, node in enumerate(tqdm(nodes[:num_trajs])):
         traj, actions = _get_robot_traj(dd, node, agent.cos_agent)
         outputs.append((traj, actions))
 
@@ -66,18 +66,30 @@ def interactive_show_robot_trajs(viz, task_env, agent, depth=None, num=100, show
                 return
     if not show_each:
         viz.show_img(img)
-        cont = input("Continue? [y] ").startswith("y")
-        if not cont:
-            exit(0)
+        if interactive:
+            cont = input("Continue? [y] ").startswith("y")
+            if not cont:
+                exit(0)
 
 def step_act_cb(task_env, agent, **kwargs):
     viz = kwargs.get("viz")
-    interactive_show_robot_trajs(viz, task_env, agent, depth=None)
+    interactive_show_robot_trajs(viz, task_env, agent,
+                                 num_trajs=kwargs.get("num_trajs", 30),
+                                 depth=kwargs.get("depth", None),
+                                 interactive=kwargs.get('interactive', False))
+
+def _test_analyze_cosagent_basic_search_tree(target, other,
+                                             num_trajs=30,
+                                             depth=None,
+                                             interactive=True,
+                                             **kwargs):
+    _test_basic_search(target, other, prior='informed',
+                       step_act_cb=step_act_cb,
+                       step_act_args={'num_trajs': num_trajs,
+                                      'interactive': interactive},
+                       **kwargs)
 
 if __name__ == "__main__":
-    _test_basic_search('Bowl', 'Book', prior='informed',
-                       step_act_cb=step_act_cb,
-                       num_sims=10000,
-                       show_progress=True,
-                       max_depth=30,
-                       exploration_const=0)
+    _test_analyze_cosagent_basic_search_tree(
+        'Bowl', 'Book', num_sims=10000,
+        show_progress=True, max_depth=30, exploration_const=0)

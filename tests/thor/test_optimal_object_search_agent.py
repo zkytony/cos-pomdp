@@ -57,6 +57,10 @@ def _test_many(targets):
     print("Failed objects:")
     pprint(failed_objects)
 
+def _test_optimal_search_agent(targets):
+    print("Testing optimal search agent")
+    _test_many(targets)
+
 
 def _test_singe_by_id(floorplan, object_id):
     print("** Searching for {} in {}".format(object_id, floorplan))

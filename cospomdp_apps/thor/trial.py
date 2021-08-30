@@ -9,13 +9,13 @@ from cospomdp.utils.misc import _debug
 from cospomdp.utils import cfg
 cfg.DEBUG_LEVEL = 0
 
+from . import constants
 from .object_search import ThorObjectSearch
 from .agent import (ThorObjectSearchOptimalAgent,
-                    ThorObjectSearchCosAgent)
-from .external import ThorObjectSearchExternalAgent
+                    ThorObjectSearchBasicCosAgent,
+                    ThorObjectSearchExternalAgent)
 from .replay import ReplaySolver
 from .result_types import PathResult, HistoryResult
-from . import constants
 from .common import make_config, TaskArgs
 
 class ThorTrial(Trial):
@@ -32,7 +32,12 @@ class ThorTrial(Trial):
         controller = thortils.launch_controller(self.config["thor"])
         return controller
 
-    def run(self, logging=False, step_act_cb=None, step_update_cb=None):
+    def run(self,
+            logging=False,
+            step_act_cb=None,
+            step_act_args={},
+            step_update_cb=None,
+            step_update_args={}):
         """
         Functions intended for debugging purposes:
             step_act_cb: Called after the agent has determined its action
@@ -60,7 +65,7 @@ class ThorTrial(Trial):
                 sys.stdout.write(f"Step {i} | Action: {a_str}; ")
                 sys.stdout.flush()
             if step_act_cb is not None:
-                step_act_cb(task_env, agent, viz=viz)
+                step_act_cb(task_env, agent, viz=viz, **step_act_args)
 
             observation, reward = task_env.execute(agent, action)
             agent.update(action, observation)
@@ -76,7 +81,7 @@ class ThorTrial(Trial):
                 viz.visualize(task_env, agent, step=i)
 
             if step_update_cb is not None:
-                step_act_cb(task_env, agent)
+                step_update_cb(task_env, agent, viz=viz, **step_update_args)
 
             if task_env.done(action):
                 success, msg = task_env.success(action)
@@ -87,6 +92,8 @@ class ThorTrial(Trial):
                 break
         results = task_env.compute_results()
         controller.stop()
+        if self.config.get("visualize", False):
+            viz.on_cleanup()
         return results
 
     @property
