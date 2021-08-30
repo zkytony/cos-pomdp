@@ -1,8 +1,9 @@
 import pomdp_py
-from cospomdp.utils.visual import BasicViz2D
-from cospomdp.utils.world import create_instance
-from cospomdp.models.basic_env import BasicEnv2D
-from cospomdp.models.reward_model import ObjectSearchRewardModel2D
+
+from cospomdp.models.reward_model import ObjectSearchRewardModel
+from .visual import BasicViz2D
+from .basic_env import BasicEnv2D
+from .parser import create_instance
 
 def solve(worldstr, nsteps=50, solver="pomdp_py.POUCT", solver_args={}):
     agent, objlocs, colors = create_instance(worldstr)
@@ -17,7 +18,7 @@ def solve(worldstr, nsteps=50, solver="pomdp_py.POUCT", solver_args={}):
                      agent.transition_model.robot_trans_model.reachable_positions,
                      agent.reward_model)
 
-    is_search_task = isinstance(agent.reward_model, ObjectSearchRewardModel2D)
+    is_search_task = isinstance(agent.reward_model, ObjectSearchRewardModel)
 
     viz = BasicViz2D(region=agent.search_region)
     viz.on_init()
