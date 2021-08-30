@@ -1,5 +1,5 @@
 import pomdp_py
-from ..common import ThorAgent
+from ..common import ThorAgent, TOS_Action
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
 from .components.action import navigation_actions
 from .components.state import CosRobotState
@@ -125,3 +125,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                   corr_dists,
                                   detectors,
                                   reward_model)
+
+
+
+    def act(self):
+        return TOS_Action("Pass", {})

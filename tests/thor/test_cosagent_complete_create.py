@@ -9,14 +9,15 @@ def step_act_cb(task_env, agent, **kwargs):
     viz = kwargs.get("viz")
 
     img = viz.render(task_env, agent, len(agent.cos_agent.history))
-    img = viz.highlight(img, agent.lll, shape="circle")
+    img = viz.highlight(img, agent.lll, color=(199, 20, 30), shape="circle", scale=0.5)
     viz.show_img(img)
+    import pdb; pdb.set_trace()
 
-    dd = TreeDebugger(agent.cos_agent.tree)
-    if kwargs.get("block", True):
-        import ipdb; ipdb.set_trace()
-    else:
-        dd.mbp
+    # dd = TreeDebugger(agent.cos_agent.tree)
+    # if kwargs.get("block", True):
+    #     import ipdb; ipdb.set_trace()
+    # else:
+    #     dd.mbp
 
 def _test_sampling_topo_map():
     args = TaskArgs(detectables={"Apple", "CounterTop", "Bread"},
@@ -41,7 +42,7 @@ def _test_sampling_topo_map():
     }
     trial = ThorObjectSearchTrial("test_cosagent", config)
     print("Trial created")
-    trial.run()
+    trial.run(step_act_cb=step_act_cb)
 
 if __name__ == "__main__":
     _test_sampling_topo_map()
