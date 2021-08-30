@@ -30,6 +30,17 @@ def navigation_actions(movement_params, grid_size):
     see thortils.navigation.convert_movement_to_action
 
     Returns navigation action suitable for GridMap coordinate system.
+
+    The GridMap coordinate system looks like:
+
+    y
+    ^
+    |
+    + ---->x  0 deg, ccw
+    z
+
+    Rotation around z axis is yaw (look left/right).
+    Rotation around x axis is pitch (look up/down)
     """
     # the action tuples here are in thor units
     action_tuples = get_navigation_actions(movement_params)

@@ -21,7 +21,72 @@ class GridMapSearchRegion(SearchRegion2D):
         # self._obstacles = grid_map.obstacles
 
 
-class ThorObjectSearchBasicCosAgent(ThorAgent):
+class ThorObjectSearchCosAgent(ThorAgent):
+
+    @property
+    def belief(self):
+        return self.cos_agent.belief
+
+    @property
+    def robot_id(self):
+        return self.cos_agent.robot_id
+
+    @property
+    def target_id(self):
+        return self.cos_agent.target_id
+
+    def sensor(self, objid):
+        return self.cos_agent.sensor(objid)
+
+    @property
+    def detectable_objects(self):
+        return self.cos_agent.detectable_objects
+
+    def _build_detectors(self, detector_specs):
+        detectable_objects = {}  # objects we care about are detectable objects
+        detectors = {}
+        for obj in self.task_config["detectables"]:
+            if len(obj) == 2:
+                object_id, object_class = obj
+            else:
+                object_id = object_class = obj
+            detectable_objects[object_id] = (object_id, object_class)
+
+            detector_type, sensor_params, quality_params = detector_specs[object_id]
+            if detector_type.strip() == "fan-nofp":
+                if type(sensor_params) == str:
+                    sensor_params = eval(f"dict({sensor_params.strip()})")
+                if quality_params == str:
+                    quality_params = eval(quality_params.strip())
+                detector = FanModelNoFP(object_id, sensor_params, quality_params)
+                detectors[object_id] = detector
+        return detectors, detectable_objects
+
+    def _build_corr_dists(self, corr_specs, objects):
+        target_id = self.target[0]
+        corr_dists = {}
+        for key in corr_specs:
+            obj1, obj2 = key
+            if obj1 == target_id:
+                other = obj2
+            elif obj2 == target_id:
+                other = obj1
+            else:
+                continue
+
+            if other not in corr_dists:
+                corr_func, corr_func_args = corr_specs[key]
+                if type(corr_func) == str:
+                    corr_func = eval(corr_func)
+                corr_dists[other] = CorrelationDist(objects[other],
+                                                    objects[target_id],
+                                                    self.search_region,
+                                                    corr_func,
+                                                    corr_func_args=corr_func_args)
+        return corr_dists
+
+
+class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
     """
     The BasicCosAgent contains a COS-POMDP that is instantiated as in
     cospomdp_apps.basic; It uses a 2D grid map representation of the search
@@ -104,68 +169,6 @@ class ThorObjectSearchBasicCosAgent(ThorAgent):
         else:
             self.solver = eval(solver)(**solver_args)
 
-
-    def _build_detectors(self, detector_specs):
-        detectable_objects = {}  # objects we care about are detectable objects
-        detectors = {}
-        for obj in self.task_config["detectables"]:
-            if len(obj) == 2:
-                object_id, object_class = obj
-            else:
-                object_id = object_class = obj
-            detectable_objects[object_id] = (object_id, object_class)
-
-            detector_type, sensor_params, quality_params = detector_specs[object_id]
-            if detector_type.strip() == "fan-nofp":
-                if type(sensor_params) == str:
-                    sensor_params = eval(f"dict({sensor_params.strip()})")
-                if quality_params == str:
-                    quality_params = eval(quality_params.strip())
-                detector = FanModelNoFP(object_id, sensor_params, quality_params)
-                detectors[object_id] = detector
-        return detectors, detectable_objects
-
-    def _build_corr_dists(self, corr_specs, objects):
-        target_id = self.target[0]
-        corr_dists = {}
-        for key in corr_specs:
-            obj1, obj2 = key
-            if obj1 == target_id:
-                other = obj2
-            elif obj2 == target_id:
-                other = obj1
-            else:
-                continue
-
-            if other not in corr_dists:
-                corr_func, corr_func_args = corr_specs[key]
-                if type(corr_func) == str:
-                    corr_func = eval(corr_func)
-                corr_dists[other] = CorrelationDist(objects[other],
-                                                    objects[target_id],
-                                                    self.search_region,
-                                                    corr_func,
-                                                    corr_func_args=corr_func_args)
-        return corr_dists
-
-    @property
-    def belief(self):
-        return self.cos_agent.belief
-
-    @property
-    def robot_id(self):
-        return self.cos_agent.robot_id
-
-    @property
-    def target_id(self):
-        return self.cos_agent.target_id
-
-    def sensor(self, objid):
-        return self.cos_agent.sensor(objid)
-
-    @property
-    def detectable_objects(self):
-        return self.cos_agent.detectable_objects
 
     def act(self):
         """
