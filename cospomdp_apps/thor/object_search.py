@@ -9,22 +9,8 @@ from pomdp_py.utils import typ
 import ai2thor
 import ai2thor.util.metrics as metrics
 
-from thortils import (thor_all_object_types,
-                      thor_agent_pose,
-                      thor_camera_horizon,
-                      thor_object_type,
-                      thor_object_of_type_in_fov,
-                      thor_object_position,
-                      thor_closest_object_of_type,
-                      thor_closest_object_of_type_position,
-                      thor_pose_as_dict)
-
-from thortils.vision import (thor_img,
-                             thor_img_depth,
-                             thor_object_bboxes,
-                             projection)
-from thortils.utils import (to_degrees, closest,
-                            normalize_angles, euclidean_dist)
+import thortils as tt
+from thortils.utils import euclidean_dist
 
 from .result_types import PathResult, HistoryResult
 from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation
@@ -55,7 +41,7 @@ class TOS(ThorEnv):
         self.goal_distance = task_config["nav_config"]["goal_distance"]
         self._detectables = self.task_config["detectables"]
         if self._detectables == "any":
-            self._all_classes = thor_all_object_types(controller)
+            self._all_classes = tt.thor_all_object_types(controller)
         if task_type not in {"class", "object"}:
             raise ValueError("Invalid target type: {}".format(task_type))
         super().__init__(controller)
@@ -67,6 +53,33 @@ class TOS(ThorEnv):
     @property
     def robot_id(self):
         return self.task_config.get("robot_id", "robot0")
+
+    def get_info(self, fields):
+        """
+        Given a list of field names (e.g. grid_size, grid_map),
+        return a dictionary mapping from a parameter name to value.
+        """
+        grid_size = tt.thor_grid_size_from_controller(self.controller)
+        scene = tt.thor_scene_from_controller(self.controller)
+        output = {}
+        for item in fields:
+            if item.lower() == "grid_size":
+                output["grid_size"] = grid_size
+            elif item.lower() == "grid_map":
+                grid_map = tt.convert_scene_to_grid_map(
+                    self.controller, scene, grid_size)
+                output["grid_map"] = grid_map
+            elif item.lower() == "agent_pose":
+                agent_pose = tt.thor_agent_pose(self.controller, as_tuple=True)
+                output["thor_agent_pose"] = agent_pose
+            elif item.lower() == "camera_pose":
+                camera_pose = tt.thor_camera_pose(self.controller, as_tuple=True)
+                output["thor_camera_pose"] = camera_pose
+            elif item.lower() == "groundtruth_prior":
+                output["thor_prior"] = {self.get_object_loc(self.target) : 1e6}
+            else:
+                raise ValueError("Invalid field item for getting information: {}".format(item))
+        return output
 
     def compute_results(self):
         """
@@ -96,7 +109,7 @@ class TOS(ThorEnv):
             self.target, self.task_type,
             **self.task_config["nav_config"])
         # Need to prepend starting pose. Get position only
-        shortest_path = [thor_pose_as_dict(self.init_state.agent_pose[0])]\
+        shortest_path = [tt.thor_pose_as_dict(self.init_state.agent_pose[0])]\
                         + [p[0] for p in poses]
 
         actual_path = self.get_current_path()
@@ -131,21 +144,21 @@ class TOS(ThorEnv):
         """
         if event is None:
             event = self.controller.step(action="Pass")
-        img = thor_img(event)
-        img_depth = thor_img_depth(event)
+        img = tt.vision.thor_img(event)
+        img_depth = tt.vision.thor_img_depth(event)
         if vision_detector is None:
             # use groundtruth detection
             detections = []
-            bboxes = thor_object_bboxes(event)  # xyxy
+            bboxes = tt.vision.thor_object_bboxes(event)  # xyxy
             for objectId in bboxes:
-                loc3d = thor_object_position(event, objectId, as_tuple=True)
+                loc3d = tt.thor_object_position(event, objectId, as_tuple=True)
                 if loc3d is None:
                     # This is due to objectId, though provided in
                     # bounding box, is not found in event metadata.
                     # Perhaps this is a bug in ai2thor
                     continue
 
-                cls = thor_object_type(objectId)
+                cls = tt.thor_object_type(objectId)
                 if not self.detectable(cls):
                     continue
                 conf = 1.0
@@ -157,20 +170,20 @@ class TOS(ThorEnv):
                 xyxy = detections[i][0]
                 # TODO: COMPLETE
                 # pos = projection.inverse_perspective(np.mean(xyxy), ..) # TODO
-        return TOS_Observation(img, img_depth, detections, thor_agent_pose(event))
+        return TOS_Observation(img, img_depth, detections, tt.thor_agent_pose(event))
 
     def get_object_loc(self, object_class):
         """Returns object location (note: in thor coordinates) for given
         object class, for the closest instance to the robot."""
-        return thor_closest_object_of_type_position(self.controller.last_event, object_class,
-                                                    as_tuple=True)
+        return tt.thor_closest_object_of_type_position(self.controller.last_event, object_class,
+                                                       as_tuple=True)
 
     def get_state(self, event=None):
         # stores agent pose as tuple, for convenience.
         if event is None:
             event = self.controller.step(action="Pass")
-        agent_pose = thor_agent_pose(event, as_tuple=True)
-        horizon = thor_camera_horizon(event)
+        agent_pose = tt.thor_agent_pose(event, as_tuple=True)
+        horizon = tt.thor_camera_horizon(event)
         objlocs = {}
         for cls in self.detectables:
             objlocs[cls] = self.get_object_loc(cls)
@@ -224,13 +237,13 @@ class TOS(ThorEnv):
         event = self.controller.step(action="Pass")
         if self.task_type == "class":
             object_type = self.target
-            in_fov = thor_object_of_type_in_fov(event, object_type)
-            p = thor_closest_object_of_type(event, object_type)["position"]
+            in_fov = tt.thor_object_of_type_in_fov(event, object_type)
+            p = tt.thor_closest_object_of_type(event, object_type)["position"]
             objpos = (p['x'], p['z'])
         else:
             raise NotImplementedError("We do not consider this case for now.")
 
-        agent_position = thor_agent_pose(event)[0]
+        agent_position = tt.thor_agent_pose(event)[0]
         object_distance = euclidean_dist(objpos, (agent_position['x'],
                                                   agent_position['z']))
         # allows 0.1 to account for small difference due to floating point instability

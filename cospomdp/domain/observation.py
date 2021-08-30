@@ -2,7 +2,7 @@ import pomdp_py
 from .state import RobotStatus, RobotState
 
 class Loc(pomdp_py.SimpleObservation):
-    """Observation of an object's 2D location"""
+    """Observation of an object's location"""
     NULL = None  # empty
     def __init__(self, objid, loc):
         self.objid = objid
@@ -17,7 +17,7 @@ class Loc(pomdp_py.SimpleObservation):
 class CosObservation(pomdp_py.Observation):
     def __init__(self, robotobz, objobzs):
         """
-        objobzs (dict): maps from objid to Loc2D or NULL
+        objobzs (dict): maps from objid to Loc or NULL
         """
         self._hashcode = hash(frozenset(objobzs.items()))
         if isinstance(robotobz, RobotState):

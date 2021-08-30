@@ -28,15 +28,17 @@ class ThorObjectSearchBasicCosAgent(ThorAgent):
     no need for "goal interpretation" and the output is directly
     wrapped by a TOS_Action for execution.
     """
-    AGENT_USES_CONTROLLER = True
+    AGENT_USES_CONTROLLER = False
     def __init__(self,
-                 controller,
                  task_config,
                  corr_specs,
                  detector_specs,
                  solver,
                  solver_args,
-                 prior="uniform"):
+                 grid_size,
+                 grid_map,
+                 thor_agent_pose,
+                 thor_prior={}):
         """
         controller (ai2thor Controller)
         task_config (dict) configuration; see make_config
@@ -44,20 +46,19 @@ class ThorObjectSearchBasicCosAgent(ThorAgent):
         detector_specs (dict): Maps from object_id to (detector_type, sensor_params, quality_params)
         solver (str): name of solver
         solver_args (dict): arguments for the solver
+        thor_prior: dict mapping from thor location to probability; If empty, then the prior will be uniform.
         """
 
         robot_id = task_config['robot_id']
-        grid_size = tt.thor_grid_size_from_controller(controller)
-        grid_map = tt.convert_scene_to_grid_map(
-            controller, tt.thor_scene_from_controller(controller), grid_size)
         search_region = GridMapSearchRegion(grid_map)
         reachable_positions = grid_map.free_locations
         self.grid_map = grid_map
         self.search_region = search_region
 
-        thor_robot_pose = tt.thor_agent_pose(controller.last_event)
         init_robot_pose = grid_map.to_grid_pose(
-            thor_robot_pose[0]['x'], thor_robot_pose[0]['z'], thor_robot_pose[1]['y']
+            thor_agent_pose[0][0],  #x
+            thor_agent_pose[0][2],  #z
+            thor_agent_pose[1][1]   #yaw
         )
 
         # TODO: SIMPLIFY - just use target_class
@@ -79,20 +80,16 @@ class ThorObjectSearchBasicCosAgent(ThorAgent):
             task_config["nav_config"]["goal_distance"] / grid_size,
             robot_id, target_id)
 
-        prior_dist = {}
-        if prior == "informed":
-            thor_x, _, thor_z = tt.thor_closest_object_of_type_position(controller, target_class, as_tuple=True)
-            x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
-            prior_dist = {(x,z): 1e5}
-
         # Construct CosAgent, the actual POMDP
         init_robot_state = RobotState2D(robot_id, init_robot_pose)
         robot_trans_model = RobotTransition2D(robot_id, reachable_positions)
         policy_model = PolicyModel2D(robot_trans_model, reward_model)
+        prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
+                 for p in thor_prior}
         self.cos_agent = CosAgent(target, init_robot_state,
                                   search_region, robot_trans_model, policy_model,
                                   corr_dists, detectors, reward_model,
-                                  prior=prior_dist)
+                                  prior=prior)
         # construct solver
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,

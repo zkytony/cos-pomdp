@@ -1,6 +1,6 @@
 # Visualization
 from os import environ
-environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'  # hide "hello from pygame community"x
+environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'  # hide "hello from pygame community"
 
 from cospomdp_apps.basic.visual import GridMapVizualizer, BasicViz2D
 from . import constants

@@ -45,12 +45,18 @@ class ThorTrial(Trial):
                 given environment observation.
         """
         controller = self._start_controller()
-        task_env = eval(self.config["task_env"])(controller, **self.config["task_env_config"])
+        task_env = eval(self.config["task_env"])(controller, self.config["task_config"])
         agent_class = eval(self.config["agent_class"])
+        agent_init_inputs = task_env.get_info(self.config["agent_init_inputs"])
         if agent_class.AGENT_USES_CONTROLLER:
-            agent = agent_class(controller, **self.config["agent_config"])
+            agent = agent_class(controller,
+                                self.config['task_config'],
+                                **self.config['agent_config'],
+                                **agent_init_inputs)
         else:
-            agent = agent_class(**self.config["agent_config"])
+            agent = agent_class(self.config["task_config"],
+                                **self.config['agent_config'],
+                                **agent_init_inputs)
 
         if self.config.get("visualize", False):
             viz = task_env.visualizer(**self.config["viz_config"])
@@ -104,15 +110,3 @@ class ThorTrial(Trial):
 # ------------- Object search trial ------------- #
 class ThorObjectSearchTrial(ThorTrial):
     RESULT_TYPES = [PathResult, HistoryResult]
-
-
-def build_object_search_trial(scene, target, task_type,
-                              max_steps=100):
-    """
-    Returns a ThorTrial for object search.
-    """
-    args = TaskArgs(scene=scene, target=target, detectables={target},
-                    max_steps=max_steps)
-    config = make_config(args)
-    trial = ThorObjectSearchTrial("test_optimal", config, verbose=True)
-    return trial

@@ -56,10 +56,9 @@ class ThorObjectSearchExternalAgent(ThorAgent):
     """The external agent uses an external model (e.g. MJOLNIR) that
     directly outputs low-level actions (e.g. MoveAhead) given visual
     input (images, bounding boxes)."""
-    AGENT_USES_CONTROLLER = True
+    AGENT_USES_CONTROLLER = False
 
     def __init__(self,
-                 controller,
                  task_config,
                  model_name,
                  load_model_path,

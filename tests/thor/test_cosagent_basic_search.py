@@ -28,15 +28,19 @@ def _test_basic_search(target,
     detectables = [target]
     if other is not None:
         detectables.append(other)
+
+    agent_init_inputs = ['grid_size', 'grid_map', 'agent_pose']
+    if prior == "informed":
+        agent_init_inputs.append('groundtruth_prior')
+
     args = TaskArgs(detectables=detectables,
                     scene='FloorPlan1',
                     target=target,
                     agent_class="ThorObjectSearchBasicCosAgent",
                     task_env="ThorObjectSearch",
                     max_steps=max_steps,
-                    prior=prior)
+                    agent_init_inputs=agent_init_inputs)
     config = make_config(args)
-    config["agent_config"]["prior"] = prior
 
     config["agent_config"]["corr_specs"] = {}
     config["agent_config"]["detector_specs"] = {

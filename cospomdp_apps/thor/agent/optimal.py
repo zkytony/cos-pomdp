@@ -19,7 +19,6 @@ class ThorObjectSearchOptimalAgent(ThorAgent):
     """The agent find the shortest path to the target, and then
     follows this path by taking appropriate actions.
     """
-
     # Because this agent is not realistic, we permit it to have
     # access to the controller.
     AGENT_USES_CONTROLLER = True

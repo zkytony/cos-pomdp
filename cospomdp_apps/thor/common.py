@@ -1,6 +1,7 @@
 import numpy as np
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
 from . import constants
 
 # State, Action, Observation used in object search task
@@ -39,6 +40,7 @@ class ThorEnv:
         return self._init_state
 
     def get_step_info(self, step):
+        """Returns a string as information after each step."""
         raise NotImplementedError
 
     def execute(self, agent, action):
@@ -74,6 +76,13 @@ class ThorEnv:
     def visualizer(self, **config):
         raise NotImplementedError
 
+    def get_info(self, fields):
+        """
+        Given a list of field names (e.g. grid_size, grid_map),
+        return a dictionary mapping from field name to value.
+        """
+        raise NotImplementedError
+
 
 class ThorAgent:
     """
@@ -101,15 +110,15 @@ class ThorAgent:
         return None
 
 
-@dataclass(init=True, frozen=True)
+@dataclass(init=True)
 class TaskArgs:
     detectables: set
-    target: str = "Apple"
-    max_steps: int = 100
+    agent_init_inputs: List = field(default_factory=lambda: [])  # inputs e.g. grid map provided at agent creation
     scene: str = 'FloorPlan1'
+    target: str = "Apple"
     task_env: str = "ThorObjectSearch"
     agent_class: str = "ThorObjectSearchOptimalAgent"
-    prior: str = 'uniform'
+    max_steps: int = 100
 
 
 # Make configs
@@ -134,10 +143,11 @@ def make_config(args):
     config = {
         "thor": thor_config,
         "max_steps": args.max_steps,
+        "task_config": task_config,
         "task_env": args.task_env,
-        "task_env_config": {"task_config": task_config},
         "agent_class": args.agent_class,
-        "agent_config": {"task_config": task_config}
+        "agent_config": {},
+        "agent_init_inputs": args.agent_init_inputs
     }
 
     # You are expected to modify config['agent_config']

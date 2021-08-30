@@ -3,8 +3,23 @@ import random
 from pprint import pprint
 import thortils
 from thortils import compute_spl
-from cospomdp_apps.thor.trial import build_object_search_trial
 from cospomdp.utils.math import mean_ci_normal
+from cospomdp_apps.thor.common import make_config, TaskArgs
+from cospomdp_apps.thor.trial import ThorObjectSearchTrial
+
+def build_object_search_trial(scene, target, task_type,
+                              max_steps=100):
+    """
+    Returns a ThorTrial for object search.
+    """
+    args = TaskArgs(scene=scene,
+                    target=target,
+                    detectables={target},
+                    max_steps=max_steps,
+                    agent_init_inputs=[])
+    config = make_config(args)
+    trial = ThorObjectSearchTrial("test_optimal", config, verbose=True)
+    return trial
 
 
 # ####### KITCHEN ##########
