@@ -1,7 +1,7 @@
 import pomdp_py
-from .state import RobotStatus, RobotState2D
+from .state import RobotStatus, RobotState
 
-class Loc2D(pomdp_py.SimpleObservation):
+class Loc(pomdp_py.SimpleObservation):
     """Observation of an object's 2D location"""
     NULL = None  # empty
     def __init__(self, objid, loc):
@@ -14,16 +14,16 @@ class Loc2D(pomdp_py.SimpleObservation):
     def id(self):
         return self.objid
 
-class CosObservation2D(pomdp_py.Observation):
+class CosObservation(pomdp_py.Observation):
     def __init__(self, robotobz, objobzs):
         """
         objobzs (dict): maps from objid to Loc2D or NULL
         """
         self._hashcode = hash(frozenset(objobzs.items()))
-        if isinstance(robotobz, RobotState2D):
-            robotobz = RobotObservation2D(robotobz.id,
-                                          robotobz['pose'],
-                                          robotobz['status'].copy())
+        if isinstance(robotobz, RobotState):
+            robotobz = RobotObservation(robotobz.id,
+                                        robotobz['pose'],
+                                        robotobz['status'].copy())
         self._robotobz = robotobz
         self._objobzs = objobzs
 
@@ -68,7 +68,7 @@ class CosObservation2D(pomdp_py.Observation):
     def z_robot(self):
         return self._robotobz
 
-class RobotObservation2D(pomdp_py.SimpleObservation):
+class RobotObservation(pomdp_py.SimpleObservation):
     def __init__(self, robot_id, robot_pose, status):
         self.robot_id = robot_id
         self.pose = robot_pose
@@ -78,8 +78,8 @@ class RobotObservation2D(pomdp_py.SimpleObservation):
     def __str__(self):
         return f"({self.robot_pose, self.status})"
 
-    def to_state(self):
-        return RobotState2D(self.robot_id, self.pose, self.status)
+    def to_state(self, state_class=RobotState):
+        return state_class(self.robot_id, self.pose, self.status)
 
 class Voxel(pomdp_py.SimpleObservation):
     """3D object observation"""

@@ -2,13 +2,16 @@ import pomdp_py
 import random
 import pytest
 import matplotlib.pyplot as plt
-from cospomdp.models.observation_model import (CosObjectObservationModel2D,
-                                               CosObservationModel2D,
+from cospomdp.models.observation_model import (CosObjectObservationModel,
+                                               CosObservationModel,
                                                FanModelYoonseon,
                                                FanModelNoFP)
 from cospomdp.models.correlation import CorrelationDist
-from cospomdp.domain.state import ObjectState2D, CosState2D, RobotState2D, RobotStatus
-from cospomdp.domain.observation import Loc2D, CosObservation2D
+from cospomdp.domain.state import (ObjectState,
+                                   CosState,
+                                   RobotState2D,
+                                   RobotStatus)
+from cospomdp.domain.observation import Loc, CosObservation
 from cospomdp.utils.math import euclidean_dist, normalize
 from cospomdp.models.search_region import SearchRegion2D
 from cospomdp.utils.plotting import plot_pose
@@ -50,32 +53,32 @@ def test_observation_model(search_region, show_plots):
     fan_params = dict(fov=90, min_range=0, max_range=5)
     detector_other = FanModelNoFP(target[0], fan_params, (0.7, 0.1), round_to=None)
 
-    omodel_target = CosObjectObservationModel2D(target[0], target[0], robot_id, detector_target)
+    omodel_target = CosObjectObservationModel(target[0], target[0], robot_id, detector_target)
     corr_dist = CorrelationDist(other, target, search_region, corr_func)
-    omodel_other = CosObjectObservationModel2D(other[0], target[0], robot_id, detector_target, corr_dist)
-    omodel = CosObservationModel2D(robot_id, target[0], {0:omodel_target, 1:omodel_other})
+    omodel_other = CosObjectObservationModel(other[0], target[0], robot_id, detector_target, corr_dist)
+    omodel = CosObservationModel(robot_id, target[0], {0:omodel_target, 1:omodel_other})
 
     srobot = RobotState2D(robot_id, (5, 5.5, 0), RobotStatus())
 
     # sampling
     for i in range(200):
         loc = random.sample(search_region.locations, 1)[0]
-        state = CosState2D({target[0]: ObjectState2D(target[0], target[1], loc),
-                            robot_id: srobot})
+        state = CosState({target[0]: ObjectState(target[0], target[1], loc),
+                          robot_id: srobot})
         z = omodel.sample(state)
         if z[target[0]].loc is not None and z[other[0]].loc is not None:
             assert euclidean_dist(z[target[0]].loc, z[other[0]].loc) <= DIST
 
     # belief update
-    uniform_belief = pomdp_py.Histogram(normalize({ObjectState2D(target[0], target[1], loc):1.0
+    uniform_belief = pomdp_py.Histogram(normalize({ObjectState(target[0], target[1], loc):1.0
                                                    for loc in search_region}))
     new_belief = {}
     other_loc = (7, 5)
-    z_other = Loc2D(other[0], other_loc)
-    z_target = Loc2D(other[0], None)
-    z = CosObservation2D(srobot, {target[0]: z_target, other[0]: z_other})
+    z_other = Loc(other[0], other_loc)
+    z_target = Loc(other[0], None)
+    z = CosObservation(srobot, {target[0]: z_target, other[0]: z_other})
     for starget in uniform_belief:
-        s = CosState2D({target[0]: starget, robot_id:srobot})
+        s = CosState({target[0]: starget, robot_id:srobot})
         new_belief[starget] = omodel.probability(z, s) * uniform_belief[starget]
     new_belief = pomdp_py.Histogram(normalize(new_belief))
     assert euclidean_dist(new_belief.mpe()['loc'], z_other.loc)\

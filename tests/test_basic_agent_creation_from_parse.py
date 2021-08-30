@@ -2,8 +2,8 @@
 import pytest
 import pomdp_py
 import numpy as np
-from cospomdp.utils.world import create_instance
-from cospomdp.domain.action import ALL_MOVES_2D, Done
+from cospomdp_apps.basic.action import ALL_MOVES_2D, Done
+from cospomdp_apps.basic.parser import create_instance
 
 @pytest.fixture
 def world():

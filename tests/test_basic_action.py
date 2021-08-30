@@ -1,5 +1,4 @@
-from cospomdp.domain.action import *
-
+from cospomdp_apps.basic.action import Move2D, MoveAhead, RotateLeft, RotateRight, Done
 
 def test_action():
     assert MoveAhead.delta == Move2D.FORWARD

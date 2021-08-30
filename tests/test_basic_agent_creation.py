@@ -1,10 +1,12 @@
 import numpy as np
+from cospomdp.domain.state import RobotState2D
 from cospomdp.models.agent import CosAgent
 from cospomdp.models.search_region import SearchRegion2D
 from cospomdp.models.correlation import CorrelationDist
 from cospomdp.models.observation_model import (FanModelYoonseon,
                                                FanModelNoFP)
-from cospomdp.models.reward_model import ObjectSearchRewardModel2D, NavRewardModel2D
+from cospomdp.models.reward_model import ObjectSearchRewardModel, NavRewardModel
+from cospomdp_apps.basic import RobotTransition2D, PolicyModel2D
 
 def test_agent_creation():
 
@@ -31,13 +33,16 @@ def test_agent_creation():
         table[0]: FanModelNoFP(table[0], fan_params, (0.8, 0.1), round_to=None),
         coffeemachine[0]: FanModelNoFP(coffeemachine[0], fan_params, (0.9, 0.1), round_to=None)
     }
-    reward_model = ObjectSearchRewardModel2D(detectors[target[0]].sensor,
-                                             1.5, robot_id, target[0])
-    agent = CosAgent(robot_id,
-                     init_robot_pose,
-                     target,
+    reward_model = ObjectSearchRewardModel(detectors[target[0]].sensor,
+                                           1.5, robot_id, target[0])
+    init_robot_state = RobotState2D(robot_id, init_robot_pose)
+    robot_trans_model = RobotTransition2D(robot_id, reachable_positions)
+    policy_model = PolicyModel2D(robot_trans_model, reward_model)
+    agent = CosAgent(target,
+                     init_robot_state,
                      search_region,
-                     reachable_positions,
+                     robot_trans_model,
+                     policy_model,
                      corr_dists,
                      detectors,
                      reward_model)

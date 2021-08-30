@@ -3,8 +3,8 @@
 import pomdp_py
 from dataclasses import dataclass  #https://stackoverflow.com/questions/34269772/type-hints-in-namedtuple/34269877
 
-class ObjectState2D(pomdp_py.ObjectState):
-    """2D Object state, specified by object ID, class and its 2D location (x,y)"""
+class ObjectState(pomdp_py.ObjectState):
+    """Object state, specified by object ID, class and its location"""
     def __init__(self, objid, objclass, loc):
         super().__init__(objclass, {"loc": loc, "id": objid})
 
@@ -27,7 +27,7 @@ class RobotStatus:
     def copy(self):
         return RobotStatus(self.done)
 
-class RobotState2D(pomdp_py.ObjectState):
+class RobotState(pomdp_py.ObjectState):
     def __init__(self, robot_id, pose, status=RobotStatus()):
         super().__init__("robot",
                          {"id": robot_id,
@@ -52,8 +52,27 @@ class RobotState2D(pomdp_py.ObjectState):
     def id(self):
         return self['id']
 
+    @property
+    def loc(self):
+        """the location of the robot, regardless of orientation"""
+        raise NotImplementedError
 
-class CosState2D(pomdp_py.OOState):
+
+class RobotState2D(RobotState):
+    """2D robot state; pose is x, y, th"""
+    @property
+    def loc(self):
+        return self['pose'][:2]
+
+    def same_pose(self, other_pose):
+        rx, ry, rth = self['pose']
+        gx, gy, gth = other_pose
+        if (rx, ry) == (gx, gy):
+            if abs(rth % 360 - gth % 360) <= 15:
+                return True
+        return False
+
+class CosState(pomdp_py.OOState):
     def __init__(self, object_states):
         super().__init__(object_states)
 

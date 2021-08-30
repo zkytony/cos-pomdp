@@ -14,7 +14,7 @@ import torch
 
 from .agent import ThorAgent
 from .common import TOS_Action
-from cospomdp.domain.action import ALL_MOVES_2D
+from cospomdp_apps.basic.action import ALL_MOVES_2D
 
 class Args(object):
     pass

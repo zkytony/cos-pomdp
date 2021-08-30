@@ -1,10 +1,12 @@
 import pytest
 import matplotlib.pyplot as plt
-from cospomdp.models.transition_model import RobotTransition2D, CosTransitionModel2D
-from cospomdp.domain.action import *
-from cospomdp.domain.state import *
+from cospomdp.models import *
+from cospomdp.domain import *
 from cospomdp.utils.plotting import plot_pose
 from cospomdp.utils.math import to_rad
+from cospomdp_apps.basic import PolicyModel2D, RobotTransition2D
+from cospomdp_apps.basic.action import (Move2D, MoveAhead, RotateLeft,
+                                        RotateRight, Done)
 
 @pytest.fixture
 def show_plots():
@@ -26,9 +28,9 @@ def test_transition_joint(dim, init_srobot):
     Trobot = RobotTransition2D("robot", [(x,y)
                                          for x in range(w)
                                          for y in range(l)])
-    state = CosState2D({"robot": init_srobot,
-                        target_id: ObjectState2D(target_id, "target", (3,3))})
-    T = CosTransitionModel2D(target_id, Trobot)
+    state = CosState({"robot": init_srobot,
+                        target_id: ObjectState(target_id, "target", (3,3))})
+    T = CosTransitionModel(target_id, Trobot)
     next_state = T.sample(state, MoveAhead)
     assert next_state.s("robot")["pose"] == (3, 5, 0)
     assert next_state.s(target_id) == state.s(target_id)
@@ -40,7 +42,7 @@ def test_transition_follow_path(dim, show_plots, init_srobot):
                                          for x in range(w)
                                          for y in range(l)])
 
-    state = CosState2D({"robot": init_srobot})
+    state = CosState({"robot": init_srobot})
     actions = {"forward": MoveAhead,
                "left": RotateLeft,
                "right": RotateRight}
@@ -67,7 +69,7 @@ def test_transition_follow_path(dim, show_plots, init_srobot):
     for a in path:
         # import pdb; pdb.set_trace()
         srobot = Trobot.sample(state, actions[a])
-        state = CosState2D({"robot": srobot})
+        state = CosState({"robot": srobot})
         poses.append(state.s("robot")["pose"])
 
     if show_plots:

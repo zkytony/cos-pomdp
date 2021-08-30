@@ -1,7 +1,7 @@
 from pomdp_py.utils import TreeDebugger
 from thortils.utils.colors import linear_color_gradient
-from cospomdp.domain.action import Move2D
 from test_cosagent_basic_search import _test_basic_search
+from cospomdp_apps.basic.action import Move2D
 from pprint import pprint
 import time
 from tqdm import tqdm

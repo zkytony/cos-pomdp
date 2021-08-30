@@ -5,11 +5,11 @@ from pomdp_py import ObservationModel, Gaussian
 
 from .sensors import FanSensor, FrustumCamera
 from ..utils.math import fround
-from ..domain.observation import Loc2D, CosObservation2D, RobotObservation2D
+from ..domain.observation import Loc, CosObservation, RobotObservation
 
 
 ### Observation models
-class CosObjectObservationModel2D(ObservationModel):
+class CosObjectObservationModel(ObservationModel):
     """This is the model for Pr( zi | starget, srobot' ),
     a result of the conditional independence assumption. It is
     the observation model in COS-POMDP.
@@ -63,8 +63,8 @@ class CosObjectObservationModel2D(ObservationModel):
         # action doesn't matter here
         """
         Args:
-            zi (Loc2D): observation of object i
-            snext (CosState2D): next state
+            zi (Loc): observation of object i
+            snext (CosState): next state
         """
         starget = snext.s(self.target_id)
         srobot = snext.s(self.robot_id)
@@ -202,7 +202,7 @@ class FanModelYoonseon(DetectionModel):
             loc = fround(self._round_to, loc_cont)
         else:  # event == C
             loc = None
-        zi = Loc2D(si.objid, loc)
+        zi = Loc(si.objid, loc)
         if return_event:
             return zi, event_occured
         else:
@@ -271,14 +271,14 @@ class FanModelNoFP(DetectionModel):
                                     [[self.sigma**2, 0],
                                      [0, self.sigma**2]])
                 loc = tuple(fround(self._round_to, gaussian.random()))
-                zi = Loc2D(si.id, loc)
+                zi = Loc(si.id, loc)
                 event = "detected"
 
             else:
-                zi = Loc2D(si.id, None)
+                zi = Loc(si.id, None)
                 event = "missed"
         else:
-            zi = Loc2D(si.id, None)
+            zi = Loc(si.id, None)
             event = "out_of_range"
         if return_event:
             return zi, event
@@ -286,7 +286,7 @@ class FanModelNoFP(DetectionModel):
             return zi
 
 
-class CosObservationModel2D(ObservationModel):
+class CosObservationModel(ObservationModel):
     def __init__(self, robot_id, target_id, zi_models):
         """
         zi_models: maps from objid to CosObjectObservationModel;
@@ -304,10 +304,10 @@ class CosObservationModel2D(ObservationModel):
         """
         objobzs = {objid : self.zi_models[objid].sample(next_state)
                   for objid in self.detectable_objects}
-        robotobz = RobotObservation2D(self.robot_id,
-                                      next_state.s(self.robot_id)['pose'],
-                                      next_state.s(self.robot_id)['status'].copy())
-        return CosObservation2D(robotobz, objobzs)
+        robotobz = RobotObservation(self.robot_id,
+                                    next_state.s(self.robot_id)['pose'],
+                                    next_state.s(self.robot_id)['status'].copy())
+        return CosObservation(robotobz, objobzs)
 
     def probability(self, observation, next_state, *args):
         """

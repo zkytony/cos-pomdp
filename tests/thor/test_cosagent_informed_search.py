@@ -1,7 +1,7 @@
 from pomdp_py.utils import TreeDebugger
 from test_cosagent_basic_search import _test_basic_search
 
-def step_act_cb(task_env, agent):
+def step_act_cb(task_env, agent, **kwargs):
     dd = TreeDebugger(agent.cos_agent.tree)
     import ipdb; ipdb.set_trace()
 

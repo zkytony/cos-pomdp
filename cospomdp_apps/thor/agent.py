@@ -24,9 +24,10 @@ from cospomdp_apps.thor.replay import ReplaySolver
 import time
 from thortils.navigation import (get_shortest_path_to_object,
                                  get_shortest_path_to_object_type)
-from cospomdp.domain.state import RobotStatus
-from cospomdp.domain.action import Move2D, ALL_MOVES_2D, Done
-from cospomdp.domain.observation import Loc2D, CosObservation2D, RobotObservation2D
+from cospomdp.domain.state import RobotStatus, RobotState2D
+from cospomdp.domain.observation import Loc, CosObservation, RobotObservation
+from cospomdp_apps.basic import PolicyModel2D, RobotTransition2D
+from cospomdp_apps.basic.action import Move2D, ALL_MOVES_2D, Done
 from cospomdp import *
 
 class ThorAgent:
@@ -239,7 +240,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
         detectors, detectable_objects = self._build_detectors(detector_specs)
         corr_dists = self._build_corr_dists(corr_specs, detectable_objects)
 
-        reward_model = ObjectSearchRewardModel2D(
+        reward_model = ObjectSearchRewardModel(
             detectors[target_id].sensor,
             task_config["nav_config"]["goal_distance"] / grid_size,
             robot_id, target_id)
@@ -251,8 +252,11 @@ class ThorObjectSearchCosAgent(ThorAgent):
             prior_dist = {(x,z): 1e5}
 
         # Construct CosAgent, the actual POMDP
-        self.cos_agent = CosAgent(robot_id, init_robot_pose, target,
-                                  search_region, reachable_positions,
+        init_robot_state = RobotState2D(robot_id, init_robot_pose)
+        robot_trans_model = RobotTransition2D(robot_id, reachable_positions)
+        policy_model = PolicyModel2D(robot_trans_model, reward_model)
+        self.cos_agent = CosAgent(target, init_robot_state,
+                                  search_region, robot_trans_model, policy_model,
                                   corr_dists, detectors, reward_model,
                                   prior=prior_dist)
         # construct solver
@@ -355,13 +359,13 @@ class ThorObjectSearchCosAgent(ThorAgent):
 
         objobzs = {}
         for cls in self.detectable_objects:
-            objobzs[cls] = Loc2D(cls, None)
+            objobzs[cls] = Loc(cls, None)
 
         for detection in tos_observation.detections:
             xyxy, conf, cls, loc3d = detection
             thor_x, _, thor_z = loc3d
             x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
-            objobzs[cls] = Loc2D(cls, (x, z))
+            objobzs[cls] = Loc(cls, (x, z))
 
         thor_robot_pose = tos_observation.robot_pose
         thor_robot_pose2d = (thor_robot_pose[0]['x'], thor_robot_pose[0]['z'], thor_robot_pose[1]['y'])
@@ -370,8 +374,8 @@ class ThorObjectSearchCosAgent(ThorAgent):
         # doesn't affect behavior if this is always false because task success
         # depends on taking the done action, not the done status.
         status = RobotStatus()
-        robotobz = RobotObservation2D(self.robot_id, robot_pose, status)
-        observation = CosObservation2D(robotobz, objobzs)
+        robotobz = RobotObservation(self.robot_id, robot_pose, status)
+        observation = CosObservation(robotobz, objobzs)
         print(observation)
         self.cos_agent.update(action, observation)
         self.solver.update(self.cos_agent, action, observation)

@@ -1,4 +1,4 @@
-from ..domain.state import ObjectState2D
+from ..domain.state import ObjectState
 
 class SearchRegion:
     """domain-specific / abstraction-specific host of a set of locations. All that
@@ -32,7 +32,7 @@ class SearchRegion2D(SearchRegion):
                            if (x,y) not in locations}
 
     def object_state(self, objid, objclass, loc):
-        return ObjectState2D(objid, objclass, loc)
+        return ObjectState(objid, objclass, loc)
 
     @property
     def dim(self):
