@@ -3,9 +3,10 @@ import time
 import random
 from collections import deque
 from thortils.navigation import find_navigation_plan, get_navigation_actions
+
 from cospomdp.utils.math import euclidean_dist, normalize
-from cospomdp.models.agent import CosAgent
-from cospomdp.models.reward_model import ObjectSearchRewardModel
+import cospomdp
+
 from ..common import ThorAgent, TOS_Action
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
 from .components.action import (grid_navigation_actions,
@@ -13,7 +14,6 @@ from .components.action import (grid_navigation_actions,
                                 from_grid_action_to_thor_action_params,
                                 from_thor_delta_to_thor_action_params,
                                 Move, MoveTopo)
-from cospomdp.domain.action import Done
 from .components.state import RobotStateTopo
 from .components.topo_map import TopoNode, TopoMap, TopoEdge
 from .components.transition_model import RobotTransitionTopo
@@ -231,7 +231,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
         robot_trans_model = RobotTransitionTopo(robot_id, target[0],
                                                 self.topo_map, self.task_config['nav_config']['h_angles'])
-        reward_model = ObjectSearchRewardModel(
+        reward_model = cospomdp.ObjectSearchRewardModel(
             detectors[target_id].sensor,
             task_config["nav_config"]["goal_distance"] / grid_map.grid_size,
             robot_id, target_id,
@@ -240,14 +240,14 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                        reward_model,
                                        self.topo_map)
 
-        self.cos_agent = CosAgent(self.target,
-                                  init_robot_state,
-                                  search_region,
-                                  robot_trans_model,
-                                  policy_model,
-                                  corr_dists,
-                                  detectors,
-                                  reward_model)
+        self.cos_agent = cospomdp.CosAgent(self.target,
+                                           init_robot_state,
+                                           search_region,
+                                           robot_trans_model,
+                                           policy_model,
+                                           corr_dists,
+                                           detectors,
+                                           reward_model)
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,
                                          rollout_policy=self.cos_agent.policy_model)
@@ -268,35 +268,41 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         assert isinstance(action, TOS_Action)
         return action
 
-    def update(self, tos_action, tos_observation):
-        # Update the goal handler with low-level sensory observation
-        self._goal_handler.update(tos_action, tos_observation)
-
-        # Interpret the observation and update the COS-POMDP agent's belief.
-        print("TODO")
-        thor_robot_pose = tos_observation.robot_pose
-        thor_camera_horizon = tos_observation.horizon  # i.e. pitch
-        robot_pose = self.grid_map.to_grid_pose(thor_robot_pose[0]['x'],
-                                                thor_robot_pose[0]['z'],
-                                                thor_robot_pose[1]['y'])
-        # TODO: properly set status - right now there is only 'done' and it
-        # doesn't affect behavior if this is always false because task success
-        # depends on taking the done action, not the done status.
-        status = RobotStatus()
-        robotobz = RobotObservation(self.robot_id, robot_pose, status)
-        observation = CosObservation(robotobz, objobzs)
-
-
-
-
-
     def handle(self, goal):
         """Returns a handler for achieving the goal."""
         if isinstance(goal, MoveTopo):
             return MoveTopoHandler(goal, self)
 
-        elif isinstance(goal, Done):
-            pass
+        elif isinstance(goal, cospomdp.Done):
+            return DoneHandler(goal, self)
+
+
+    def update(self, tos_action, tos_observation):
+        # Update the goal handler with low-level sensory observation
+        self._goal_handler.update(tos_action, tos_observation)
+        # Also update COS-POMDP with the low-level observation
+        super().update(tos_action, tos_observation)
+
+    def interpret_robot_obz(self, tos_observation):
+        # Here, we will build a pose of format (x, y, pitch, yaw, nid)
+        thor_robot_position, thor_robot_rotation = tos_observation.robot_pose
+        x, y, yaw = self.grid_map.to_grid_pose(thor_robot_position['x'],
+                                               thor_robot_position['z'],
+                                               thor_robot_rotation['y'])
+        pitch = tos_observation.horizon
+        nid = self.topo_map.closest_node(x, y)
+        return cospomdp.RobotObservation(self.robot_id,
+                                         (x, y, yaw),
+                                         cospomdp.RobotStatus(done=tos_observation.done),
+                                         horizon=pitch,
+                                         topo_nid=nid)
+
+
+    def interpret_action(self, tos_action):
+        # It actually doesn't matter to the CosAgent what low-level
+        # action is taken by the goal handler.
+        return None
+
 
 # -------- Goal Handlers -------- #
 class GoalHandler:
@@ -304,7 +310,7 @@ class GoalHandler:
         """
         agent: ThorObjectSearchCompleteCosAgent
         """
-        pass
+        self.goal = goal
 
     def step(self):
         raise NotImplementedError
@@ -320,7 +326,7 @@ class GoalHandler:
         return "({}, done={})".format(self.goal, self.done)
 
     def __repr__(self):
-        return "{}({})".format(self.__class__.__name__, str(self))
+        return "{}({})".format(self.__class__.__name__, self)
 
 
 
@@ -328,6 +334,7 @@ class MoveTopoHandler(GoalHandler):
     """Deals with navigating along an edge on the topological map."""
     def __init__(self, goal, agent):
         assert isinstance(goal, MoveTopo)
+        super().__init__(goal, agent)
         # Plans a sequence of actions to go from where
         # the robot is currently to the dst node.
         robot_pose = agent.belief.random().s(agent.robot_id).pose
@@ -353,6 +360,7 @@ class MoveTopoHandler(GoalHandler):
                                        thor_reachable_positions,
                                        grid_size=agent.grid_map.grid_size,
                                        diagonal_ok=agent.task_config["nav_config"]["diagonal_ok"],
+                                       angle_tolerance=360,
                                        debug=True)
         self._plan = plan
         self._index = 0
@@ -377,5 +385,14 @@ class MoveTopoHandler(GoalHandler):
                   .format(tos_action, expected, actual))
         self._index += 1
 
+    @property
     def done(self):
         return self._index >= len(self._plan)
+
+
+class DoneHandler(GoalHandler):
+    def __init__(self, goal, agent):
+        super().__init__(goal, agent)
+
+    def step(self):
+        return Done()

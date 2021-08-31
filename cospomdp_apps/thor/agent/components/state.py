@@ -30,9 +30,9 @@ class RobotStateTopo(RobotState):
             as (x, y, pitch, yaw, nid) in the robot_obz. The fields
             of RobotObservation are not changed.
         """
-        x, y, pitch, yaw, nid = robot_obz.pose
+        x, y, yaw = robot_obz.pose
         return RobotStateTopo(robot_obz.robot_id,
                               (x, y, yaw),
-                              pitch,
-                              nid,
+                              robot_obz.horizon,
+                              robot_obz.topo_nid,
                               robot_obz.status)

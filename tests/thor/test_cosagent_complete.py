@@ -17,42 +17,51 @@ def step_act_cb(task_env, agent, **kwargs):
     # import pdb; pdb.set_trace()
 
 
-def _test_sampling_topo_map(target,
-                            other,
-                            prior='uniform',
-                            target_range=5,
-                            other_range=6,
-                            max_depth=30,
-                            num_sims=500,
-                            max_steps=100,
-                            discount_factor=0.95,
-                            exploration_const=100,
-                            show_progress=True,
-                            step_act_cb=None,
-                            step_act_args={},
-                            step_update_cb=None):
+def _test_complete_search(target,
+                          other,
+                          scene="FloorPlan1",
+                          prior='uniform',
+                          dist=3,
+                          target_range=5,
+                          other_range=6,
+                          target_accuracy=0.7,
+                          other_accuracy=0.8,
+                          max_depth=30,
+                          num_sims=500,
+                          max_steps=100,
+                          discount_factor=0.95,
+                          exploration_const=100,
+                          show_progress=True,
+                          step_act_cb=None,
+                          step_act_args={},
+                          step_update_cb=None):
     print("Test cospomdp_complete search (prior={})".format(prior))
     detectables = [target]
     if other is not None:
         detectables.append(other)
 
-    args = TaskArgs(detectables={"Apple", "CounterTop", "Bread"},
-                    scene='FloorPlan3',
-                    target="Apple",
+    agent_init_inputs = ['grid_map', 'agent_pose']
+    if prior == "informed":
+        agent_init_inputs.append('groundtruth_prior')
+
+    args = TaskArgs(detectables=detectables,
+                    scene=scene,
+                    target=target,
                     agent_class="ThorObjectSearchCompleteCosAgent",
                     task_env="ThorObjectSearch",
-                    agent_init_inputs=['grid_map', 'agent_pose'])
+                    agent_init_inputs=agent_init_inputs)
     config = make_config(args)
-    config["agent_config"]["corr_specs"] = {
-        ("Apple", "CounterTop"): (around, dict(d=3)),
-        ("Apple", "Bread"): (around, dict(d=1))
-    }
+
+    config["agent_config"]["corr_specs"] = {}
     config["agent_config"]["detector_specs"] = {
-        "Apple": ("fan-nofp", dict(fov=45, min_range=1, max_range=3), (0.7, 0.1)),
-        "CounterTop": ("fan-nofp", dict(fov=90, min_range=1, max_range=5), (0.8, 0.1)),
-        "Bread": ("fan-nofp", dict(fov=90, min_range=1, max_range=4), (0.7, 0.1))
+        target: ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))
     }
-    config["agent_config"]["num_place_samples"] = 10
+    if other is not None:
+        config["agent_config"]["corr_specs"][(target, other)] = (around, dict(d=dist))
+        config["agent_config"]["detector_specs"][other] =\
+            ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
+
+    config["agent_config"]["num_place_samples"] = 50
 
     config["agent_config"]["solver"] = "pomdp_py.POUCT"
     config["agent_config"]["solver_args"] = dict(max_depth=max_depth,
@@ -65,11 +74,13 @@ def _test_sampling_topo_map(target,
     config["viz_config"] = {
         'res': 30
     }
-    trial = ThorObjectSearchTrial("test_cosagent", config)
+    trial = ThorObjectSearchTrial("test_cosagent-complete", config, verbose=True)
     print("Trial created")
     trial.run(step_act_cb=step_act_cb,
               step_act_args=step_act_args,
               step_update_cb=step_update_cb)
 
 if __name__ == "__main__":
-    _test_sampling_topo_map(step_act_cb=step_act_cb)
+    _test_complete_search("Bowl", "Book",
+                          scene="FloorPlan1",
+                          step_act_cb=step_act_cb)

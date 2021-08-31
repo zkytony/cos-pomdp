@@ -124,7 +124,7 @@ def update_target_belief(target_id, current_btarget, next_srobot,
         for starget in tqdm(current_btarget):
             state = CosState({target_id: starget,
                               next_srobot.id: next_srobot})
-            new_btarget_hist[starget] =\
-                observation_model.probability(observation, state) * current_btarget[starget]
+            pr_z = observation_model.probability(observation, state)
+            new_btarget_hist[starget] = pr_z * current_btarget[starget]
         new_btarget = pomdp_py.Histogram(normalize(new_btarget_hist))
     return new_btarget

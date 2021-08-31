@@ -69,10 +69,11 @@ class CosObservation(pomdp_py.Observation):
         return self._robotobz
 
 class RobotObservation(pomdp_py.SimpleObservation):
-    def __init__(self, robot_id, robot_pose, status):
+    def __init__(self, robot_id, robot_pose, status, **kwargs):
         self.robot_id = robot_id
         self.pose = robot_pose
         self.status = status
+        self.__dict__.update(kwargs)
         super().__init__((self.robot_id, self.pose, self.status))
 
     def __str__(self):
