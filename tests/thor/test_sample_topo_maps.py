@@ -55,7 +55,7 @@ def _test_topo_map_sampling(worldstr, num_samples=10, seed=100, sleep=10, sep=2.
     viz = GridMapVisualizer(grid_map=grid_map)
     viz.on_init()
     img = viz.render()
-    img = draw_topo(img, topo_map, viz._res, draw_grid_path=False,
+    img = draw_topo(img, topo_map, viz._res, draw_grid_path=True,
                     edge_color=(200, 40, 20))
     viz.show_img(img)
     time.sleep(sleep)

@@ -3,6 +3,7 @@ import numpy as np
 from collections import deque
 from cospomdp.utils.graph import Node, Graph, Edge
 from cospomdp.utils.math import euclidean_dist
+from thortils.utils.colors import lighter
 import networkx as nx
 
 class TopoNode(Node):
@@ -113,17 +114,27 @@ def draw_edge(img, pos1, pos2, r, thickness=2, color=(0, 0, 0)):
              color, thickness=thickness)
     return img
 
-def draw_topo(img, topo_map, r, draw_grid_path=False,
-              path_color=(52, 235, 222), edge_color=(200, 40, 20), edge_thickness=2):
+def draw_topo(img, topo_map, r, draw_grid_path=False, path_color=(52, 235, 222),
+              edge_color=(200, 40, 20), edge_thickness=2, linewidth=2):
+    """
+    Draws topological map on the image `img`.
+
+    linewidth: the linewidth of the bounding box when drawing grid path
+    edge_thickness: the thickness of the edge on the topo map.
+    """
     for eid in topo_map.edges:
         edge = topo_map.edges[eid]
-
-        if draw_grid_path and edge.grid_path is not None:
-            for x, y in edge.grid_path:
-                cv2.rectangle(img,
-                              (y*r, x*r),
-                              (y*r+r, x*r+r),
-                              path_color, -1)
+        if draw_grid_path:
+            if edge.grid_path is not None:
+                for x, y in edge.grid_path:
+                    cv2.rectangle(img,
+                                  (y*r, x*r),
+                                  (y*r+r, x*r+r),
+                                  path_color, -1)
+                    cv2.rectangle(img, (y*r, x*r), (y*r+r, x*r+r),
+                                  lighter(path_color, 0.7), linewidth)
+            else:
+                import pdb; pdb.set_trace()
 
         node1, node2 = edge.nodes
         pos1 = node1.pos

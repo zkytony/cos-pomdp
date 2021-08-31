@@ -141,7 +141,7 @@ def _sample_topo_map(target_hist,
 
             path = _shortest_path(reachable_positions,
                                   nodes[nbnid].pos,
-                                  topo_node.pos)
+                                  nodes[nid].pos)
             if path is None:
                 # Skip this edge because we cannot find path
                 continue
