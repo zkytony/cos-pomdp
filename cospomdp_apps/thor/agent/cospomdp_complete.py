@@ -226,7 +226,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         reward_model = ObjectSearchRewardModel(
             detectors[target_id].sensor,
             task_config["nav_config"]["goal_distance"] / grid_map.grid_size,
-            robot_id, target_id)
+            robot_id, target_id,
+            **task_config["reward_config"])
         policy_model = PolicyModelTopo(robot_trans_model,
                                        reward_model,
                                        self.topo_map)
@@ -247,6 +248,10 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
 
     def act(self):
+        goal = self.solver.plan(self.cos_agent)
+        print(goal)
+
+
         return TOS_Action("Pass", {})
 
     def update(self, tos_action, tos_observation):

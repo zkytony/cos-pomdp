@@ -148,7 +148,8 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         reward_model = ObjectSearchRewardModel(
             detectors[target_id].sensor,
             task_config["nav_config"]["goal_distance"] / grid_map.grid_size,
-            robot_id, target_id)
+            robot_id, target_id,
+            **task_config["reward_config"])
 
         # Construct CosAgent, the actual POMDP
         init_robot_state = RobotState2D(robot_id, init_robot_pose)

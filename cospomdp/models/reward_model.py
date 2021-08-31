@@ -15,7 +15,7 @@ class ObjectSearchRewardModel(pomdp_py.RewardModel):
         self.target_id = target_id
         self._hi = hi
         self._lo = lo
-        self._step = step
+        self._step = step  # default step cost
 
     def sample(self, state, action, next_state):
         srobot = state.s(self.robot_id)
@@ -27,7 +27,10 @@ class ObjectSearchRewardModel(pomdp_py.RewardModel):
                 return self._hi
             else:
                 return self._lo
-        return self._step
+        if hasattr(action, "step_cost"):
+            return action.step_cost
+        else:
+            return self._step
 
     def success(self, srobot, starget):
         if euclidean_dist(srobot.loc, starget.loc) <= self.goal_dist:
@@ -55,4 +58,7 @@ class NavRewardModel(pomdp_py.RewardModel):
                 return self._hi
             else:
                 return self._lo
-        return self._step
+        if hasattr(action, "step_cost"):
+            return action.step_cost
+        else:
+            return self._step

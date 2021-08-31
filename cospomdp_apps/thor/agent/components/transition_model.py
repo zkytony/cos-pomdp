@@ -33,14 +33,14 @@ class RobotTransitionTopo(RobotTransition):
                 # there is no pitch
                 pitch = 0.0
 
-                next_srobot = RobotStateTopo(srobot.robot_id,
+                next_srobot = RobotStateTopo(srobot.id,
                                              (*next_robot_pos, yaw),
                                              pitch,
                                              action.dst_nid)
             else:
                 raise ValueError("Unexpected action {} for robot state {}.".format(action, state))
         else:
-            next_srobot = RobotStateTopo(srobot.robot_id,
+            next_srobot = RobotStateTopo(srobot.id,
                                          srobot.pose,
                                          srobot.horizon,
                                          srobot.nid)

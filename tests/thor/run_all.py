@@ -7,6 +7,7 @@ from test_analyze_search_tree import _test_analyze_cosagent_basic_search_tree
 from test_mjolnir_agent import _test_mjolnir_agent
 from test_optimal_object_search_agent import _test_optimal_search_agent
 from test_visualizer import _test_visualizer
+from test_sample_topo_maps import _test_topo_map_sampling_multiple
 
 def main():
     _test_visualizer(sleep=2)
@@ -26,6 +27,7 @@ def main():
         'Bowl', 'Book', num_sims=100, num_trajs=10, max_steps=1,
         show_progress=True, max_depth=30, exploration_const=0,
         interactive=False)
+    _test_topo_map_sampling_multiple()
 
 if __name__ == "__main__":
     main()

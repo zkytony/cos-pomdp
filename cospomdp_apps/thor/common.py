@@ -137,6 +137,11 @@ def make_config(args):
             "diagonal_ok": constants.DIAG_MOVE,
             "movement_params": thor_config["MOVEMENT_PARAMS"]
         },
+        "reward_config": {
+            "hi": constants.TOS_REWARD_HI,
+            "lo": constants.TOS_REWARD_LO,
+            "step": constants.TOS_REWARD_STEP,
+        },
         "discount_factor": 0.99,
     }
 

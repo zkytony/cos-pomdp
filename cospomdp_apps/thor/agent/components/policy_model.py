@@ -50,10 +50,10 @@ class PolicyModelTopo(RolloutPolicy):
             robot_pose = srobot["pose"]
             valid_moves = set()
             for nb_id in self.topo_map.neighbors(srobot.nid):
-                eid = topo_map.edge_between(srobot.nid, nb_id)
+                eid = self.topo_map.edge_between(srobot.nid, nb_id)
                 valid_moves.add(MoveTopo(srobot.nid,
                                          nb_id,
-                                         topo_map.edges[eid].grid_dist))
+                                         self.topo_map.edges[eid].grid_dist))
             self._legal_moves[srobot] = valid_moves
             return valid_moves
 
@@ -75,14 +75,14 @@ class PolicyModelTopo(RolloutPolicy):
 
             closest_target_nid = topo_map.closest_node(*starget.loc)
             path = topo_map.shortest_path(srobot.nid, closest_target_nid)
-            current_gdist = sum(e.grid_dist for e in path)
+            current_gdist = sum(topo_map.edges[eid].grid_dist for eid in path)
             for move in self.policy_model.valid_moves(state):
                 path = topo_map.shortest_path(move.dst_nid, closest_target_nid)
-                next_gdist = sum(e.grid_dist for e in path)
+                next_gdist = sum(topo_map.edges[eid].grid_dist for eid in path)
                 if next_gdist < current_gdist:
                     preferences.add((move, self.num_visits_init, self.val_init))
 
             if euclidean_dist(srobot.pose[:2],
-                              starget.loc) <= self.policy_model.reward_model.goal_dist:
-                preferences.add((Done, self.num_visits_init, self.val_init))
+                              starget.loc) <= self.policy_model._reward_model.goal_dist:
+                preferences.add((Done(), self.num_visits_init, self.val_init))
             return preferences
