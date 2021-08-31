@@ -4,7 +4,7 @@ from thortils.utils import getch
 import argparse
 import time
 
-from cospomdp_apps.thor.visual import GridMapVizualizer
+from cospomdp_apps.thor.visual import GridMapVisualizer
 
 def _test_visualizer(args=None, sleep=15):
     if args is None:
@@ -24,7 +24,7 @@ def _test_visualizer(args=None, sleep=15):
     print(thortils.thor_agent_pose(controller))
 
     print("Start at (2,12)")
-    viz = GridMapVizualizer(grid_map=grid_map)
+    viz = GridMapVisualizer(grid_map=grid_map)
     img = viz.render()
     img = viz.highlight(img, [(2,12)], color=(128,128,128))
     viz.show_img(img)

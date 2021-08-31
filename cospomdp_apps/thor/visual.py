@@ -2,11 +2,11 @@
 from os import environ
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'  # hide "hello from pygame community"
 
-from cospomdp_apps.basic.visual import GridMapVizualizer, BasicViz2D
+from cospomdp_apps.basic.visual import GridMapVisualizer, BasicViz2D
 from . import constants
 
 
-class ThorObjectSearchViz2D(GridMapVizualizer):
+class ThorObjectSearchViz2D(GridMapVisualizer):
     def __init__(self, **config):
         super().__init__(**config)
 
