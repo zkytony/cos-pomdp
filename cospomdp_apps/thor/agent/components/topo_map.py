@@ -9,17 +9,23 @@ import networkx as nx
 class TopoNode(Node):
     """TopoNode is a node on the grid map."""
 
-    def __init__(self, node_id, grid_pos, prob):
-        super().__init__(node_id, (grid_pos, prob))
+    def __init__(self, node_id, grid_pos, search_region_locs):
+        """
+        grid_pos (x,y): The grid position this node is located
+        search_region_locs (list or set): locations where the
+            target object can be for which this node is the closest.
+        """
+        super().__init__(node_id, grid_pos)
         self._coords = grid_pos
+        self.search_region_locs = search_region_locs
 
     @property
     def pos(self):
-        return self.data[0]
+        return self.data
 
-    @property
-    def prob(self):
-        return self.data[1]
+    def prob(self, target_hist):
+        return sum(target_hist[loc]
+                   for loc in self.search_region_locs)
 
     def __str__(self):
         return "n{}@{}".format(self.id, self.pos)
@@ -103,6 +109,9 @@ class TopoMap(Graph):
             self._cache_shortest_path[(src, dst)] = path
             return path
 
+    def total_prob(self, target_hist):
+        return sum(self.nodes[nid].prob(target_hist)
+                   for nid in self.nodes)
 
 
 #------ Visualization -----#

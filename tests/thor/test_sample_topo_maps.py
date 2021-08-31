@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from thortils.utils.visual import GridMapVisualizer
 from thortils.grid_map import GridMap
-from cospomdp.utils.math import indicies2d
+from cospomdp.utils.math import indicies2d, normalize
 from cospomdp_apps.thor.agent.cospomdp_complete\
     import _sample_topo_map
 from cospomdp_apps.thor.agent.components.topo_map\
@@ -46,12 +46,15 @@ def _test_topo_map_sampling(worldstr, num_samples=10, seed=100, sleep=10, sep=2.
                 target_hist[(x,y)] = 10.0
                 obstacles.add((x,y))
 
+    target_hist = normalize(target_hist)
     topo_map = _sample_topo_map(target_hist,
                                 reachable_positions,
                                 num_samples,
                                 degree=3,
                                 sep=2.0,
                                 rnd=random.Random(seed))
+    print(topo_map.total_prob(target_hist))
+
     grid_map = GridMap(width, length, obstacles)
     viz = GridMapVisualizer(grid_map=grid_map)
     viz.on_init()
