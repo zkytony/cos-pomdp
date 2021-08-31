@@ -1,4 +1,5 @@
 import pomdp_py
+import random
 from collections import deque
 from thortils.navigation import find_navigation_plan
 from cospomdp.utils.math import euclidean_dist, normalize
@@ -55,7 +56,8 @@ def _sample_topo_map(target_hist,
                      reachable_positions,
                      num_samples,
                      degree=3,
-                     sep=4.0):
+                     sep=4.0,
+                     rnd=random):
     """Given a search region, a distribution over target locations in the
     search region, return a TopoMap with nodes within
     reachable_positions.
@@ -102,8 +104,14 @@ def _sample_topo_map(target_hist,
 
     places = set()
     for i in range(num_samples):
-        pos = hist.random()
-        places.add(pos)
+        pos = hist.random(rnd=rnd)
+        if len(places) > 0:
+            closest_pos = min(places,
+                              key=lambda c: euclidean_dist(pos, c))
+            if euclidean_dist(closest_pos, pos) >= sep:
+                places.add(pos)
+        else:
+            places.add(pos)
 
     # Create nodes
     pos_to_nid = {}
@@ -114,38 +122,36 @@ def _sample_topo_map(target_hist,
         pos_to_nid[pos] = i
 
     # Now, we need to connect the places to form a graph.
+    _conns = {}
     edges = {}
     for nid in nodes:
-        topo_node = nodes[i]
-        pos = topo_node.pos
+        if nid not in _conns:
+            _conns[nid] = set()
+        neighbors = _conns[nid]
+        neighbor_positions = {nodes[nbnid].pos for nbnid in neighbors}
+        candidates = set(places) - {nodes[nid].pos} - neighbor_positions
+        degree_needed = degree - len(neighbors)
+        new_neighbors = list(sorted(candidates, key=lambda pos: euclidean_dist(pos, nodes[nid].pos)))[:degree_needed]
+        for nbpos in new_neighbors:
+            nbnid = pos_to_nid[nbpos]
+            _conns[nid].add(nbnid)
+            if nbnid not in _conns:
+                _conns[nbnid] = set()
+            _conns[nbnid].add(nid)
 
-        neighbors = set()
-        candidates = set(places) - {pos}
-        while len(candidates) > 0:
-            closest_pos = min(candidates,
-                              key=lambda c: euclidean_dist(pos, c))
-            if euclidean_dist(closest_pos, pos) >= sep:
-                # add neighbor
-                nb_nid = pos_to_nid[closest_pos]
-                neighbors.add(nb_nid)
-                if len(neighbors) >= degree:
-                    break
-            candidates -= {closest_pos}
-
-        for nb_nid in neighbors:
-            # Find a path between
             path = _shortest_path(reachable_positions,
-                                  nodes[nb_nid].pos,
+                                  nodes[nbnid].pos,
                                   topo_node.pos)
             if path is None:
                 # Skip this edge because we cannot find path
                 continue
-            eid = len(edges)
+            eid = len(edges) + 1000
             edges[eid] = TopoEdge(eid,
-                                  topo_node,
-                                  nodes[nb_nid],
+                                  nodes[nid],
+                                  nodes[nbnid],
                                   path)
-    return TopoMap(edges)
+    topo_map = TopoMap(edges)
+    return topo_map
 
 
 class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
@@ -165,6 +171,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                  task_config,
                  corr_specs,
                  detector_specs,
+                 solver,
+                 solver_args,
                  grid_map,
                  thor_agent_pose,
                  thor_prior={},
@@ -231,8 +239,15 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                   corr_dists,
                                   detectors,
                                   reward_model)
-
+        if solver == "pomdp_py.POUCT":
+            self.solver = pomdp_py.POUCT(**solver_args,
+                                         rollout_policy=self.cos_agent.policy_model)
+        else:
+            self.solver = eval(solver)(**solver_args)
 
 
     def act(self):
         return TOS_Action("Pass", {})
+
+    def update(self, tos_action, tos_observation):
+        pass

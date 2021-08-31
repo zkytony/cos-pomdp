@@ -1,4 +1,4 @@
-from thortils.utils.visual import Visualizer2D, GridMapVizualizer
+from thortils.utils.visual import Visualizer2D
 from thortils.utils.colors import inverse_color_rgb
 
 class BasicViz2D(Visualizer2D):

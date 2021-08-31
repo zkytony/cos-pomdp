@@ -16,7 +16,15 @@ def step_act_cb(task_env, agent, **kwargs):
     import pdb; pdb.set_trace()
 
 
-def _test_sampling_topo_map():
+def _test_sampling_topo_map(max_depth=30,
+                            num_sims=500,
+                            max_steps=100,
+                            discount_factor=0.95,
+                            exploration_const=100,
+                            show_progress=True,
+                            step_act_cb=None,
+                            step_act_args={},
+                            step_update_cb=None):
     args = TaskArgs(detectables={"Apple", "CounterTop", "Bread"},
                     scene='FloorPlan3',
                     target="Apple",
@@ -34,13 +42,23 @@ def _test_sampling_topo_map():
         "Bread": ("fan-nofp", dict(fov=90, min_range=1, max_range=4), (0.7, 0.1))
     }
     config["agent_config"]["num_place_samples"] = 10
+
+    config["agent_config"]["solver"] = "pomdp_py.POUCT"
+    config["agent_config"]["solver_args"] = dict(max_depth=max_depth,
+                                                 num_sims=num_sims,
+                                                 discount_factor=discount_factor,
+                                                 exploration_const=exploration_const,
+                                                 show_progress=show_progress)
+
     config["visualize"] = True
     config["viz_config"] = {
         'res': 30
     }
     trial = ThorObjectSearchTrial("test_cosagent", config)
     print("Trial created")
-    trial.run(step_act_cb=step_act_cb)
+    trial.run(step_act_cb=step_act_cb,
+              step_act_args=step_act_args,
+              step_update_cb=step_update_cb)
 
 if __name__ == "__main__":
-    _test_sampling_topo_map()
+    _test_sampling_topo_map(step_act_cb=step_act_cb)

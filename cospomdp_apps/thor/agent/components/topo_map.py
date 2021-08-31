@@ -20,6 +20,12 @@ class TopoNode(Node):
     def prob(self):
         return self.data[1]
 
+    def __str__(self):
+        return "n{}@{}".format(self.id, self.pos)
+
+    def __repr__(self):
+        return "TopoNode({})".format(str(self))
+
 
 class TopoEdge(Edge):
     def __init__(self, id, node1, node2, grid_path):
@@ -66,10 +72,12 @@ class TopoMap(Graph):
 
     def edge_between(self, nid1, nid2):
         edges = self.edges_between(nid1, nid2)
-        if len(edges) > 0:
+        if edges is None:
+            return None
+        if len(edges) > 1:
             raise ValueError("There are multiple edges between nodes {} and {}. Unexpected."\
                              .format(nid1, nid2))
-        return next(edges)
+        return next(iter(edges))
 
     def navigable(self, nid1, nid2):
         # DFS find path from nid1 to nid2
@@ -106,7 +114,7 @@ def draw_edge(img, pos1, pos2, r, thickness=2, color=(0, 0, 0)):
     return img
 
 def draw_topo(img, topo_map, r, draw_grid_path=False,
-              path_color=(52, 235, 222), edge_color=(0, 0, 0), edge_thickness=2):
+              path_color=(52, 235, 222), edge_color=(200, 40, 20), edge_thickness=2):
     for eid in topo_map.edges:
         edge = topo_map.edges[eid]
 

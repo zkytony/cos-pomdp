@@ -281,3 +281,7 @@ def entropy(p, base=2):
 
 def euclidean_dist(p1, p2):
     return math.sqrt(sum([(a - b)** 2 for a, b in zip(p1, p2)]))
+
+def indicies2d(m, n):
+    # reference: https://stackoverflow.com/a/44230705/2893053
+    return np.indices((m,n)).transpose(1,2,0)
