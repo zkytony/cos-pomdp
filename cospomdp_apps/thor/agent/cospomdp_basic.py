@@ -86,6 +86,39 @@ class ThorObjectSearchCosAgent(ThorAgent):
                                                     corr_func_args=corr_func_args)
         return corr_dists
 
+    def interpret_robot_obz(tos_observation):
+        raise NotImplementedError
+
+    def update(self, tos_action, tos_observation):
+        """
+        Given TOS_Action and TOS_Observation, update the agent's belief, etc.
+        """
+        # Because policy_model's movements are already in sync with task movements,
+        # we can directly get the POMDP action from there.
+        action_names = {a.name: a for a in set(self.cos_agent.policy_model.movements) | {Done()}}
+        if tos_action.name in action_names:
+            action = action_names[tos_action.name]
+        else:
+            raise ValueError("Cannot understand action {}".format(action))
+
+        objobzs = {}
+        for cls in self.detectable_objects:
+            objobzs[cls] = Loc(cls, None)
+
+        for detection in tos_observation.detections:
+            xyxy, conf, cls, loc3d = detection
+            thor_x, _, thor_z = loc3d
+            x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
+            objobzs[cls] = Loc(cls, (x, z))
+
+        robotobz = self.interpret_robot_obz(tos_observation)
+        # RobotObservation(self.robot_id, robot_pose, status)
+        observation = CosObservation(robotobz, objobzs)
+        print(observation)
+        self.cos_agent.update(action, observation)
+        self.solver.update(self.cos_agent, action, observation)
+
+
 
 class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
     """
@@ -199,38 +232,10 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         """
         return from_grid_action_to_thor_action_params(action, self.grid_map.grid_size)
 
-
-    def update(self, tos_action, tos_observation):
-        """
-        Given TOS_Action and TOS_Observation, update the agent's belief, etc.
-        """
-        # Because policy_model's movements are already in sync with task movements,
-        # we can directly get the POMDP action from there.
-        action_names = {a.name: a for a in set(self.cos_agent.policy_model.movements) | {Done()}}
-        if tos_action.name in action_names:
-            action = action_names[tos_action.name]
-        else:
-            raise ValueError("Cannot understand action {}".format(action))
-
-        objobzs = {}
-        for cls in self.detectable_objects:
-            objobzs[cls] = Loc(cls, None)
-
-        for detection in tos_observation.detections:
-            xyxy, conf, cls, loc3d = detection
-            thor_x, _, thor_z = loc3d
-            x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
-            objobzs[cls] = Loc(cls, (x, z))
-
+    def interpret_robot_obz(self, tos_observation):
         thor_robot_pose = tos_observation.robot_pose
         thor_robot_pose2d = (thor_robot_pose[0]['x'], thor_robot_pose[0]['z'], thor_robot_pose[1]['y'])
         robot_pose = self.grid_map.to_grid_pose(*thor_robot_pose2d)
-        # TODO: properly set status - right now there is only 'done' and it
-        # doesn't affect behavior if this is always false because task success
-        # depends on taking the done action, not the done status.
-        status = RobotStatus()
-        robotobz = RobotObservation(self.robot_id, robot_pose, status)
-        observation = CosObservation(robotobz, objobzs)
-        print(observation)
-        self.cos_agent.update(action, observation)
-        self.solver.update(self.cos_agent, action, observation)
+        return RobotObservation(self.robot_id,
+                                robot_pose,
+                                RobotStatus(done=tos_observation.done))

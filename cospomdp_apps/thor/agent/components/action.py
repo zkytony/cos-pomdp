@@ -24,6 +24,9 @@ class Move(Motion):
     def __repr__(self):
         return str(self)
 
+class Goal:
+    def do(self):
+        pass
 
 class MoveTopo(Motion):
     def __init__(self, src_nid, dst_nid, gdist=None,
@@ -98,6 +101,8 @@ def grid_navigation_actions(movement_params, grid_size):
         actions.append(Move(name, delta))
     return actions
 
+def from_thor_delta_to_thor_action_params(name, delta):
+    return _to_thor_action_params(name, delta)
 
 def from_grid_action_to_thor_action_params(action, grid_size):
     """Returns a dictionary used to pass in Controller.step()
@@ -107,14 +112,23 @@ def from_grid_action_to_thor_action_params(action, grid_size):
         v_angle = 0
     else:
         forward, h_angle, v_angle = action.delta
+    delta = list(action.delta)
+    delta[0] *= grid_size  # delta[0] is forward
+    return _to_thor_action_params(action.name, tuple(delta))
 
-    if action.name == "MoveAhead" or action.name == "MoveBack":
-        return {"moveMagnitude": forward * grid_size}
+def _to_thor_action_params(name, delta):
+    if len(delta) == 2:
+        forward, h_angle = delta
+        v_angle = 0
+    else:
+        forward, h_angle, v_angle = delta
+    if name == "MoveAhead" or name == "MoveBack":
+        return {"moveMagnitude": forward}
 
-    elif action.name == "RotateLeft" or action.name == "RotateRight":
+    elif name == "RotateLeft" or name == "RotateRight":
         return {"degrees": abs(h_angle)}
 
-    elif action.name == "LookUp" or action.name == "LookDown":
+    elif name == "LookUp" or name == "LookDown":
         return {"degrees": abs(v_angle)}
 
     else:

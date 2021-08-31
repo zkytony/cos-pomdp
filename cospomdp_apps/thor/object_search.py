@@ -129,7 +129,7 @@ class TOS(ThorEnv):
             path.append(agent_position)
         return path
 
-    def get_observation(self, event=None, vision_detector=None):
+    def get_observation(self, event, action, vision_detector=None):
         """
         vision_detector (cosp.vision.Detector or None): vision detector;
             If None, then groundtruth detection will be used
@@ -142,8 +142,6 @@ class TOS(ThorEnv):
                     the detected class, `conf` is confidence, `xyxy` is bounding box,
                     'pos' is the 3D position of the detected object.
         """
-        if event is None:
-            event = self.controller.step(action="Pass")
         img = tt.vision.thor_img(event)
         img_depth = tt.vision.thor_img_depth(event)
         if vision_detector is None:
@@ -170,7 +168,12 @@ class TOS(ThorEnv):
                 xyxy = detections[i][0]
                 # TODO: COMPLETE
                 # pos = projection.inverse_perspective(np.mean(xyxy), ..) # TODO
-        return TOS_Observation(img, img_depth, detections, tt.thor_agent_pose(event))
+        return TOS_Observation(img,
+                               img_depth,
+                               detections,
+                               tt.thor_agent_pose(event),
+                               tt.thor_camera_horizon(event),
+                               self.done(action))
 
     def get_object_loc(self, object_class):
         """Returns object location (note: in thor coordinates) for given

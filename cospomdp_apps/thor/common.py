@@ -23,6 +23,8 @@ class TOS_Observation:
     img_depth: np.ndarray
     detections: list    # list of (xyxy, conf, cls, loc3d)
     robot_pose: tuple
+    horizon: float
+    done: bool = False
 
     def __str__(self):
         return ",".join(list(sorted([d[2] for d in self.detections])))
@@ -47,11 +49,12 @@ class ThorEnv:
         state = self.get_state(self.controller)
         if action.name in constants.get_acceptable_thor_actions():
             event = self.controller.step(action=action.name, **action.params)
+            event = self.controller.step(action="Pass")   # https://github.com/allenai/ai2thor/issues/538
         else:
             event = self.controller.step(action="Pass")
 
         next_state = self.get_state(event)
-        observation = self.get_observation(event, vision_detector=agent.vision_detector)
+        observation = self.get_observation(event, action, vision_detector=agent.vision_detector)
         reward = self.get_reward(state, action, next_state)
         self.update_history(next_state, action, observation, reward)
         return (observation, reward)
@@ -62,11 +65,14 @@ class ThorEnv:
     def done(self):
         raise NotImplementedError
 
+    def success(self):
+        raise NotImplementedError
+
     def get_state(self, event_or_controller):
         """Returns groundtruth state"""
         raise NotImplementedError
 
-    def get_observation(self, event):
+    def get_observation(self, event, action):
         """Returns groundtruth observation (i.e. correct object detections)"""
         raise NotImplementedError
 

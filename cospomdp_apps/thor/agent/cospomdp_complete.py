@@ -1,14 +1,19 @@
 import pomdp_py
+import time
 import random
 from collections import deque
-from thortils.navigation import find_navigation_plan
+from thortils.navigation import find_navigation_plan, get_navigation_actions
 from cospomdp.utils.math import euclidean_dist, normalize
 from cospomdp.models.agent import CosAgent
 from cospomdp.models.reward_model import ObjectSearchRewardModel
 from ..common import ThorAgent, TOS_Action
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
 from .components.action import (grid_navigation_actions,
-                                from_grid_action_to_thor_action_delta)
+                                from_grid_action_to_thor_action_delta,
+                                from_grid_action_to_thor_action_params,
+                                from_thor_delta_to_thor_action_params,
+                                Move, MoveTopo)
+from cospomdp.domain.action import Done
 from .components.state import RobotStateTopo
 from .components.topo_map import TopoNode, TopoMap, TopoEdge
 from .components.transition_model import RobotTransitionTopo
@@ -178,13 +183,15 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                  thor_prior={},
                  num_place_samples=10,
                  topo_map_degree=3,
-                 places_sep=4.0):
+                 places_sep=4.0,
+                 seed=1000):
 
         robot_id = task_config["robot_id"]
         search_region = GridMapSearchRegion(grid_map)
         reachable_positions = grid_map.free_locations
         self.search_region = search_region
         self.grid_map = grid_map
+        self.reachable_positions = reachable_positions  # positions the robot can reach
 
         # Form initial topological graph for navigation.
         prior = {loc: 1e-12 for loc in search_region}
@@ -192,7 +199,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             loc = grid_map.to_grid_pos(thor_loc[0], thor_loc[2])
             prior[loc] = thor_prior[thor_loc]
 
-        movement_params = task_config["nav_config"]["movement_params"]
+        self.thor_movement_params = task_config["nav_config"]["movement_params"]
         init_robot_pose = grid_map.to_grid_pose(
             thor_agent_pose[0][0],  #x
             thor_agent_pose[0][2],  #z
@@ -203,7 +210,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                          reachable_positions,
                                          num_place_samples,
                                          degree=topo_map_degree,
-                                         sep=places_sep)
+                                         sep=places_sep,
+                                         rnd=random.Random(seed))
 
         init_topo_nid = self.topo_map.closest_node(*init_robot_pose[:2])
         init_robot_state = RobotStateTopo(robot_id, init_robot_pose, pitch, init_topo_nid)
@@ -246,13 +254,128 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         else:
             self.solver = eval(solver)(**solver_args)
 
+        # This is used to output low-level actions that achieve
+        # goals
+        self._goal_handler = None
 
     def act(self):
-        goal = self.solver.plan(self.cos_agent)
-        print(goal)
+        if self._goal_handler is None or self._goal_handler.done:
+            goal = self.solver.plan(self.cos_agent)
+            self._goal_handler = self.handle(goal)
 
-
-        return TOS_Action("Pass", {})
+        # Low-level action
+        action = self._goal_handler.step()
+        assert isinstance(action, TOS_Action)
+        return action
 
     def update(self, tos_action, tos_observation):
+        # Update the goal handler with low-level sensory observation
+        self._goal_handler.update(tos_action, tos_observation)
+
+        # Interpret the observation and update the COS-POMDP agent's belief.
+        print("TODO")
+        thor_robot_pose = tos_observation.robot_pose
+        thor_camera_horizon = tos_observation.horizon  # i.e. pitch
+        robot_pose = self.grid_map.to_grid_pose(thor_robot_pose[0]['x'],
+                                                thor_robot_pose[0]['z'],
+                                                thor_robot_pose[1]['y'])
+        # TODO: properly set status - right now there is only 'done' and it
+        # doesn't affect behavior if this is always false because task success
+        # depends on taking the done action, not the done status.
+        status = RobotStatus()
+        robotobz = RobotObservation(self.robot_id, robot_pose, status)
+        observation = CosObservation(robotobz, objobzs)
+
+
+
+
+
+    def handle(self, goal):
+        """Returns a handler for achieving the goal."""
+        if isinstance(goal, MoveTopo):
+            return MoveTopoHandler(goal, self)
+
+        elif isinstance(goal, Done):
+            pass
+
+# -------- Goal Handlers -------- #
+class GoalHandler:
+    def __init__(self, goal, agent):
+        """
+        agent: ThorObjectSearchCompleteCosAgent
+        """
         pass
+
+    def step(self):
+        raise NotImplementedError
+
+    def update(self, tos_action, tos_observation):
+        raise NotImplementedError
+
+    @property
+    def done(self):
+        raise NotImplementedError
+
+    def __str__(self):
+        return "({}, done={})".format(self.goal, self.done)
+
+    def __repr__(self):
+        return "{}({})".format(self.__class__.__name__, str(self))
+
+
+
+class MoveTopoHandler(GoalHandler):
+    """Deals with navigating along an edge on the topological map."""
+    def __init__(self, goal, agent):
+        assert isinstance(goal, MoveTopo)
+        # Plans a sequence of actions to go from where
+        # the robot is currently to the dst node.
+        robot_pose = agent.belief.random().s(agent.robot_id).pose
+        closest_nid = agent.topo_map.closest_node(*robot_pose[:2])
+        assert closest_nid == goal.src_nid,\
+            "Not expecting agent, which is closest to node {}, to take {}"\
+            .format(closest_nid, goal)
+
+        # Preparing the inputs for find_navigation_plan in thortils
+        thor_rx, thor_rz, thor_rth = agent.grid_map.to_thor_pose(*robot_pose)
+        thor_start_position = (thor_rx, 0, thor_rz)
+        thor_start_rotation = (0, thor_rth, 0)
+        _goal_pos = agent.topo_map.nodes[goal.dst_nid].pos
+        thor_gx, thor_gz = agent.grid_map.to_thor_pos(*_goal_pos)
+        thor_goal_position = (thor_gx, 0, thor_gz)
+        thor_goal_rotation = (0, 0, 0)  # we don't care about rotation here
+        thor_reachable_positions = [agent.grid_map.to_thor_pos(*p)
+                                    for p in agent.reachable_positions]
+        navigation_actions = get_navigation_actions(agent.thor_movement_params)
+        plan, _ = find_navigation_plan((thor_start_position, thor_start_rotation),
+                                       (thor_goal_position, thor_goal_rotation),
+                                       navigation_actions,
+                                       thor_reachable_positions,
+                                       grid_size=agent.grid_map.grid_size,
+                                       diagonal_ok=agent.task_config["nav_config"]["diagonal_ok"],
+                                       debug=True)
+        self._plan = plan
+        self._index = 0
+
+
+    def step(self):
+        action_name, action_delta = self._plan[self._index]["action"]
+        params = from_thor_delta_to_thor_action_params(action_name, action_delta)
+        return TOS_Action(action_name, params)
+
+    def update(self, tos_action, tos_observation):
+        # Check if the robot pose is expected
+        thor_rx = tos_observation.robot_pose[0]['x']
+        thor_rz = tos_observation.robot_pose[0]['z']
+        thor_rth = tos_observation.robot_pose[1]['y']
+        actual = (thor_rx, thor_rz, thor_rth)
+        expected_thor_rx, expected_thor_rz, _, expected_thor_rth = self._plan[self._index]['next_pose']
+        expected = (expected_thor_rx, expected_thor_rz, expected_thor_rth)
+        if expected != actual:
+            print("Warning: after taking {}, the robot pose is unexpected.\n"
+                  "The expected pose is: {}; The actual pose is: {}"\
+                  .format(tos_action, expected, actual))
+        self._index += 1
+
+    def done(self):
+        return self._index >= len(self._plan)

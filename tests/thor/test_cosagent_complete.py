@@ -8,15 +8,21 @@ from cospomdp_apps.thor.agent.components.topo_map\
 from pomdp_py.utils import TreeDebugger
 
 def step_act_cb(task_env, agent, **kwargs):
-    viz = kwargs.get("viz")
+    # viz = kwargs.get("viz")
+    pass
 
-    img = viz.render(task_env, agent, len(agent.cos_agent.history))
-    img = draw_topo(img, agent.topo_map, viz._res, draw_grid_path=True)
-    viz.show_img(img)
-    import pdb; pdb.set_trace()
+    # img = viz.render(task_env, agent, len(agent.cos_agent.history))
+    # img = draw_topo(img, agent.topo_map, viz._res, draw_grid_path=True)
+    # viz.show_img(img)
+    # import pdb; pdb.set_trace()
 
 
-def _test_sampling_topo_map(max_depth=30,
+def _test_sampling_topo_map(target,
+                            other,
+                            prior='uniform',
+                            target_range=5,
+                            other_range=6,
+                            max_depth=30,
                             num_sims=500,
                             max_steps=100,
                             discount_factor=0.95,
@@ -25,6 +31,11 @@ def _test_sampling_topo_map(max_depth=30,
                             step_act_cb=None,
                             step_act_args={},
                             step_update_cb=None):
+    print("Test cospomdp_complete search (prior={})".format(prior))
+    detectables = [target]
+    if other is not None:
+        detectables.append(other)
+
     args = TaskArgs(detectables={"Apple", "CounterTop", "Bread"},
                     scene='FloorPlan3',
                     target="Apple",
