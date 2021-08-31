@@ -22,3 +22,17 @@ class RobotStateTopo(RobotState):
     @property
     def loc(self):
         return self['pose'][:2]
+
+    @staticmethod
+    def from_obz(robot_obz):
+        """
+        robot_obz (RobotObservation); Here, we will receive pose
+            as (x, y, pitch, yaw, nid) in the robot_obz. The fields
+            of RobotObservation are not changed.
+        """
+        x, y, pitch, yaw, nid = robot_obz.pose
+        return RobotStateTopo(robot_obz.robot_id,
+                              (x, y, yaw),
+                              pitch,
+                              nid,
+                              robot_obz.status)

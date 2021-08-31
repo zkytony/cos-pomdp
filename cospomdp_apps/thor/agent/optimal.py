@@ -14,6 +14,8 @@ import time
 from thortils.navigation import (get_shortest_path_to_object,
                                  get_shortest_path_to_object_type)
 
+from .components.action import from_thor_delta_to_thor_action_params
+
 
 class ThorObjectSearchOptimalAgent(ThorAgent):
     """The agent find the shortest path to the target, and then
@@ -31,7 +33,7 @@ class ThorObjectSearchOptimalAgent(ThorAgent):
         self.controller = controller
         self.target = task_config["target"]
         self.task_type = task_config["task_type"]
-        self.movement_params = task_config["nav_config"]["movement_params"]
+        self.task_config = task_config
 
         start_pose = tt.thor_camera_pose(self.controller, as_tuple=True)
         overall_plan, overall_poses = ThorObjectSearchOptimalAgent.plan(
@@ -46,11 +48,12 @@ class ThorObjectSearchOptimalAgent(ThorAgent):
         """Returns action in plan"""
         if self._index < len(self.plan):
             action_name, action_params = self.plan[self._index]
-            if action_name not in self.movement_params:
+            if action_name not in self.task_config["nav_config"]["movement_params"]:
                 action = TOS_Action(action_name, action_params)
             else:
-                # TODO: should use the params in the action tuple.
-                action = TOS_Action(action_name, self.movement_params[action_name])
+                delta = action_params
+                thor_action_params = from_thor_delta_to_thor_action_params(action_name, delta)
+                action = TOS_Action(action_name, thor_action_params)
             self._index += 1
         else:
             action = TOS_Action("Done", {})

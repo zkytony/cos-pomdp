@@ -84,9 +84,11 @@ class CosAgent(pomdp_py.Agent):
     def update(self, action, observation):
         robotobz = observation.z(self.robot_id)
         rstate_class = self.init_robot_state.__class__
-        new_brobot = pomdp_py.Histogram({robotobz.to_state(rstate_class): 1.0})
+        next_srobot = rstate_class.from_obz(robotobz)
+        new_brobot = pomdp_py.Histogram({next_srobot: 1.0})
         new_btarget = update_target_belief(
-            self.target_id, self.belief.b(self.target_id), observation, self.observation_model)
+            self.target_id, self.belief.b(self.target_id), next_srobot,
+            observation, self.observation_model)
         new_belief = CosJointBelief({self.robot_id: new_brobot,
                                      self.target_id: new_btarget})
         self.set_belief(new_belief)
@@ -111,17 +113,17 @@ def initialize_target_belief(target, search_region, belief_type, prior):
     else:
         raise NotImplementedError("belief_type {} is not yet implemented".format(belief_type))
 
-def update_target_belief(target_id, current_btarget, observation, observation_model):
+def update_target_belief(target_id, current_btarget, next_srobot,
+                         observation, observation_model):
     """
     current_btarget: current target belief
+    srobot: robot state corresponding to the observation.
     """
-    srobot = observation.z_robot.to_state()
-
     if isinstance(current_btarget, pomdp_py.Histogram):
         new_btarget_hist = {}
         for starget in tqdm(current_btarget):
             state = CosState({target_id: starget,
-                              srobot.id: srobot})
+                              next_srobot.id: next_srobot})
             new_btarget_hist[starget] =\
                 observation_model.probability(observation, state) * current_btarget[starget]
         new_btarget = pomdp_py.Histogram(normalize(new_btarget_hist))

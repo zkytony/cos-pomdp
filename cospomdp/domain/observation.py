@@ -78,9 +78,6 @@ class RobotObservation(pomdp_py.SimpleObservation):
     def __str__(self):
         return f"({self.robot_pose, self.status})"
 
-    def to_state(self, state_class=RobotState):
-        return state_class(self.robot_id, self.pose, self.status)
-
 class Voxel(pomdp_py.SimpleObservation):
     """3D object observation"""
     FREE = "free"

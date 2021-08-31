@@ -1,5 +1,6 @@
 import pomdp_py
 
+
 class Motion(pomdp_py.SimpleAction):
     """Motion moves the robot.
     The specific definition is domain-dependent"""

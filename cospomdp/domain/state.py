@@ -57,6 +57,13 @@ class RobotState(pomdp_py.ObjectState):
         """the location of the robot, regardless of orientation"""
         raise NotImplementedError
 
+    @staticmethod
+    def from_obz(robot_obz):
+        """
+        robot_obz (RobotObservation)
+        """
+        raise NotImplementedError
+
 
 class RobotState2D(RobotState):
     """2D robot state; pose is x, y, th"""
@@ -71,6 +78,16 @@ class RobotState2D(RobotState):
             if abs(rth % 360 - gth % 360) <= 15:
                 return True
         return False
+
+    @staticmethod
+    def from_obz(robot_obz):
+        """
+        robot_obz (RobotObservation)
+        """
+        return RobotState2D(robot_obz.robot_id,
+                            robot_obz.pose,
+                            robot_obz.status)
+
 
 class CosState(pomdp_py.OOState):
     def __init__(self, object_states):
