@@ -25,6 +25,17 @@ class Move(Motion):
         return str(self)
 
 
+class MoveTopo(Motion):
+    def __init__(self, src_nid, dst_nid, gdist=None):
+        """
+        Moves the robot from src node to dst node
+        """
+        self.src_nid = src_nid
+        self.dst_nid = dst_nid
+        self.gdist = gdist
+        super().__init__("move({}->{})".format(self.src_nid, self.dst_nid))
+
+
 def grid_navigation_actions2d(movement_params, grid_size):
     """
     movement_params (name -> {params})

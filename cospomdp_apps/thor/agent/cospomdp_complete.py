@@ -1,16 +1,19 @@
 import pomdp_py
 from collections import deque
 from thortils.navigation import find_navigation_plan
+from cospomdp.utils.math import euclidean_dist, normalize
+from cospomdp.models.agent import CosAgent
+from cospomdp.models.reward_model import ObjectSearchRewardModel
 from ..common import ThorAgent, TOS_Action
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
 from .components.action import (grid_navigation_actions,
                                 from_grid_action_to_thor_action_delta)
-from .components.state import CosRobotState
+from .components.state import RobotStateTopo
 from .components.topo_map import TopoNode, TopoMap, TopoEdge
+from .components.transition_model import RobotTransitionTopo
+from .components.policy_model import PolicyModelTopo
 from ..constants import GOAL_DISTANCE
-from cospomdp.utils.math import euclidean_dist
-from cospomdp.models.agent import CosAgent
-from cospomdp.models.reward_model import ObjectSearchRewardModel
+
 
 def _shortest_path(reachable_positions, gloc1, gloc2):
     """
@@ -48,13 +51,13 @@ def _shortest_path(reachable_positions, gloc1, gloc2):
     return None
 
 
-def _sample_places(target_hist,
-                   reachable_positions,
-                   num_places,
-                   degree=3,
-                   sep=4.0):
+def _sample_topo_map(target_hist,
+                     reachable_positions,
+                     num_samples,
+                     degree=3,
+                     sep=4.0):
     """Given a search region, a distribution over target locations in the
-    search region, return a list of `num_places` of locations within
+    search region, return a TopoMap with nodes within
     reachable_positions.
 
     The algorithm works by first converting the target_hist,
@@ -66,6 +69,9 @@ def _sample_places(target_hist,
     position is the sum of those search region locations mapped to it.
 
     Then, simply sample reachable positions based on this distribution.
+
+    The purpose of this topo map is for navigation action abstraction
+    and robot state abstraction.
 
     Args:
         target_hist (dict): maps from location to probability
@@ -92,10 +98,10 @@ def _sample_places(target_hist,
         reachable_pos_dist[pos] = 0.0
         for search_region_loc in mapping[pos]:
             reachable_pos_dist[pos] += target_hist[search_region_loc]
-    hist = pomdp_py.Histogram(reachable_pos_dist)
+    hist = pomdp_py.Histogram(normalize(reachable_pos_dist))
 
     places = set()
-    for i in range(num_places):
+    for i in range(num_samples):
         pos = hist.random()
         places.add(pos)
 
@@ -103,7 +109,7 @@ def _sample_places(target_hist,
     pos_to_nid = {}
     nodes = {}
     for i, pos in enumerate(places):
-        topo_node = TopoNode(i, pos)
+        topo_node = TopoNode(i, pos, hist[pos])
         nodes[i] = topo_node
         pos_to_nid[pos] = i
 
@@ -185,13 +191,14 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             thor_agent_pose[1][1]   #yaw
         )
         pitch = thor_agent_pose[1][0]
-        self.lll = _sample_places(prior,
-                                  reachable_positions,
-                                  num_place_samples,
-                                  degree=topo_map_degree,
-                                  sep=places_sep)
+        self.topo_map = _sample_topo_map(prior,
+                                         reachable_positions,
+                                         num_place_samples,
+                                         degree=topo_map_degree,
+                                         sep=places_sep)
 
-        init_robot_state = CosRobotState(robot_id, init_robot_pose, pitch, None)
+        init_topo_nid = self.topo_map.closest_node(*init_robot_pose[:2])
+        init_robot_state = RobotStateTopo(robot_id, init_robot_pose, pitch, init_topo_nid)
 
         if task_config["task_type"] == 'class':
             target_id = task_config['target']
@@ -206,16 +213,21 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         detectors, detectable_objects = self._build_detectors(detector_specs)
         corr_dists = self._build_corr_dists(corr_specs, detectable_objects)
 
+        robot_trans_model = RobotTransitionTopo(robot_id, target[0],
+                                                self.topo_map, self.task_config['nav_config']['h_angles'])
         reward_model = ObjectSearchRewardModel(
             detectors[target_id].sensor,
             task_config["nav_config"]["goal_distance"] / grid_map.grid_size,
             robot_id, target_id)
+        policy_model = PolicyModelTopo(robot_trans_model,
+                                       reward_model,
+                                       self.topo_map)
 
         self.cos_agent = CosAgent(self.target,
                                   init_robot_state,
                                   search_region,
-                                  None,  # TODO
-                                  None,  # TODO
+                                  robot_trans_model,
+                                  policy_model,
                                   corr_dists,
                                   detectors,
                                   reward_model)

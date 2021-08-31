@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import copy
 from collections import deque
+import networkx as nx
 
 ########################################
 #  Node
@@ -33,6 +34,14 @@ class Node:
     def __repr__(self):
         return "%s(%d)" % (type(self).__name__, self.id)
 
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.id == other.id\
+                and self.data == other.data
+        return False
 
 class SuperNode(Node, ABC):
 
@@ -45,6 +54,10 @@ class SuperNode(Node, ABC):
         if type(enset) != OrderedEdgeNodeSet:
             raise ValueError("super node must use OrderedEdgeNodeSet!")
         self.enset = enset
+
+    @property
+    def data(self):
+        return self.enset
 
     @classmethod
     @abstractmethod
@@ -79,6 +92,10 @@ class Edge:
         self.data = data
 
     @property
+    def attrs(self):
+        return {"data": self.data}
+
+    @property
     def degenerate(self):
         return len(self.nodes) == 1
 
@@ -91,6 +108,14 @@ class Edge:
             return "#%d[<%d>%s<%d>]" % (self.id, self.nodes[0].id, str(data), self.nodes[1].id)
         else:
             return "#%d[<%d>]" % (self.id, self.nodes[0].id)
+
+    def other(self, this_nid):
+        if this_nid == self.nodes[0].id:
+            return self.nodes[1]
+        elif this_nid == self.nodes[1].id:
+            return self.nodes[0]
+        else:
+            raise ValueError("Invalid query {} for other node in edge".format(this_nid))
 
 
 class SuperEdge(Edge, ABC):
@@ -351,6 +376,40 @@ class Graph(EdgeNodeSet):
             to_cover -= set(component.nodes.keys())
         return components
 
+    def shortest_path(self, src, dst, weight):
+        """
+        Returns the path from src to dst (node ids), using Dijkstra's Algorithm.
+        weight is a function that takes in an edge and outputs a weight number.
+        """
+        V = {nid for nid in self.nodes}
+        S = set()
+        d = {v:float("inf")
+             for v in V
+             if v != src}
+        d[src] = 0
+        prev = {src: None}
+        while len(S) < len(V):
+            diff_set = V - S
+            v = min(diff_set, key=lambda v: d[v])
+            S.add(v)
+            for eid in self.edges_from(v):
+                edge = self.edges[eid]
+                w = edge.other(v).id
+                cost = weight(edge)
+                if d[v] + cost < d[w]:
+                    d[w] = d[v] + cost
+                    prev[w] = (v, eid)
+
+        # Return a path
+        path = []
+        pair = prev[dst]
+        while pair is not None:
+            v, eid = pair
+            path.append(eid)
+            pair = prev[v]
+        return list(reversed(path))
+
+
     def subtract(self, other):
         """
         Given another graph "other", produce a graph equivalent
@@ -540,6 +599,19 @@ class Graph(EdgeNodeSet):
             return supergraph
 
 
+    #--- Conversion ---#
+    def to_nx_graph(self):
+        if self._directed:
+            G = nx.MultiDiGraph()
+        else:
+            G = nx.MultiGraph()
+
+        for eid in self.edges:
+            edge = self.edges[eid]
+            node1, node2 = edge.nodes
+            G.add_edge(node1, node2, **edge.attrs)
+        return G
+
     #--- Visualizations ---#
     def visualize(self, ax, included_nodes=None, dotsize=10, linewidth=1.0,
                   img=None, show_nids=False,
@@ -581,6 +653,7 @@ class Graph(EdgeNodeSet):
 
                     plot_line(ax, node.coords, self.nodes[neighbor_id].coords,
                               linewidth=3, color=edge_color, zorder=1, alpha=0.2)
+
 
 
 

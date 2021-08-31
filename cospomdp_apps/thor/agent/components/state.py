@@ -1,6 +1,6 @@
 from cospomdp.domain.state import RobotState, RobotStatus
 
-class CosRobotState(RobotState):
+class RobotStateTopo(RobotState):
     def __init__(self, robot_id, pose, horizon, topo_nid, status=RobotStatus()):
         """
         We treat robot pose in the same way as Ai2thor does:
@@ -14,3 +14,11 @@ class CosRobotState(RobotState):
     @property
     def pitch(self):
         return self.horizon
+
+    @property
+    def nid(self):
+        return self.topo_nid
+
+    @property
+    def loc(self):
+        return self['pose'][:2]

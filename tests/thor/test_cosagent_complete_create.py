@@ -1,6 +1,6 @@
 from cospomdp.utils.corr_funcs import around
 from cospomdp_apps.thor.agent.cospomdp_complete\
-    import _sample_places, ThorObjectSearchCompleteCosAgent
+    import ThorObjectSearchCompleteCosAgent
 from cospomdp_apps.thor.common import TaskArgs, make_config
 from cospomdp_apps.thor.trial import ThorObjectSearchTrial
 from cospomdp_apps.thor.agent.components.topo_map\
@@ -11,14 +11,14 @@ def step_act_cb(task_env, agent, **kwargs):
     viz = kwargs.get("viz")
 
     img = viz.render(task_env, agent, len(agent.cos_agent.history))
-    img = draw_topo(img, agent.lll, viz._res, draw_grid_path=True)
+    img = draw_topo(img, agent.topo_map, viz._res, draw_grid_path=True)
     viz.show_img(img)
     import pdb; pdb.set_trace()
 
 
 def _test_sampling_topo_map():
     args = TaskArgs(detectables={"Apple", "CounterTop", "Bread"},
-                    scene='FloorPlan1',
+                    scene='FloorPlan3',
                     target="Apple",
                     agent_class="ThorObjectSearchCompleteCosAgent",
                     task_env="ThorObjectSearch",
