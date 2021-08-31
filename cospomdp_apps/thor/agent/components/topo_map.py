@@ -133,9 +133,9 @@ def draw_topo(img, topo_map, r, draw_grid_path=False, path_color=(52, 235, 222),
                                   path_color, -1)
                     cv2.rectangle(img, (y*r, x*r), (y*r+r, x*r+r),
                                   lighter(path_color, 0.7), linewidth)
-            else:
-                import pdb; pdb.set_trace()
 
+    for eid in topo_map.edges:
+        edge = topo_map.edges[eid]
         node1, node2 = edge.nodes
         pos1 = node1.pos
         pos2 = node2.pos
