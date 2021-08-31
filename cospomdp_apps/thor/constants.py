@@ -32,7 +32,7 @@ RENDER_INSTANCE_SEGMENTATION = True
 # Need in order to not stuck the agent for sub-90 degree rotation.
 # BUT, it actually DOES NOT WORK
 CONTINUOUS = True
-SNAP_TO_GRID = not CONTINUOUS
+SNAP_TO_GRID = True
 
 #------------------------------------------------------------------------------
 # Ai2thor parameters related to object search
@@ -297,7 +297,7 @@ TOS_REWARD_LO = -100
 TOS_REWARD_STEP = -1
 
 # Moves diagonally
-DIAG_MOVE = False
+DIAG_MOVE = True
 
 GOAL_DISTANCE = 1.0
 

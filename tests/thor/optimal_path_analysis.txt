@@ -1,0 +1,83 @@
+
+2021-08-31 11:19:11.235455 Event (Normal): Trial test_optimal | Step 1: Action: RotateLeft; Reward: -1; Observation: ; (x=-1.000, z=1.000, pitch=-0.000, yaw=225.000
+                                                              {'action': ('RotateLeft', (0.0, -45, 0.0)), 'next_pose': (-1.0, 1.0, 0.0, 225.0)}
+
+
+2021-08-31 11:19:11.747757 Event (Normal): Trial test_optimal | Step 2: Action: RotateLeft; Reward: -1; Observation: Vase; (x=-1.000, z=1.000, pitch=0.000, yaw=180.000
+                                                              {'action': ('RotateLeft', (0.0, -45, 0.0)), 'next_pose': (-1.0, 1.0, 0.0, 180.0)},
+
+
+2021-08-31 11:19:12.327754 Event (Normal): Trial test_optimal | Step 3: Action: MoveAhead; Reward: -1; Observation: Vase; (x=-1.000, z=0.750, pitch=0.000, yaw=180.000
+                                                              {'action': ('MoveAhead', (0.25, 0.0, 0.0)), 'next_pose': (-1.0, 0.75, 0.0, 180.0)},
+
+
+2021-08-31 11:19:12.974909 Event (Normal): Trial test_optimal | Step 4: Action: MoveAhead; Reward: -1; Observation: Vase; (x=-1.000, z=0.500, pitch=0.000, yaw=180.000
+                                                              {'action': ('MoveAhead', (0.25, 0.0, 0.0)), 'next_pose': (-1.0, 0.5, 0.0, 180.0)},
+
+
+2021-08-31 11:19:13.536226 Event (Normal): Trial test_optimal | Step 5: Action: MoveAhead; Reward: -1; Observation: Vase; (x=-1.000, z=0.250, pitch=0.000, yaw=180.000
+                                                               {'action': ('MoveAhead', (0.25, 0.0, 0.0)), 'next_pose': (-1.0, 0.25, 0.0, 180.0)},
+
+
+2021-08-31 11:19:14.096633 Event (Normal): Trial test_optimal | Step 6: Action: MoveAhead; Reward: -1; Observation: ; (x=-1.000, z=0.000, pitch=0.000, yaw=180.000
+                                                                {'action': ('MoveAhead', (0.25, 0.0, 0.0)), 'next_pose': (-1.0, 0.0, 0.0, 180.0)},
+
+
+2021-08-31 11:19:14.637596 Event (Normal): Trial test_optimal | Step 7: Action: MoveAhead; Reward: -1; Observation: ; (x=-1.000, z=-0.250, pitch=0.000, yaw=180.000
+                                                                 {'action': ('MoveAhead', (0.25, 0.0, 0.0)), 'next_pose': (-1.0, -0.25, 0.0, 180.0)},
+
+
+2021-08-31 11:19:15.170358 Event (Normal): Trial test_optimal | Step 8: Action: MoveAhead; Reward: -1; Observation: ; (x=-1.000, z=-0.500, pitch=0.000, yaw=180.000
+                                                               {'action': ('MoveAhead', (0.25, 0.0, 0.0)), 'next_pose': (-1.0, -0.5, 0.0, 180.0)},
+
+2021-08-31 11:19:15.705097 Event (Normal): Trial test_optimal | Step 9: Action: MoveAhead; Reward: -1; Observation: ; (x=-1.000, z=-0.750, pitch=0.000, yaw=180.000
+                                                                {'action': ('MoveAhead', (0.25, 0.0, 0.0)), 'next_pose': (-1.0, -0.75, 0.0, 180.0)},
+
+2021-08-31 11:19:16.249439 Event (Normal): Trial test_optimal | Step 10: Action: MoveAhead; Reward: -1; Observation: ; (x=-1.000, z=-1.000, pitch=0.000, yaw=180.000
+                                                                {'action': ('MoveAhead', (0.25, 0.0, 0.0)), 'next_pose': (-1.0, -1.0, 0.0, 180.0)},
+
+
+2021-08-31 11:19:16.799369 Event (Normal): Trial test_optimal | Step 11: Action: RotateLeft; Reward: -1; Observation: Vase; (x=-1.000, z=-1.000, pitch=-0.000, yaw=135.000
+                                                                {'action': ('RotateLeft', (0.0, -45, 0.0)), 'next_pose': (-1.0, -1.0, 0.0, 135.0)},
+
+
+2021-08-31 11:19:17.374055 Event (Normal): Trial test_optimal | Step 12: Action: MoveAhead; Reward: -1; Observation: Vase; (x=-0.823, z=-1.177, pitch=-0.000, yaw=135.000
+                                                                 {'action': ('MoveAhead', (0.25, 0.0, 0.0)), 'next_pose': (-0.75, -1.25, 0.0, 135.0)}, ***THIS IS OFF; 45 degree move forward***
+
+
+2021-08-31 11:19:17.935204 Event (Normal): Trial test_optimal | Step 13: Action: MoveAhead; Reward: -1; Observation: Vase; (x=-0.646, z=-1.354, pitch=-0.000, yaw=135.000
+2021-08-31 11:19:18.518893 Event (Normal): Trial test_optimal | Step 14: Action: MoveAhead; Reward: -1; Observation: Vase; (x=-0.470, z=-1.530, pitch=-0.000, yaw=135.000
+2021-08-31 11:19:19.064653 Event (Normal): Trial test_optimal | Step 15: Action: RotateLeft; Reward: -1; Observation: Vase; (x=-0.470, z=-1.530, pitch=-0.000, yaw=90.000
+2021-08-31 11:19:19.591152 Event (Normal): Trial test_optimal | Step 16: Action: MoveAhead; Reward: -1; Observation: Vase; (x=-0.220, z=-1.530, pitch=-0.000, yaw=90.000
+2021-08-31 11:19:20.097920 Event (Normal): Trial test_optimal | Step 17: Action: MoveAhead; Reward: -1; Observation: Vase; (x=0.030, z=-1.530, pitch=-0.000, yaw=90.000
+2021-08-31 11:19:20.601740 Event (Normal): Trial test_optimal | Step 18: Action: MoveAhead; Reward: -1; Observation: Vase; (x=0.280, z=-1.530, pitch=-0.000, yaw=90.000
+2021-08-31 11:19:21.072864 Event (Normal): Trial test_optimal | Step 19: Action: MoveAhead; Reward: -1; Observation: Vase; (x=0.530, z=-1.530, pitch=-0.000, yaw=90.000
+2021-08-31 11:19:21.514712 Event (Normal): Trial test_optimal | Step 20: Action: MoveAhead; Reward: -1; Observation: Vase; (x=0.780, z=-1.530, pitch=-0.000, yaw=90.000
+2021-08-31 11:19:21.963886 Event (Normal): Trial test_optimal | Step 21: Action: LookDown; Reward: -1; Observation: Vase; (x=0.780, z=-1.530, pitch=-0.000, yaw=90.000
+2021-08-31 11:19:22.469056 Event (Normal): Trial test_optimal | Step 22: Action: LookDown; Reward: -1; Observation: Vase; (x=0.780, z=-1.530, pitch=-0.000, yaw=90.000
+2021-08-31 11:19:22.996575 Event (Normal): Trial test_optimal | Step 23: Action: RotateRight; Reward: -1; Observation: Vase; (x=0.780, z=-1.530, pitch=-0.000, yaw=135.000
+
+ {'action': ('MoveAhead', (0.25, 0.0, 0.0)),
+  'next_pose': (-0.5, -1.5, 0.0, 135.0)},
+ {'action': ('MoveAhead', (0.25, 0.0, 0.0)),
+  'next_pose': (-0.25, -1.75, 0.0, 135.0)},
+ {'action': ('RotateLeft', (0.0, -45, 0.0)),
+  'next_pose': (-0.25, -1.75, 0.0, 90.0)},
+ {'action': ('MoveAhead', (0.25, 0.0, 0.0)),
+  'next_pose': (0.0, -1.75, 0.0, 90.0)},
+ {'action': ('MoveAhead', (0.25, 0.0, 0.0)),
+  'next_pose': (0.25, -1.75, 0.0, 90.0)},
+ {'action': ('MoveAhead', (0.25, 0.0, 0.0)),
+  'next_pose': (0.5, -1.75, 0.0, 90.0)},
+ {'action': ('MoveAhead', (0.25, 0.0, 0.0)),
+  'next_pose': (0.75, -1.75, 0.0, 90.0)},
+ {'action': ('MoveAhead', (0.25, 0.0, 0.0)),
+  'next_pose': (1.0, -1.75, 0.0, 90.0)},
+ {'action': ('RotateLeft', (0.0, -45, 0.0)),
+  'next_pose': (1.0, -1.75, 0.0, 45.0)},
+ {'action': ('RotateLeft', (0.0, -45, 0.0)),
+  'next_pose': (1.0, -1.75, 0.0, 0.0)},
+ {'action': ('RotateLeft', (0.0, -45, 0.0)),
+  'next_pose': (1.0, -1.75, 0.0, 315.0)},
+ {'action': ('RotateLeft', (0.0, -45, 0.0)),
+  'next_pose': (1.0, -1.75, 0.0, 270.0)}]
