@@ -61,7 +61,7 @@ def _test_basic_search(target,
     config["viz_config"] = {
         'res': 30
     }
-    trial = ThorObjectSearchTrial("test_cosagent", config, verbose=True)
+    trial = ThorObjectSearchTrial("test_cosagent-basic", config, verbose=True)
     print("Trial created")
     trial.run(step_act_cb=step_act_cb,
               step_act_args=step_act_args,

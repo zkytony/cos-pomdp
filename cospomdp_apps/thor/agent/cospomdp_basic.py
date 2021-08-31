@@ -4,8 +4,8 @@ import math
 import pomdp_py
 import thortils as tt
 
+import cospomdp
 from cospomdp.utils.math import indicator, normalize, euclidean_dist
-from cospomdp import *
 from cospomdp_apps.basic import PolicyModel2D, RobotTransition2D
 from cospomdp_apps.basic.action import Move2D, ALL_MOVES_2D, Done
 
@@ -16,7 +16,7 @@ from ..common import TOS_Action, ThorAgent
 from .. import constants
 
 
-class GridMapSearchRegion(SearchRegion2D):
+class GridMapSearchRegion(cospomdp.SearchRegion2D):
     def __init__(self, grid_map):
         super().__init__(grid_map.obstacles)
         # self._obstacles = grid_map.obstacles
@@ -59,7 +59,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
                     sensor_params = eval(f"dict({sensor_params.strip()})")
                 if quality_params == str:
                     quality_params = eval(quality_params.strip())
-                detector = FanModelNoFP(object_id, sensor_params, quality_params)
+                detector = cospomdp.FanModelNoFP(object_id, sensor_params, quality_params)
                 detectors[object_id] = detector
         return detectors, detectable_objects
 
@@ -79,11 +79,11 @@ class ThorObjectSearchCosAgent(ThorAgent):
                 corr_func, corr_func_args = corr_specs[key]
                 if type(corr_func) == str:
                     corr_func = eval(corr_func)
-                corr_dists[other] = CorrelationDist(objects[other],
-                                                    objects[target_id],
-                                                    self.search_region,
-                                                    corr_func,
-                                                    corr_func_args=corr_func_args)
+                corr_dists[other] = cospomdp.CorrelationDist(objects[other],
+                                                             objects[target_id],
+                                                             self.search_region,
+                                                             corr_func,
+                                                             corr_func_args=corr_func_args)
         return corr_dists
 
     def interpret_robot_obz(tos_observation):
@@ -95,26 +95,19 @@ class ThorObjectSearchCosAgent(ThorAgent):
         """
         # Because policy_model's movements are already in sync with task movements,
         # we can directly get the POMDP action from there.
-        action_names = {a.name: a for a in set(self.cos_agent.policy_model.movements) | {Done()}}
-        if tos_action.name in action_names:
-            action = action_names[tos_action.name]
-        else:
-            raise ValueError("Cannot understand action {}".format(action))
-
         objobzs = {}
         for cls in self.detectable_objects:
-            objobzs[cls] = Loc(cls, None)
+            objobzs[cls] = cospomdp.Loc(cls, None)
 
         for detection in tos_observation.detections:
             xyxy, conf, cls, loc3d = detection
             thor_x, _, thor_z = loc3d
             x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
-            objobzs[cls] = Loc(cls, (x, z))
+            objobzs[cls] = cospomdp.Loc(cls, (x, z))
 
         robotobz = self.interpret_robot_obz(tos_observation)
-        # RobotObservation(self.robot_id, robot_pose, status)
-        observation = CosObservation(robotobz, objobzs)
-        print(observation)
+        observation = cospomdp.CosObservation(robotobz, objobzs)
+        action = self.interpret_action(tos_action)
         self.cos_agent.update(action, observation)
         self.solver.update(self.cos_agent, action, observation)
 
@@ -178,25 +171,25 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         detectors, detectable_objects = self._build_detectors(detector_specs)
         corr_dists = self._build_corr_dists(corr_specs, detectable_objects)
 
-        reward_model = ObjectSearchRewardModel(
+        reward_model = cospomdp.ObjectSearchRewardModel(
             detectors[target_id].sensor,
             task_config["nav_config"]["goal_distance"] / grid_map.grid_size,
             robot_id, target_id,
             **task_config["reward_config"])
 
         # Construct CosAgent, the actual POMDP
-        init_robot_state = RobotState2D(robot_id, init_robot_pose)
+        init_robot_state = cospomdp.RobotState2D(robot_id, init_robot_pose)
         robot_trans_model = RobotTransition2D(robot_id, reachable_positions)
         movement_params = self.task_config["nav_config"]["movement_params"]
+        self.navigation_actions = grid_navigation_actions2d(movement_params, grid_map.grid_size)
         policy_model = PolicyModel2D(robot_trans_model, reward_model,
-                                     movements=grid_navigation_actions2d(movement_params,
-                                                                         grid_map.grid_size))
+                                     movements=self.navigation_actions)
         prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
                  for p in thor_prior}
-        self.cos_agent = CosAgent(target, init_robot_state,
-                                  search_region, robot_trans_model, policy_model,
-                                  corr_dists, detectors, reward_model,
-                                  prior=prior)
+        self.cos_agent = cospomdp.CosAgent(target, init_robot_state,
+                                           search_region, robot_trans_model, policy_model,
+                                           corr_dists, detectors, reward_model,
+                                           prior=prior)
         # construct solver
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,
@@ -236,6 +229,14 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         thor_robot_pose = tos_observation.robot_pose
         thor_robot_pose2d = (thor_robot_pose[0]['x'], thor_robot_pose[0]['z'], thor_robot_pose[1]['y'])
         robot_pose = self.grid_map.to_grid_pose(*thor_robot_pose2d)
-        return RobotObservation(self.robot_id,
-                                robot_pose,
-                                RobotStatus(done=tos_observation.done))
+        return cospomdp.RobotObservation(self.robot_id,
+                                         robot_pose,
+                                         cospomdp.RobotStatus(done=tos_observation.done))
+
+    def interpret_action(self, tos_action):
+        cospomdp_actions = {a.name: a for a in set(self.navigation_actions) | {Done()}}
+        if tos_action.name in cospomdp_actions:
+            action = cospomdp_actions[tos_action.name]
+            return action
+        else:
+            raise ValueError("Cannot understand action {}".format(action))
