@@ -24,9 +24,24 @@ class Move(Motion):
     def __repr__(self):
         return str(self)
 
-def navigation_actions(movement_params, grid_size):
+
+def grid_navigation_actions2d(movement_params, grid_size):
     """
     movement_params (name -> {params})
+    see thortils.navigation.convert_movement_to_action
+    """
+    actions = grid_navigation_actions(movement_params, grid_size)
+    actions2d = []
+    for a in actions:
+        if a.name not in {"LookUp", "LookDown"}:
+            actions2d.append(Move2D(a.name, a.delta[:2]))
+    return actions2d
+
+
+def grid_navigation_actions(movement_params, grid_size):
+    """
+    movement_params (name -> {params})
+    e.g. {"MoveAhead": {"moveMagnitude": 0.25}}
     see thortils.navigation.convert_movement_to_action
 
     Returns navigation action suitable for GridMap coordinate system.
@@ -66,19 +81,10 @@ def navigation_actions(movement_params, grid_size):
         actions.append(Move(name, delta))
     return actions
 
-def navigation_actions2d(movement_params, grid_size):
-    """
-    movement_params (name -> {params})
-    see thortils.navigation.convert_movement_to_action
-    """
-    actions = navigation_actions(movement_params, grid_size)
-    actions2d = []
-    for a in actions:
-        if a.name not in {"LookUp", "LookDown"}:
-            actions2d.append(Move2D(a.name, a.delta[:2]))
-    return actions2d
 
-def thor_action_params(action, grid_size):
+def from_grid_action_to_thor_action_params(action, grid_size):
+    """Returns a dictionary used to pass in Controller.step()
+    as parameters for the action with name `action.name`."""
     if len(action.delta) == 2:
         forward, h_angle = action.delta
         v_angle = 0
@@ -88,17 +94,49 @@ def thor_action_params(action, grid_size):
     if action.name == "MoveAhead" or action.name == "MoveBack":
         return {"moveMagnitude": forward * grid_size}
 
-    elif action.name == "RotateLeft":
+    elif action.name == "RotateLeft" or action.name == "RotateRight":
         return {"degrees": abs(h_angle)}
+
+    elif action.name == "LookUp" or action.name == "LookDown":
+        return {"degrees": abs(v_angle)}
+
+    else:
+        raise ValueError("Unrecognized action {}".format(action.name))
+
+
+def from_grid_action_to_thor_action_delta(action, grid_size):
+    """Given a Move action (in grid map coordinates),
+    Returns a tuple (forward, h_angles, v_angles).
+
+    The ai2thor coordinate system looks like:
+
+    z 0 deg cw
+    ^
+    |
+    + ---->x  0
+    y
+
+    """
+    if len(action.delta) == 2:
+        forward, h_angle = action.delta
+        v_angle = 0
+    else:
+        forward, h_angle, v_angle = action.delta
+
+    if action.name == "MoveAhead":
+        return (forward*grid_size, 0.0, 0.0)
+
+    elif action.name == "RotateLeft":
+        return (0.0, -abs(h_angle), 0.0)
 
     elif action.name == "RotateRight":
-        return {"degrees": abs(h_angle)}
+        return (0.0, abs(h_angle), 0.0)
 
     elif action.name == "LookUp":
-        return {"degrees": abs(v_angle)}
+        return (0.0, 0.0, -abs(v_angle))
 
     elif action.name == "LookDown":
-        return {"degrees": abs(v_angle)}
+        return (0.0, 0.0, abs(v_angle))
 
     else:
         raise ValueError("Unrecognized action {}".format(action.name))

@@ -9,7 +9,8 @@ from cospomdp import *
 from cospomdp_apps.basic import PolicyModel2D, RobotTransition2D
 from cospomdp_apps.basic.action import Move2D, ALL_MOVES_2D, Done
 
-from .components.action import thor_action_params, navigation_actions2d
+from .components.action import (grid_navigation_actions2d,
+                                from_grid_action_to_thor_action_params)
 
 from ..common import TOS_Action, ThorAgent
 from .. import constants
@@ -154,8 +155,8 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         robot_trans_model = RobotTransition2D(robot_id, reachable_positions)
         movement_params = self.task_config["nav_config"]["movement_params"]
         policy_model = PolicyModel2D(robot_trans_model, reward_model,
-                                     movements=navigation_actions2d(movement_params,
-                                                                    grid_map.grid_size))
+                                     movements=grid_navigation_actions2d(movement_params,
+                                                                         grid_map.grid_size))
         prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
                  for p in thor_prior}
         self.cos_agent = CosAgent(target, init_robot_state,
@@ -195,7 +196,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         they are in sync - i.e. we convert parameters in `action` to parameters
         that can be used for ai2thor.
         """
-        return thor_action_params(action, self.grid_map.grid_size)
+        return from_grid_action_to_thor_action_params(action, self.grid_map.grid_size)
 
 
     def update(self, tos_action, tos_observation):
