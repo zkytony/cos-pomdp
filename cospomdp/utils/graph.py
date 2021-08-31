@@ -66,11 +66,11 @@ class Edge:
     An edge links two nodes.
     """
 
-    def __init__(self, id, node1, node2, data=None):
+    def __init__(self, eid, node1, node2, data=None):
         """
         The id is expected to be unique in the graph edges.
         """
-        self.id = id
+        self.id = eid
         if node2 is None:
             self.nodes = (node1,)
         else:

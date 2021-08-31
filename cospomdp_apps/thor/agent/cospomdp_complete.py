@@ -1,87 +1,145 @@
 import pomdp_py
+from collections import deque
 from thortils.navigation import find_navigation_plan
 from ..common import ThorAgent, TOS_Action
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
 from .components.action import (grid_navigation_actions,
                                 from_grid_action_to_thor_action_delta)
 from .components.state import CosRobotState
+from .components.topo_map import TopoNode, TopoMap, TopoEdge
 from ..constants import GOAL_DISTANCE
+from cospomdp.utils.math import euclidean_dist
 from cospomdp.models.agent import CosAgent
 from cospomdp.models.reward_model import ObjectSearchRewardModel
 
+def _shortest_path(reachable_positions, gloc1, gloc2):
+    """
+    Computes the shortest distance between two locations.
+    The two locations will be snapped to the closest free cell.
+    """
+    def neighbors(x,y):
+        return [(x+1, y), (x-1,y),
+                (x,y+1), (x,y-1)]
+
+    def get_path(s, t, prev):
+        v = t
+        path = [t]
+        while v != s:
+            v = prev[v]
+            path.append(v)
+        return path
+
+    # BFS; because no edge weight
+    reachable_positions = set(reachable_positions)
+    visited = set()
+    q = deque()
+    q.append(gloc1)
+    prev = {gloc1:None}
+    while len(q) > 0:
+        loc = q.popleft()
+        if loc == gloc2:
+            return get_path(gloc1, gloc2, prev)
+        for nb_loc in neighbors(*loc):
+            if nb_loc in reachable_positions:
+                if nb_loc not in visited:
+                    q.append(nb_loc)
+                    visited.add(nb_loc)
+                    prev[nb_loc] = loc
+    return None
+
+
 def _sample_places(target_hist,
                    reachable_positions,
-                   navigation_actions,
-                   current_robot_pose,
-                   num_samples,
-                   grid_map,
-                   goal_distance=GOAL_DISTANCE):
+                   num_places,
+                   degree=3,
+                   sep=4.0):
     """Given a search region, a distribution over target locations in the
     search region, return a list of `num_places` of locations within
     reachable_positions.
 
-    The algorithm works by first sampling locations from the search
-    region based on the target_hist, then expanding a tree from where
-    the robot is; For each new node, check if it is 'covering' any
-    sampled location; If so, consider it a node on the topological
-    graph. New nodes are searched for until all sampled locations are
-    covered.
+    The algorithm works by first converting the target_hist,
+    which is a distribution over the search region, to a distribution
+    over the robot's reachable positions.
 
-    The paths to all topological graph nodes are also returned, to
-    save time for later planning.
+    This is done by, for each location in the search region, find
+    a closest reachable position; Then the probability at a reachable
+    position is the sum of those search region locations mapped to it.
 
-    Note that search region, reachable_positions, navigation actions,
-    current robot pose, target_hist, are all in 2D. All locations are
-    on the grid map.
+    Then, simply sample reachable positions based on this distribution.
 
     Args:
         target_hist (dict): maps from location to probability
         reachable_positions (list of tuples)
-        navigation_actions (list of Move actions)
-        current_robot_pose
         num_places (int): number of places to sample
-        min_sep (float): The minimum separation between two sampled
-            target locations.
-        distance (float): Distance between topo node (i.e. place) and
-            sampled target location.
-        grid_map (GridMap): the implementation uses thortils'
-            find_navigation_plan, which works on thor
-            coordinates. Therefore we need the grid_map for
-            conversion; But, eventually, the nodes on the topo map
-            will be according to grid map coordinates
+        degrees (int): controls the number of maximum neighbors per place.
+        sep (float): minimum distance between two places (grid cells)
 
     Returns:
         TopologicalMap.
 
     """
-    # Convert navigation actions to action tuples (as defined in thortils.navigation)
-    # Need to convert to thor coordinates
-    thor_navigation_action_tuples = []
-    for nav_action in navigation_actions:
-        thor_delta = from_grid_action_to_thor_action_delta(nav_action, grid_map.grid_size)
-        thor_navigation_action_tuples.append((nav_action.name, thor_delta))
+    mapping = {}
+    for loc in target_hist:
+        closest_reachable_pos = min(reachable_positions,
+                                    key=lambda robot_pos: euclidean_dist(loc, robot_pos))
+        if closest_reachable_pos not in mapping:
+            mapping[closest_reachable_pos] = []
+        mapping[closest_reachable_pos].append(loc)
 
-    hist = pomdp_py.Histogram(target_hist)
-    locations = []
-    for i in range(num_samples):
-        loc = hist.random()
-        locations.append(grid_map.to_thor_pos(*loc))
+    # distribution over reachable positions
+    reachable_pos_dist = {}
+    for pos in mapping:
+        reachable_pos_dist[pos] = 0.0
+        for search_region_loc in mapping[pos]:
+            reachable_pos_dist[pos] += target_hist[search_region_loc]
+    hist = pomdp_py.Histogram(reachable_pos_dist)
 
-    thor_x, thor_z, thor_yaw = grid_map.to_thor_pose(*current_robot_pose)
-    thor_robot_position = (thor_x, 0.0, thor_z)
-    thor_robot_rotation = (0.0, thor_yaw, 0.0)
-    for thor_loc in locations:
-        thor_goal_position = (thor_loc[0], 0.0, thor_loc[1])
-        thor_goal_rotation = (0.0, 0.0, 0.0) # we don't care about rotation here
-        find_navigation_plan((thor_robot_position, thor_robot_rotation),
-                             (thor_goal_position, thor_goal_rotation),
-                             thor_navigation_action_tuples,
-                             goal_distance=goal_distance,
-                             angle_tolerance=360)  # any angle is fine
+    places = set()
+    for i in range(num_places):
+        pos = hist.random()
+        places.add(pos)
 
+    # Create nodes
+    pos_to_nid = {}
+    nodes = {}
+    for i, pos in enumerate(places):
+        topo_node = TopoNode(i, pos)
+        nodes[i] = topo_node
+        pos_to_nid[pos] = i
 
+    # Now, we need to connect the places to form a graph.
+    edges = {}
+    for nid in nodes:
+        topo_node = nodes[i]
+        pos = topo_node.pos
 
-    return locations
+        neighbors = set()
+        candidates = set(places) - {pos}
+        while len(candidates) > 0:
+            closest_pos = min(candidates,
+                              key=lambda c: euclidean_dist(pos, c))
+            if euclidean_dist(closest_pos, pos) >= sep:
+                # add neighbor
+                nb_nid = pos_to_nid[closest_pos]
+                neighbors.add(nb_nid)
+                if len(neighbors) >= degree:
+                    break
+            candidates -= {closest_pos}
+
+        for nb_nid in neighbors:
+            # Find a path between
+            path = _shortest_path(reachable_positions,
+                                  nodes[nb_nid].pos,
+                                  topo_node.pos)
+            if path is None:
+                # Skip this edge because we cannot find path
+                continue
+            eid = len(edges)
+            edges[eid] = TopoEdge(eid,
+                                  topo_node,
+                                  nodes[nb_nid],
+                                  path)
+    return TopoMap(edges)
 
 
 class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
@@ -104,7 +162,9 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                  grid_map,
                  thor_agent_pose,
                  thor_prior={},
-                 num_place_samples=10):
+                 num_place_samples=10,
+                 topo_map_degree=3,
+                 places_sep=4.0):
 
         robot_id = task_config["robot_id"]
         search_region = GridMapSearchRegion(grid_map)
@@ -119,7 +179,6 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             prior[loc] = thor_prior[thor_loc]
 
         movement_params = task_config["nav_config"]["movement_params"]
-        nav_actions = navigation_actions(movement_params, grid_map.grid_size)
         init_robot_pose = grid_map.to_grid_pose(
             thor_agent_pose[0][0],  #x
             thor_agent_pose[0][2],  #z
@@ -128,9 +187,9 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         pitch = thor_agent_pose[1][0]
         self.lll = _sample_places(prior,
                                   reachable_positions,
-                                  nav_actions,
-                                  init_robot_pose,
-                                  num_place_samples)
+                                  num_place_samples,
+                                  degree=topo_map_degree,
+                                  sep=places_sep)
 
         init_robot_state = CosRobotState(robot_id, init_robot_pose, pitch, None)
 
