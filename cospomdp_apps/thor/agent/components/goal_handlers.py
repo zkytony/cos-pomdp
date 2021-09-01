@@ -41,10 +41,6 @@ class MoveTopoHandler(GoalHandler):
         # Plans a sequence of actions to go from where
         # the robot is currently to the dst node.
         robot_pose = agent.belief.random().s(agent.robot_id).pose
-        closest_nid = agent.topo_map.closest_node(*robot_pose[:2])
-        assert closest_nid == goal.src_nid,\
-            "Not expecting agent, which is closest to node {}, to take {}"\
-            .format(closest_nid, goal)
 
         # Preparing the inputs for find_navigation_plan in thortils
         thor_rx, thor_rz, thor_rth = agent.grid_map.to_thor_pose(*robot_pose)
