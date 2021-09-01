@@ -15,10 +15,14 @@ class PolicyModelTopo(RolloutPolicy):
         self.robot_trans_model = robot_trans_model
         self._legal_moves = {}
         self._reward_model = reward_model
-        self.topo_map = topo_map
+        self._topo_map = topo_map
         self.action_prior = PolicyModelTopo.ActionPrior(num_visits_init,
                                                         val_init,
                                                         self)
+
+    @property
+    def topo_map(self):
+        return self._topo_map
 
     @property
     def robot_id(self):
@@ -49,17 +53,18 @@ class PolicyModelTopo(RolloutPolicy):
         else:
             robot_pose = srobot["pose"]
             valid_moves = set()
-            for nb_id in self.topo_map.neighbors(srobot.nid):
-                eid = self.topo_map.edge_between(srobot.nid, nb_id)
+            for nb_id in self._topo_map.neighbors(srobot.nid):
+                eid = self._topo_map.edge_between(srobot.nid, nb_id)
                 valid_moves.add(MoveTopo(srobot.nid,
                                          nb_id,
-                                         self.topo_map.edges[eid].grid_dist))
+                                         self._topo_map.edges[eid].grid_dist))
             self._legal_moves[srobot] = valid_moves
             return valid_moves
 
-    def update(self):
-        raise NotImplementedError
-
+    def update(self, topo_map):
+        """Update the topo_map"""
+        self._topo_map = topo_map
+        self._legal_moves = {}  # clear
 
     class ActionPrior(ActionPrior):
         def __init__(self, num_visits_init, val_init, policy_model):

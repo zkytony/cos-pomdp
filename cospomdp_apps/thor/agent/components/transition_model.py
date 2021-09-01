@@ -15,7 +15,7 @@ class RobotTransitionTopo(RobotTransition):
 
     def __init__(self, robot_id, target_id, topo_map, h_angles):
         super().__init__(robot_id)
-        self.topo_map = topo_map
+        self._topo_map = topo_map
         self.target_id = target_id
         self.h_angles = h_angles
 
@@ -25,7 +25,7 @@ class RobotTransitionTopo(RobotTransition):
 
         if isinstance(action, MoveTopo):
             if srobot.nid == action.src_nid:
-                next_robot_pos = self.topo_map.nodes[action.dst_nid].pos
+                next_robot_pos = self._topo_map.nodes[action.dst_nid].pos
 
                 # will sample a yaw facing the target object
                 yaw = _yaw_facing(next_robot_pos, starget.loc, self.h_angles)
@@ -38,7 +38,7 @@ class RobotTransitionTopo(RobotTransition):
                                              pitch,
                                              action.dst_nid)
             else:
-                raise ValueError("Unexpected action {} for robot state {}.".format(action, state))
+                raise ValueError("Unexpected action {} for robot state {}.".format(action, srobot))
         else:
             next_srobot = RobotStateTopo(srobot.id,
                                          srobot.pose,
@@ -46,3 +46,6 @@ class RobotTransitionTopo(RobotTransition):
                                          srobot.nid)
 
         return next_srobot
+
+    def update(self, topo_map):
+        self._topo_map = topo_map

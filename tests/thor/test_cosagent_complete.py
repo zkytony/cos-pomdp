@@ -61,7 +61,7 @@ def _test_complete_search(target,
         config["agent_config"]["detector_specs"][other] =\
             ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
 
-    config["agent_config"]["num_place_samples"] = 50
+    config["agent_config"]["num_place_samples"] = 20
 
     config["agent_config"]["solver"] = "pomdp_py.POUCT"
     config["agent_config"]["solver_args"] = dict(max_depth=max_depth,
@@ -83,4 +83,5 @@ def _test_complete_search(target,
 if __name__ == "__main__":
     _test_complete_search("Bowl", "Book",
                           scene="FloorPlan1",
-                          step_act_cb=step_act_cb)
+                          step_act_cb=step_act_cb,
+                          num_sims=100)

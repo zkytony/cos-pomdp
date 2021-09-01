@@ -108,8 +108,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
         robotobz = self.interpret_robot_obz(tos_observation)
         observation = cospomdp.CosObservation(robotobz, objobzs)
         action = self.interpret_action(tos_action)
-        self.cos_agent.update(action, observation)
-        self.solver.update(self.cos_agent, action, observation)
+        self._update_belief(action, observation)
 
 
 
@@ -240,3 +239,10 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
             return action
         else:
             raise ValueError("Cannot understand action {}".format(action))
+
+    def _update_belief(self, action, observation):
+        """
+        Here, action, observation are already interpreted.
+        """
+        self.cos_agent.update(action, observation)
+        self.solver.update(self.cos_agent, action, observation)

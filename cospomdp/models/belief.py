@@ -20,3 +20,6 @@ class CosJointBelief(pomdp_py.OOBelief):
         bobj = self.object_beliefs[objid]
         sobj_mpe = bobj.mpe()
         return bobj[ObjectState(objid, sobj_mpe.objclass, loc)]
+
+    def set_b(self, objid, belief):
+        self.object_beliefs[objid] = belief
