@@ -41,7 +41,7 @@ such as ai2thor.
 
 ## YOLOv5 data organization
 ```
-cosp/vision/data
+cos-pomdp/data/
     yolov5/
         train/
             images/
