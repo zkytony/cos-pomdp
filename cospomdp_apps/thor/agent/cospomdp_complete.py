@@ -279,22 +279,17 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
     def act(self):
         goal = self.solver.plan(self.cos_agent)
-
-        # TODO: this shouldn't hurt, theoretically, but it is not pleasant
-        del self.cos_agent.tree # remove the search tree after planning
+        print("Goal: {}".format(goal))
+        if goal.name == "done":
+            from pomdp_py import TreeDebugger
+            dd = TreeDebugger(self.cos_agent.tree)
+            import pdb; pdb.set_trace()
 
         if self._goal_handler is None or goal != self._goal_handler.goal:
             # Goal is different now. We try to handle this goal
             self._goal_handler = self.handle(goal)
+
         action = self._goal_handler.step()
-        # if self._goal_handler is None or self._goal_handler.done:
-        #     goal = self.solver.plan(self.cos_agent)
-        #     from pomdp_py.utils import TreeDebugger
-        #     dd = TreeDebugger(self.cos_agent.tree)
-        #     import pdb; pdb.set_trace()
-        #     self._goal_handler = self.handle(goal)
-        # # Low-level action
-        # action = self._goal_handler.step()
         assert isinstance(action, TOS_Action)
         return action
 
@@ -314,16 +309,21 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         # Also update COS-POMDP with the low-level observation
         super().update(tos_action, tos_observation)
 
+        # TODO: this shouldn't hurt, theoretically, but it is not pleasant
+        del self.cos_agent.tree # remove the search tree after planning
+
         # Update the topo map (resample it, because belief has changed),
-        # if the goal is finished.
-        if self._goal_handler.done:
-            btarget = self.belief.b(self.target_id)
-            target_hist = {s.loc: btarget[s] for s in btarget}
-            if self.topo_map.total_prob(target_hist) < self._topo_cover_thresh:
-                self._resample_topo_map(target_hist)
-                # since we updated the topological map,
-                # existing search tree is invalid.
+        # if the belief update makes the current one undesirable
+        btarget = self.belief.b(self.target_id)
+        target_hist = {s.loc: btarget[s] for s in btarget}
+        if self.topo_map.total_prob(target_hist) < self._topo_cover_thresh:
+            self._resample_topo_map(target_hist)
+            # since we updated the topological map,
+            # existing search tree is invalid.
+            if hasattr(self.cos_agent, "tree"):
                 del self.cos_agent.tree
+
+
 
     def interpret_robot_obz(self, tos_observation):
         # Here, we will build a pose of format (x, y, pitch, yaw, nid)

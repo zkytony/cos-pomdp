@@ -81,7 +81,8 @@ class ThorTrial(Trial):
                 _step_info = task_env.get_step_info(step=i)
                 self.log_event(Event("Trial %s | %s" % (self.name, _step_info)))
             else:
-                sys.stdout.write("Observation: {}; Reward: {}\n".format(observation, reward))
+                sys.stdout.write("Observation: {}; Reward: {}\n"\
+                                 .format(action, observation, reward))
                 sys.stdout.flush()
 
             if self.config.get("visualize", False):

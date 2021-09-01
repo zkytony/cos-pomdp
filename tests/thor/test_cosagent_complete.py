@@ -78,7 +78,8 @@ def _test_complete_search(target,
     print("Trial created")
     trial.run(step_act_cb=step_act_cb,
               step_act_args=step_act_args,
-              step_update_cb=step_update_cb)
+              step_update_cb=step_update_cb,
+              logging=True)
 
 if __name__ == "__main__":
     _test_complete_search("Bowl", "Book",
