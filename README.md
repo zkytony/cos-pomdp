@@ -80,7 +80,8 @@ Train the model with
 source train_yolov5.sh
 ```
 You want to make sure the dataset directory is of valid format.
-
+The best way to do that is to run the dataset creation step
+above till finish.
 
 ## AI2-Thor Setup
 
