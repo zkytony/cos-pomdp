@@ -172,7 +172,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
 
         reward_model = cospomdp.ObjectSearchRewardModel(
             detectors[target_id].sensor,
-            task_config["nav_config"]["goal_distance"] / grid_map.grid_size,
+            (task_config["nav_config"]["goal_distance"] / grid_map.grid_size) * 0.8,  # just to make sure we are close enough
             robot_id, target_id,
             **task_config["reward_config"])
 

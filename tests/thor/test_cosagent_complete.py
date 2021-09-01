@@ -29,6 +29,7 @@ def _test_complete_search(target,
                           max_depth=30,
                           num_sims=500,
                           max_steps=100,
+                          num_place_samples=20,
                           discount_factor=0.95,
                           exploration_const=100,
                           show_progress=True,
@@ -36,6 +37,8 @@ def _test_complete_search(target,
                           step_act_args={},
                           step_update_cb=None):
     print("Test cospomdp_complete search (prior={})".format(prior))
+    print("Target object: {}".format(target))
+    print("Other object: {}".format(other))
     detectables = [target]
     if other is not None:
         detectables.append(other)
@@ -61,7 +64,7 @@ def _test_complete_search(target,
         config["agent_config"]["detector_specs"][other] =\
             ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
 
-    config["agent_config"]["num_place_samples"] = 20
+    config["agent_config"]["num_place_samples"] = num_place_samples
 
     config["agent_config"]["solver"] = "pomdp_py.POUCT"
     config["agent_config"]["solver_args"] = dict(max_depth=max_depth,
@@ -82,7 +85,7 @@ def _test_complete_search(target,
               logging=True)
 
 if __name__ == "__main__":
-    _test_complete_search("Bowl", "Book",
+    _test_complete_search("PepperShaker", "StoveBurner",
                           scene="FloorPlan1",
                           step_act_cb=step_act_cb,
                           num_sims=100)

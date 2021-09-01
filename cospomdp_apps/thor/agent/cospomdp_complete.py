@@ -250,7 +250,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                                 self.topo_map, self.task_config['nav_config']['h_angles'])
         reward_model = cospomdp.ObjectSearchRewardModel(
             detectors[target_id].sensor,
-            task_config["nav_config"]["goal_distance"] / grid_map.grid_size,
+            (task_config["nav_config"]["goal_distance"] / grid_map.grid_size) * 0.8,  # just to make sure we are close enough
             robot_id, target_id,
             **task_config["reward_config"])
         policy_model = PolicyModelTopo(robot_trans_model,
@@ -280,10 +280,10 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
     def act(self):
         goal = self.solver.plan(self.cos_agent)
         print("Goal: {}".format(goal))
-        if goal.name == "done":
-            from pomdp_py import TreeDebugger
-            dd = TreeDebugger(self.cos_agent.tree)
-            import pdb; pdb.set_trace()
+        # if goal.name == "done":
+        #     from pomdp_py import TreeDebugger
+        #     dd = TreeDebugger(self.cos_agent.tree)
+        #     import pdb; pdb.set_trace()
 
         if self._goal_handler is None or goal != self._goal_handler.goal:
             # Goal is different now. We try to handle this goal
