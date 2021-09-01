@@ -20,7 +20,8 @@ def _test_visualizer(args=None, sleep=15):
     controller = thortils.launch_controller({**constants.CONFIG, **{"scene": args.scene}})
 
     reachable_positions = thortils.thor_reachable_positions(controller)
-    grid_map = thortils.convert_scene_to_grid_map(controller, args.scene, constants.GRID_SIZE)
+    grid_map = thortils.proper_convert_scene_to_grid_map(controller, constants.GRID_SIZE)
+    # convert_scene_to_grid_map(controller, args.scene, constants.GRID_SIZE)
     print(thortils.thor_agent_pose(controller))
 
     print("Start at (2,12)")
