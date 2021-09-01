@@ -37,8 +37,7 @@ class PolicyModelTopo(RolloutPolicy):
 
     def rollout(self, state, history=None):
         if self.action_prior is not None:
-            preferences = self.action_prior.get_preferred_actions(state, history)\
-                | {(Done(), 0, 0)}
+            preferences = self.action_prior.get_preferred_actions(state, history)
             if len(preferences) > 0:
                 return random.sample(preferences, 1)[0][0]
             else:

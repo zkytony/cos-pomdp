@@ -2,6 +2,8 @@ import pomdp_py
 import time
 import random
 from collections import deque
+import concurrent.futures
+
 from thortils.navigation import find_navigation_plan, get_navigation_actions
 
 from cospomdp.utils.math import euclidean_dist, normalize
@@ -276,15 +278,23 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         self._goal_handler = None
 
     def act(self):
-        if self._goal_handler is None or self._goal_handler.done:
-            goal = self.solver.plan(self.cos_agent)
-            from pomdp_py.utils import TreeDebugger
-            dd = TreeDebugger(self.cos_agent.tree)
-            import pdb; pdb.set_trace()
-            self._goal_handler = self.handle(goal)
+        goal = self.solver.plan(self.cos_agent)
 
-        # Low-level action
+        # TODO: this shouldn't hurt, theoretically, but it is not pleasant
+        del self.cos_agent.tree # remove the search tree after planning
+
+        if self._goal_handler is None or goal != self._goal_handler.goal:
+            # Goal is different now. We try to handle this goal
+            self._goal_handler = self.handle(goal)
         action = self._goal_handler.step()
+        # if self._goal_handler is None or self._goal_handler.done:
+        #     goal = self.solver.plan(self.cos_agent)
+        #     from pomdp_py.utils import TreeDebugger
+        #     dd = TreeDebugger(self.cos_agent.tree)
+        #     import pdb; pdb.set_trace()
+        #     self._goal_handler = self.handle(goal)
+        # # Low-level action
+        # action = self._goal_handler.step()
         assert isinstance(action, TOS_Action)
         return action
 
@@ -315,28 +325,6 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                 # existing search tree is invalid.
                 del self.cos_agent.tree
 
-    def _resample_topo_map(self, target_hist):
-        srobot_old = self.cos_agent.belief.b(self.robot_id).mpe()
-        topo_map = _sample_topo_map(target_hist,
-                                    self.reachable_positions,
-                                    self._num_place_samples,
-                                    degree=self._topo_map_degree,
-                                    sep=self._places_sep,
-                                    rnd=random.Random(self._seed),
-                                    robot_pos=srobot_old.pose[:2])
-        self.cos_agent.transition_model.robot_trans_model.update(topo_map)
-        self.cos_agent.policy_model.update(topo_map)
-        self.topo_map = topo_map
-        srobot = RobotStateTopo(srobot_old.id,
-                                srobot_old.pose,
-                                srobot_old.horizon,
-                                topo_map.closest_node(*srobot_old.pose[:2]),
-                                status=srobot_old.status)
-        self.belief.set_b(self.robot_id,
-                          pomdp_py.Histogram({srobot: 1.0}))
-
-
-
     def interpret_robot_obz(self, tos_observation):
         # Here, we will build a pose of format (x, y, pitch, yaw, nid)
         thor_robot_position, thor_robot_rotation = tos_observation.robot_pose
@@ -344,7 +332,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                                thor_robot_position['z'],
                                                thor_robot_rotation['y'])
         pitch = tos_observation.horizon
-        nid = self.topo_map.closest_node(x, y)
+        nid = self.belief.b(self.robot_id).mpe().topo_nid  # keeps the same topo node id
         return cospomdp.RobotObservation(self.robot_id,
                                          (x, y, yaw),
                                          cospomdp.RobotStatus(done=tos_observation.done),
@@ -369,4 +357,39 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         # a goal is completed. If not, then the observation
         # is not useful, and we don't update the solver
         if self._goal_handler.done:
+            # will update the node id to the goal, if the handled
+            # goal is movetopo
+            if isinstance(self._goal_handler.goal, MoveTopo):
+                srobot_old = self.belief.b(self.robot_id).mpe()
+                new_nid = self.topo_map.closest_node(*srobot_old.pose[:2])
+                self._update_belief_topo_nid(srobot_old, new_nid)
+
             self.solver.update(self.cos_agent, self._goal_handler.goal, observation)
+
+    def _resample_topo_map(self, target_hist):
+        srobot_old = self.cos_agent.belief.b(self.robot_id).mpe()
+        topo_map = _sample_topo_map(target_hist,
+                                    self.reachable_positions,
+                                    self._num_place_samples,
+                                    degree=self._topo_map_degree,
+                                    sep=self._places_sep,
+                                    rnd=random.Random(self._seed),
+                                    robot_pos=srobot_old.pose[:2])
+        self.cos_agent.transition_model.robot_trans_model.update(topo_map)
+        self.cos_agent.policy_model.update(topo_map)
+        self.topo_map = topo_map
+        self._update_belief_topo_nid(srobot_old,
+                                     topo_map.closest_node(*srobot_old.pose[:2]))
+
+    def _update_belief_topo_nid(self, srobot_old, new_nid):
+        """
+        Returns a RobotStateTopo with all fields the same as srobot_old,
+        except that the topo_nid is equal to the `new_nid`
+        """
+        srobot = RobotStateTopo(srobot_old.id,
+                                srobot_old.pose,
+                                srobot_old.horizon,
+                                new_nid,
+                                status=srobot_old.status)
+        self.belief.set_b(self.robot_id,
+                          pomdp_py.Histogram({srobot: 1.0}))

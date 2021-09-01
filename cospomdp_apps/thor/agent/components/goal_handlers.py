@@ -98,4 +98,11 @@ class DoneHandler(GoalHandler):
         super().__init__(goal, agent)
 
     def step(self):
-        return cospomdp.Done()
+        return TOS_Action(cospomdp.Done().name, {})
+
+    def update(self, tos_action, tos_observation):
+        pass
+
+    @property
+    def done(self):
+        return True
