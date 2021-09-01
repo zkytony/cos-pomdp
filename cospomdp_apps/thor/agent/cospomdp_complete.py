@@ -254,7 +254,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         policy_model = PolicyModelTopo(robot_trans_model,
                                        reward_model,
                                        self.topo_map)
-
+        prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
+                 for p in thor_prior}
         self.cos_agent = cospomdp.CosAgent(self.target,
                                            init_robot_state,
                                            search_region,
@@ -262,7 +263,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                            policy_model,
                                            corr_dists,
                                            detectors,
-                                           reward_model)
+                                           reward_model,
+                                           prior=prior)
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,
                                          rollout_policy=self.cos_agent.policy_model)
@@ -276,6 +278,9 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
     def act(self):
         if self._goal_handler is None or self._goal_handler.done:
             goal = self.solver.plan(self.cos_agent)
+            from pomdp_py.utils import TreeDebugger
+            dd = TreeDebugger(self.cos_agent.tree)
+            import pdb; pdb.set_trace()
             self._goal_handler = self.handle(goal)
 
         # Low-level action
