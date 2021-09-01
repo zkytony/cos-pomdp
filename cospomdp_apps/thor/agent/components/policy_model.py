@@ -37,7 +37,8 @@ class PolicyModelTopo(RolloutPolicy):
 
     def rollout(self, state, history=None):
         if self.action_prior is not None:
-            preferences = self.action_prior.get_preferred_actions(state, history)
+            preferences = self.action_prior.get_preferred_actions(state, history)\
+                | {(Done(), 0, 0)}
             if len(preferences) > 0:
                 return random.sample(preferences, 1)[0][0]
             else:
@@ -85,8 +86,4 @@ class PolicyModelTopo(RolloutPolicy):
                 next_gdist = sum(topo_map.edges[eid].grid_dist for eid in path)
                 if next_gdist < current_gdist:
                     preferences.add((move, self.num_visits_init, self.val_init))
-
-            if euclidean_dist(srobot.pose[:2],
-                              starget.loc) <= self.policy_model._reward_model.goal_dist:
-                preferences.add((Done(), self.num_visits_init, self.val_init))
             return preferences
