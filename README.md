@@ -64,6 +64,19 @@ python -m cospomdp_apps.thor.data.browse -m yolo path/to/dataset/yaml
 Use `a` and `d` to browse back and forth. To quit, press `q`.
 
 ## Train YOLOv5
+https://github.com/ultralytics/yolov5
+
+You may need to install:
+```
+pip install tensorboard
+```
+
+Train the model with
+```
+source train_yolov5.sh
+```
+You want to make sure the dataset directory is of valid format.
+
 
 ## AI2-Thor Setup
 
