@@ -2,6 +2,7 @@ from thortils.navigation import find_navigation_plan, get_navigation_actions
 
 import cospomdp
 from cospomdp_apps.thor.common import TOS_Action
+from cospomdp.utils.math import approx_equal
 from .action import (MoveTopo,
                      from_thor_delta_to_thor_action_params,)
 
@@ -81,7 +82,7 @@ class MoveTopoHandler(GoalHandler):
         actual = (thor_rx, thor_rz, thor_rth)
         expected_thor_rx, expected_thor_rz, _, expected_thor_rth = self._plan[self._index]['next_pose']
         expected = (expected_thor_rx, expected_thor_rz, expected_thor_rth)
-        if expected != actual:
+        if not approx_equal(expected, actual, epsilon=1e-4):
             print("Warning: after taking {}, the robot pose is unexpected.\n"
                   "The expected pose is: {}; The actual pose is: {}"\
                   .format(tos_action, expected, actual))

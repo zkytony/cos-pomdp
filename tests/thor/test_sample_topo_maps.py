@@ -24,6 +24,14 @@ x.....
 ......
 """
 
+worldstr1 =\
+"""
+......
+x.....
+......
+......
+"""
+
 def _test_topo_map_sampling(worldstr, num_samples=10, seed=100, sleep=10, sep=2.0):
     print("Test topo map sampling")
     obstacles = set()
@@ -65,9 +73,9 @@ def _test_topo_map_sampling(worldstr, num_samples=10, seed=100, sleep=10, sep=2.
     time.sleep(sleep)
 
 def _test_topo_map_sampling_multiple():
-    _test_topo_map_sampling(worldstr, seed=100, sleep=1, num_samples=30)
-    _test_topo_map_sampling(worldstr, seed=200, sleep=1, num_samples=30)
-    _test_topo_map_sampling(worldstr, seed=300, sleep=1, num_samples=30)
+    _test_topo_map_sampling(worldstr1, seed=100, sleep=1, num_samples=30)
+    _test_topo_map_sampling(worldstr1, seed=200, sleep=1, num_samples=30)
+    _test_topo_map_sampling(worldstr1, seed=300, sleep=1, num_samples=30)
 
 if __name__ == "__main__":
     _test_topo_map_sampling_multiple()

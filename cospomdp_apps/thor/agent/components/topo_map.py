@@ -145,10 +145,11 @@ def draw_topo(img, topo_map, r, draw_grid_path=False, path_color=(52, 235, 222),
 
     for eid in topo_map.edges:
         edge = topo_map.edges[eid]
-        node1, node2 = edge.nodes
-        pos1 = node1.pos
-        pos2 = node2.pos
-        img = draw_edge(img, pos1, pos2, r, edge_thickness, color=edge_color)
+        if not edge.degenerate:
+            node1, node2 = edge.nodes
+            pos1 = node1.pos
+            pos2 = node2.pos
+            img = draw_edge(img, pos1, pos2, r, edge_thickness, color=edge_color)
 
     for nid in topo_map.nodes:
         pos = topo_map.nodes[nid].pos

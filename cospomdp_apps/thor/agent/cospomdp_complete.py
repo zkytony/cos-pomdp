@@ -59,7 +59,8 @@ def _sample_topo_map(target_hist,
                      num_samples,
                      degree=3,
                      sep=4.0,
-                     rnd=random):
+                     rnd=random,
+                     robot_pos=None):
     """Given a search region, a distribution over target locations in the
     search region, return a TopoMap with nodes within
     reachable_positions.
@@ -83,6 +84,7 @@ def _sample_topo_map(target_hist,
         num_places (int): number of places to sample
         degrees (int): controls the number of maximum neighbors per place.
         sep (float): minimum distance between two places (grid cells)
+        robot_pos (x,y): If not None, will add a node at where the robot is.
 
     Returns:
         TopologicalMap.
@@ -105,6 +107,8 @@ def _sample_topo_map(target_hist,
     hist = pomdp_py.Histogram(normalize(reachable_pos_dist))
 
     places = set()
+    if robot_pos is not None:
+        places.add(robot_pos)
     for i in range(num_samples):
         pos = hist.random(rnd=rnd)
         if len(places) > 0:
@@ -119,7 +123,7 @@ def _sample_topo_map(target_hist,
     pos_to_nid = {}
     nodes = {}
     for i, pos in enumerate(places):
-        topo_node = TopoNode(i, pos, mapping[pos])
+        topo_node = TopoNode(i, pos, mapping.get(pos, set()))
         nodes[i] = topo_node
         pos_to_nid[pos] = i
 
@@ -152,6 +156,9 @@ def _sample_topo_map(target_hist,
                                   nodes[nid],
                                   nodes[nbnid],
                                   path)
+    if len(edges) == 0:
+        edges[0] = TopoEdge(0, nodes[next(iter(nodes))], None, [])
+
     topo_map = TopoMap(edges)
     return topo_map
 
@@ -194,6 +201,14 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         self.grid_map = grid_map
         self.reachable_positions = reachable_positions  # positions the robot can reach
 
+        # initial robot pose
+        init_robot_pose = grid_map.to_grid_pose(
+            thor_agent_pose[0][0],  #x
+            thor_agent_pose[0][2],  #z
+            thor_agent_pose[1][1]   #yaw
+        )
+        pitch = thor_agent_pose[1][0]
+
         # Form initial topological graph for navigation.
         prior = {loc: 1e-12 for loc in search_region}
         for thor_loc in thor_prior:
@@ -210,17 +225,11 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                          self._num_place_samples,
                                          degree=self._topo_map_degree,
                                          sep=self._places_sep,
-                                         rnd=random.Random(self._seed))
-
-        self.thor_movement_params = task_config["nav_config"]["movement_params"]
-        init_robot_pose = grid_map.to_grid_pose(
-            thor_agent_pose[0][0],  #x
-            thor_agent_pose[0][2],  #z
-            thor_agent_pose[1][1]   #yaw
-        )
-        pitch = thor_agent_pose[1][0]
+                                         rnd=random.Random(self._seed),
+                                         robot_pos=init_robot_pose[:2])
         init_topo_nid = self.topo_map.closest_node(*init_robot_pose[:2])
         init_robot_state = RobotStateTopo(robot_id, init_robot_pose, pitch, init_topo_nid)
+        self.thor_movement_params = task_config["nav_config"]["movement_params"]
 
         if task_config["task_type"] == 'class':
             target_id = task_config['target']
@@ -302,23 +311,24 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                 del self.cos_agent.tree
 
     def _resample_topo_map(self, target_hist):
+        srobot_old = self.cos_agent.belief.b(self.robot_id).mpe()
         topo_map = _sample_topo_map(target_hist,
                                     self.reachable_positions,
                                     self._num_place_samples,
                                     degree=self._topo_map_degree,
                                     sep=self._places_sep,
-                                    rnd=random.Random(self._seed))
+                                    rnd=random.Random(self._seed),
+                                    robot_pos=srobot_old.pose[:2])
         self.cos_agent.transition_model.robot_trans_model.update(topo_map)
         self.cos_agent.policy_model.update(topo_map)
         self.topo_map = topo_map
-        old_robot_state = self.cos_agent.belief.b(self.robot_id).mpe()
-        robot_state = RobotStateTopo(old_robot_state.id,
-                                     old_robot_state.pose,
-                                     old_robot_state.horizon,
-                                     topo_map.closest_node(*old_robot_state.pose[:2]),
-                                     status=old_robot_state.status)
+        srobot = RobotStateTopo(srobot_old.id,
+                                srobot_old.pose,
+                                srobot_old.horizon,
+                                topo_map.closest_node(*srobot_old.pose[:2]),
+                                status=srobot_old.status)
         self.belief.set_b(self.robot_id,
-                          pomdp_py.Histogram({robot_state: 1.0}))
+                          pomdp_py.Histogram({srobot: 1.0}))
 
 
 
