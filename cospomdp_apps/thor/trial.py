@@ -33,18 +33,7 @@ class ThorTrial(Trial):
         controller = thortils.launch_controller(self.config["thor"])
         return controller
 
-    def run(self,
-            logging=False,
-            step_act_cb=None,
-            step_act_args={},
-            step_update_cb=None,
-            step_update_args={}):
-        """
-        Functions intended for debugging purposes:
-            step_act_cb: Called after the agent has determined its action
-            step_update_cb: Called after the agent has executed the action and updated
-                given environment observation.
-        """
+    def setup(self):
         controller = self._start_controller()
         task_env = eval(self.config["task_env"])(controller, self.config["task_config"])
         agent_class = eval(self.config["agent_class"])
@@ -59,9 +48,36 @@ class ThorTrial(Trial):
                                 **self.config['agent_config'],
                                 **agent_init_inputs)
 
+        # what to return
+        result = dict(controller=controller,
+                      task_env=task_env,
+                      agent=agent)
+
         if self.config.get("visualize", False):
             viz = task_env.visualizer(**self.config["viz_config"])
             viz.visualize(task_env, agent, step=0)
+            result['viz'] = viz
+
+        return result
+
+
+    def run(self,
+            logging=False,
+            step_act_cb=None,
+            step_act_args={},
+            step_update_cb=None,
+            step_update_args={}):
+        """
+        Functions intended for debugging purposes:
+            step_act_cb: Called after the agent has determined its action
+            step_update_cb: Called after the agent has executed the action and updated
+                given environment observation.
+        """
+        components = self.setup()
+        agent = components['agent']
+        task_env = components['task_env']
+        controller = components['controller']
+        viz = components.get("viz", None)
 
         max_steps = self.config["max_steps"]
         for i in range(1, max_steps+1):

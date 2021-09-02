@@ -30,7 +30,7 @@ class Goal:
 
 class MoveTopo(Motion):
     def __init__(self, src_nid, dst_nid, gdist=None,
-                 cost_scaling_factor=1.0):
+                 cost_scaling_factor=1.0, atype="move"):
         """
         Moves the robot from src node to dst node
         """
@@ -38,11 +38,15 @@ class MoveTopo(Motion):
         self.dst_nid = dst_nid
         self.gdist = gdist
         self._cost_scaling_factor = cost_scaling_factor
-        super().__init__("move({}->{})".format(self.src_nid, self.dst_nid))
+        super().__init__("{}({}->{})".format(atype, self.src_nid, self.dst_nid))
 
     @property
     def step_cost(self):
-        return -(self.gdist * self._cost_scaling_factor)
+        return min(-(self.gdist * self._cost_scaling_factor), -1)
+
+class Stay(MoveTopo):
+    def __init__(self, nid, cost_scaling_factor=1.0):
+        super().__init__(nid, nid, gdist=0.0, cost_scaling_factor=1.0, atype="stay")
 
 
 def grid_navigation_actions2d(movement_params, grid_size):

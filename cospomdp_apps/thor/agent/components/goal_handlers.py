@@ -1,10 +1,15 @@
+import pomdp_py
 from thortils.navigation import find_navigation_plan, get_navigation_actions
 
 import cospomdp
+from cospomdp_apps import basic
 from cospomdp_apps.thor.common import TOS_Action
 from cospomdp.utils.math import approx_equal
-from .action import (MoveTopo,
-                     from_thor_delta_to_thor_action_params,)
+from .action import (MoveTopo, Stay,
+                     from_grid_action_to_thor_action_params,
+                     from_thor_delta_to_thor_action_params,
+                     grid_navigation_actions2d)
+from ..cospomdp_basic import ThorObjectSearchCosAgent
 
 
 # -------- Goal Handlers -------- #
@@ -31,6 +36,15 @@ class GoalHandler:
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, self)
 
+    @property
+    def ispomdp(self):
+        raise NotImplementedError
+
+    @property
+    def updates_first(self):
+        """True if the handler should be updated before
+        the COSPOMDP agent is updated"""
+        return True
 
 
 class MoveTopoHandler(GoalHandler):
@@ -88,6 +102,10 @@ class MoveTopoHandler(GoalHandler):
     def done(self):
         return self._index >= len(self._plan)
 
+    @property
+    def ispomdp(self):
+        return False
+
 
 class DoneHandler(GoalHandler):
     def __init__(self, goal, agent):
@@ -102,3 +120,118 @@ class DoneHandler(GoalHandler):
     @property
     def done(self):
         return True
+
+    @property
+    def ispomdp(self):
+        return False
+
+
+class LocalSearchHandler(GoalHandler):
+    """Invoked when the COS-POMDP agent decides to 'Stay'.  There is potentially a
+    lot of extensions to this handler, depending on whether you would like to
+    consider 3D, object interaction, occlusion etc.
+    """
+    @staticmethod
+    def create(goal, agent, search_type, params):
+        """
+        Factory function.
+        search_type determines which kind of local searcher to use.
+        This can be:
+
+            basic (uses the basic COS-POMDP locally i.e. with low-level actions)
+            3D (uses COS-POMDP locally with low-level actions, yet with a
+                3D state, action and observation spaces) TODO: not yet implemented
+            3D_interact (represents the search problem in 3D while
+                considering local interactions with objects, particularly containers)
+
+        Args:
+            goal: should be a Stay
+            agent (ThorObjectSearchCosAgent): the COS-POMDP agent that plans goals.
+        """
+        assert isinstance(goal, Stay)
+        if search_type == "basic":
+            return LocalSearchBasicHandler(goal, agent, params)
+        else:
+            raise NotImplemented("Search type {} is not yet implemented".format(search_type))
+
+    @property
+    def ispomdp(self):
+        return True
+
+
+
+
+class LocalSearchBasicHandler(LocalSearchHandler):
+    """Even though the search is expected to be local,
+    we don't manually restrict a region for the agent
+    to operate - the size of the search region is the same,
+    it's just the actions are smaller."""
+    def __init__(self, goal, agent, params):
+        """
+        agent (ThorObjectSearchCosAgent)
+        """
+        self._parent = agent
+        local_robot_state = agent.robot_state()
+
+        robot_id = agent.robot_id
+        target_id = agent.robot_id
+
+        search_region = agent.search_region
+        reachable_positions = agent.reachable_positions
+
+        movement_params = agent.task_config["nav_config"]["movement_params"]
+        self.navigation_actions = grid_navigation_actions2d(movement_params,
+                                                       agent.grid_map.grid_size)
+        robot_trans_model = basic.RobotTransition2D(robot_id, reachable_positions)
+        reward_model = agent.cos_agent.reward_model # the reward model is the same
+        policy_model = basic.PolicyModel2D(robot_trans_model, reward_model,
+                                           movements=self.navigation_actions)
+
+        _btarget = agent.belief.b(target_id)
+        prior = {s.loc : _btarget[s] for s in _btarget}
+        self._local_cos_agent = cospomdp.CosAgent(agent.target,
+                                                  local_robot_state,
+                                                  search_region,
+                                                  robot_trans_model,
+                                                  policy_model,
+                                                  agent.corr_dists,
+                                                  agent.detectors,
+                                                  reward_model,
+                                                  prior=prior)
+        self.solver = pomdp_py.POUCT(**params,
+                                     rollout_policy=self._local_cos_agent.policy_model)
+
+
+    def step(self):
+        action = self.solver.plan(self._local_cos_agent)
+        params = from_grid_action_to_thor_action_params(
+            action, self._parent.grid_map.grid_size)
+        return TOS_Action(action.name, params)
+
+    def update(self, tos_action, tos_observation):
+        """This local agent updates AFTER the COSPOMDP agent.
+        Because the two both maintain belief at ground level,
+        we can simply sync the beliefs"""
+        self._local_cos_agent.set_belief(self._parent.belief)
+
+    @property
+    def updates_first(self):
+        """True if the handler should be updated before
+        the COSPOMDP agent is updated"""
+        return False
+
+    @property
+    def cos_agent(self):
+        return self._local_cos_agent
+
+    @property
+    def detectable_objects(self):
+        return self.cos_agent.detectable_objects
+
+    @property
+    def grid_map(self):
+        return self._parent.grid_map
+
+    @property
+    def done(self):
+        raise NotImplementedError

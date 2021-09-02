@@ -12,12 +12,14 @@ import cospomdp
 from ..constants import GOAL_DISTANCE
 from ..common import ThorAgent, TOS_Action
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
-from .components.action import Move, MoveTopo
+from .components.action import Move, MoveTopo, Stay
 from .components.state import RobotStateTopo
 from .components.topo_map import TopoNode, TopoMap, TopoEdge
 from .components.transition_model import RobotTransitionTopo
 from .components.policy_model import PolicyModelTopo
-from .components.goal_handlers import MoveTopoHandler, DoneHandler
+from .components.goal_handlers import (MoveTopoHandler,
+                                       DoneHandler,
+                                       LocalSearchHandler)
 
 
 def _shortest_path(reachable_positions, gloc1, gloc2):
@@ -191,6 +193,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                  topo_map_degree=3,
                  places_sep=4.0,
                  topo_cover_thresh=0.5,
+                 local_search_type="basic",
+                 local_search_params={},
                  seed=1000):
         """
         If the probability
@@ -245,6 +249,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
         detectors, detectable_objects = self._build_detectors(detector_specs)
         corr_dists = self._build_corr_dists(corr_specs, detectable_objects)
+        self.detectors = detectors
+        self.corr_dists = corr_dists
 
         robot_trans_model = RobotTransitionTopo(robot_id, target[0],
                                                 self.topo_map, self.task_config['nav_config']['h_angles'])
@@ -267,6 +273,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                            detectors,
                                            reward_model,
                                            prior=prior)
+        self._local_search_type = local_search_type
+        self._local_search_params = local_search_params
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,
                                          rollout_policy=self.cos_agent.policy_model)
@@ -295,7 +303,12 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
     def handle(self, goal):
         """Returns a handler for achieving the goal."""
-        if isinstance(goal, MoveTopo):
+        if isinstance(goal, Stay):
+            return LocalSearchHandler.create(goal, self,
+                                             self._local_search_type,
+                                             self._local_search_params)
+
+        elif isinstance(goal, MoveTopo):
             return MoveTopoHandler(goal, self)
 
         elif isinstance(goal, cospomdp.Done):
@@ -304,12 +317,18 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
     def update(self, tos_action, tos_observation):
         # Update the goal handler with low-level sensory observation
-        self._goal_handler.update(tos_action, tos_observation)
+        if self._goal_handler.updates_first:
+            self._goal_handler.update(tos_action, tos_observation)
 
         # Also update COS-POMDP with the low-level observation
         super().update(tos_action, tos_observation)
 
-        # TODO: this shouldn't hurt, theoretically, but it is not pleasant
+        if not self._goal_handler.updates_first:
+            self._goal_handler.update(tos_action, tos_observation)
+
+        # this shouldn't hurt, theoretically; It is necessary in order
+        # to prevent replanning goals from the same, out-dated tree while
+        # a goal is in execution.
         del self.cos_agent.tree # remove the search tree after planning
 
         # Update the topo map (resample it, because belief has changed),

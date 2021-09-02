@@ -11,17 +11,20 @@ from .action import ALL_MOVES_2D, Done
 ############################
 class PolicyModel2D(cospomdp.PolicyModel):
     def __init__(self, robot_trans_model,
-                 movements=ALL_MOVES_2D, **kwargs):
+                 movements=ALL_MOVES_2D,
+                 **kwargs):
         super().__init__(robot_trans_model,
                          movements | {Done()},
                          **kwargs)
         self._legal_moves = {}
         self.movements = movements
 
-    def set_observation_model(self, observation_model):
+    def set_observation_model(self, observation_model,
+                              use_action_prior=True):
         super().set_observation_model(observation_model)
-        self.action_prior = PolicyModel2D.ActionPrior(self.num_visits_init,
-                                                      self.val_init, self)
+        if use_action_prior:
+            self.action_prior = PolicyModel2D.ActionPrior(self.num_visits_init,
+                                                          self.val_init, self)
 
     def get_all_actions(self, state, history=None):
         return self.valid_moves(state) | {Done()}# + [Search(), Done()]
@@ -56,12 +59,15 @@ class PolicyModel2D(cospomdp.PolicyModel):
             self.policy_model = policy_model
 
         def get_preferred_actions(self, state, history):
-            robot_state = state.robot_state
+            robot_id = self.policy_model.robot_id
+            target_id = self.policy_model.observation_model.target_id
+            srobot = state.s(robot_id)
             preferences = set()
-            target_loc = state.target_state["loc"]
             for move in self.policy_model.movements:
-                next_robot_state = self.policy_model.robot_trans_model.sample(state, move)
-                observation = self.policy_model.observation_model.sample(next_robot_state, move)
+                next_srobot = self.policy_model.robot_trans_model.sample(state, move)
+                next_state = cospomdp.CosState({target_id: state.s(target_id),
+                                                robot_id: next_srobot})
+                observation = self.policy_model.observation_model.sample(next_state, move)
                 for zi in observation:
                     if zi.loc is not None:
                         preferences.add((move, self.num_visits_init, self.val_init))

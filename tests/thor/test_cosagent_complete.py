@@ -38,7 +38,8 @@ def _test_complete_search(target,
                           show_progress=True,
                           step_act_cb=None,
                           step_act_args={},
-                          step_update_cb=None):
+                          step_update_cb=None,
+                          setup_only=False):
     print("Test cospomdp_complete search (prior={})".format(prior))
     print("Target object: {}".format(target))
     print("Other object: {}".format(other))
@@ -82,10 +83,13 @@ def _test_complete_search(target,
     }
     trial = ThorObjectSearchTrial("test_cosagent-complete", config, verbose=True)
     print("Trial created")
-    trial.run(step_act_cb=step_act_cb,
-              step_act_args=step_act_args,
-              step_update_cb=step_update_cb,
-              logging=True)
+    if setup_only:
+        return trial.setup()
+    else:
+        trial.run(step_act_cb=step_act_cb,
+                  step_act_args=step_act_args,
+                  step_update_cb=step_update_cb,
+                  logging=True)
 
 if __name__ == "__main__":
     _test_complete_search("PepperShaker", "StoveBurner",

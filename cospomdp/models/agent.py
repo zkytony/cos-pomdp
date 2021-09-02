@@ -62,7 +62,7 @@ class CosAgent(pomdp_py.Agent):
                     robot_id, detectors[objid], corr_dist=corr_dists[objid])
             omodels[objid] = omodel_i
         observation_model = CosObservationModel(robot_id, target_id, omodels)
-
+        policy_model.set_observation_model(observation_model)
         super().__init__(init_belief, policy_model,
                          transition_model, observation_model, reward_model)
 

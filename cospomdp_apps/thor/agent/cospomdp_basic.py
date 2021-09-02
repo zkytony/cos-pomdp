@@ -1,3 +1,15 @@
+"""
+Overall control flow
+
+     ThorObjectSearchCosAgent --> act --> ThorObjectSearch --\
+    /               (solver.plan(COSAgent))                   \
+   \ (CosAgent.update())                                       \
+    \                                                           \
+     \                                                        execute
+      <--------------------- update ------------- observation /
+
+"""
+
 import random
 import time
 import math
@@ -38,6 +50,10 @@ class ThorObjectSearchCosAgent(ThorAgent):
 
     def sensor(self, objid):
         return self.cos_agent.sensor(objid)
+
+    def robot_state(self):
+        """Since robot state is observable, return the mpe state in belief"""
+        return self.cos_agent.belief.b(self.robot_id).mpe()
 
     @property
     def detectable_objects(self):
@@ -149,6 +165,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         reachable_positions = grid_map.free_locations
         self.grid_map = grid_map
         self.search_region = search_region
+        self.reachable_positions = reachable_positions
 
         init_robot_pose = grid_map.to_grid_pose(
             thor_agent_pose[0][0],  #x
@@ -169,6 +186,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
 
         detectors, detectable_objects = self._build_detectors(detector_specs)
         corr_dists = self._build_corr_dists(corr_specs, detectable_objects)
+        self.corr_dists = corr_dists
 
         reward_model = cospomdp.ObjectSearchRewardModel(
             detectors[target_id].sensor,
@@ -207,7 +225,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         if not isinstance(action, TOS_Action):
             if isinstance(action, Move2D):
                 name = action.name
-                params = self.movement_params(action)
+                params = self.thor_action_params(action)
             elif isinstance(action, Done):
                 name = "done"
                 params = {}
@@ -215,7 +233,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         else:
             return action
 
-    def movement_params(self, action):
+    def thor_action_params(self, action):
         """Different from external agents, which uses deep learning models that
         are trained with fixed rotation sizes, here we are able to set the parameters
         of ai2thor movements based on POMDP action's parameters. So we make sure
