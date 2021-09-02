@@ -30,17 +30,6 @@ class PolicyModel2D(cospomdp.PolicyModel):
     def get_all_actions(self, state, history=None):
         return self.valid_moves(state) | {Done()}# + [Search(), Done()]
 
-    def rollout(self, state, history=None):
-        if self.action_prior is not None:
-            preferences = self.action_prior.get_preferred_actions(state, history)\
-                | {(Done(), 0, 0)}
-            if len(preferences) > 0:
-                return random.sample(preferences, 1)[0][0]
-            else:
-                return random.sample(self.get_all_actions(state=state), 1)[0]
-        else:
-            return random.sample(self.get_all_actions(state=state), 1)[0]
-
     def valid_moves(self, state):
         srobot = state.s(self.robot_id)
         if srobot in self._legal_moves:
