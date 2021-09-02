@@ -20,6 +20,7 @@ class CosAgent(pomdp_py.Agent):
                  detectors,
                  reward_model,
                  belief_type="histogram",
+                 use_heuristic=True,
                  prior={}):
         """
         Args:
@@ -62,7 +63,8 @@ class CosAgent(pomdp_py.Agent):
                     robot_id, detectors[objid], corr_dist=corr_dists[objid])
             omodels[objid] = omodel_i
         observation_model = CosObservationModel(robot_id, target_id, omodels)
-        policy_model.set_observation_model(observation_model)
+        policy_model.set_observation_model(observation_model,
+                                           use_heuristic=use_heuristic)
         super().__init__(init_belief, policy_model,
                          transition_model, observation_model, reward_model)
 
@@ -92,7 +94,6 @@ class CosAgent(pomdp_py.Agent):
         new_belief = CosJointBelief({self.robot_id: new_brobot,
                                      self.target_id: new_btarget})
         self.set_belief(new_belief)
-
 
 def initialize_robot_belief(init_robot_state):
     """The robot state is known"""

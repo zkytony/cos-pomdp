@@ -184,7 +184,7 @@ class LocalSearchBasicHandler(LocalSearchHandler):
                                                        agent.grid_map.grid_size)
         robot_trans_model = basic.RobotTransition2D(robot_id, reachable_positions)
         reward_model = agent.cos_agent.reward_model # the reward model is the same
-        policy_model = basic.PolicyModel2D(robot_trans_model, reward_model,
+        policy_model = basic.PolicyModel2D(robot_trans_model,
                                            movements=self.navigation_actions)
 
         _btarget = agent.belief.b(target_id)

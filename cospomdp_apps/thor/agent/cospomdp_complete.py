@@ -259,9 +259,9 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             (task_config["nav_config"]["goal_distance"] / grid_map.grid_size) * 0.8,  # just to make sure we are close enough
             robot_id, target_id,
             **task_config["reward_config"])
-        policy_model = PolicyModelTopo(robot_trans_model,
-                                       reward_model,
-                                       self.topo_map)
+        policy_model = PolicyModelTopo(robot_trans_model, self.topo_map)
+                                       # reward_model,
+
         prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
                  for p in thor_prior}
         self.cos_agent = cospomdp.CosAgent(self.target,

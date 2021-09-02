@@ -14,15 +14,14 @@ class PolicyModel2D(cospomdp.PolicyModel):
                  movements=ALL_MOVES_2D,
                  **kwargs):
         super().__init__(robot_trans_model,
-                         movements | {Done()},
                          **kwargs)
         self._legal_moves = {}
         self.movements = movements
 
     def set_observation_model(self, observation_model,
-                              use_action_prior=True):
+                              use_heuristic=True):
         super().set_observation_model(observation_model)
-        if use_action_prior:
+        if use_heuristic:
             self.action_prior = PolicyModel2D.ActionPrior(self.num_visits_init,
                                                           self.val_init, self)
 
@@ -72,4 +71,5 @@ class PolicyModel2D(cospomdp.PolicyModel):
                     if zi.loc is not None:
                         preferences.add((move, self.num_visits_init, self.val_init))
                         break
-            return preferences | {(Done(), 0, 0)}
+            preferences = preferences | {(Done(), 0, 0)}
+            return preferences

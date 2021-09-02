@@ -7,11 +7,9 @@ from ..utils.math import euclidean_dist
 class PolicyModel(RolloutPolicy):
     def __init__(self,
                  robot_trans_model,
-                 all_actions,
                  num_visits_init=10,
                  val_init=100):
         self.robot_trans_model = robot_trans_model
-        self.all_actions = all_actions
         self.action_prior = None
         self.num_visits_init = num_visits_init
         self.val_init = val_init
@@ -43,7 +41,7 @@ class PolicyModel(RolloutPolicy):
         else:
             return random.sample(self.get_all_actions(state=state), 1)[0]
 
-    def set_observation_model(self, observation_model):
+    def set_observation_model(self, observation_model, use_heuristic=True):
         # Classes that inherit this class can override this
         # function to create action prior
         self._observation_model = observation_model
