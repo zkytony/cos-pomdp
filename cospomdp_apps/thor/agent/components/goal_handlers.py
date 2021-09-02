@@ -203,9 +203,12 @@ class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent)
 
 
     def step(self):
+        print("Planning locally")
         action = self.solver.plan(self._local_cos_agent)
-        params = from_grid_action_to_thor_action_params(
-            action, self._parent.grid_map.grid_size)
+        print(pomdp_py.TreeDebugger(self._local_cos_agent.tree))
+        if isinstance(action, basic.Move2D):
+            params = from_grid_action_to_thor_action_params(
+                action, self._parent.grid_map.grid_size)
         return TOS_Action(action.name, params)
 
     def update(self, tos_action, tos_observation):

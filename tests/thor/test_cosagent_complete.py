@@ -99,4 +99,9 @@ if __name__ == "__main__":
     _test_complete_search("PepperShaker", "StoveBurner",
                           scene="FloorPlan1",
                           step_act_cb=step_act_cb,
-                          num_sims=100)
+                          num_sims=100,
+                          local_search_params={"num_sims": 200,
+                                               "max_depth": 30,
+                                               "discount_factor": 0.95,
+                                               "exploration_const": 100,
+                                               "show_progress": True})

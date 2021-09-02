@@ -64,31 +64,37 @@ class PolicyModelTopo(cospomdp.PolicyModel):
             self.policy_model = policy_model
 
         def get_preferred_actions(self, state, history):
+            # If you have taken done before, you are done. So keep the done.
+            last_action = history[-1][0] if len(history) > 0 else None
+            if isinstance(last_action, Done):
+                return {(Done(), 0, 0)}
+
             topo_map = self.policy_model.topo_map
             srobot = state.s(self.policy_model.robot_id)
             starget = state.s(self.policy_model.target_id)
-            preferences = {(Done(), 0, 0)}
+            preferences = set()
 
+            closest_target_nid = topo_map.closest_node(*starget.loc)
+            path = topo_map.shortest_path(srobot.nid, closest_target_nid)
+            current_gdist = sum(topo_map.edges[eid].grid_dist for eid in path)
             for move in self.policy_model.valid_moves(state):
-                next_srobot = self.policy_model.robot_trans_model.sample(state, move)
-                next_state = cospomdp.CosState({starget.id: state.s(starget.id),
-                                                srobot.id: next_srobot})
-                observation = self.policy_model.observation_model.sample(next_state, move)
-                for zi in observation:
-                    if zi.loc is not None:
-                        preferences.add((move, self.num_visits_init, self.val_init))
-                        break
+                # A move is preferred if:
+                # (1) it moves the robot closer to the target, in terms of geodesic distance
+                next_path = topo_map.shortest_path(move.dst_nid, closest_target_nid)
+                next_gdist = sum(topo_map.edges[eid].grid_dist for eid in next_path)
+                if next_gdist < current_gdist:
+                    preferences.add((move, self.num_visits_init, self.val_init))
+                    break
 
-            # if len(preferences) == 0:
-            #     preferences.add((Stay(srobot.nid), self.num_visits_init, self.val_init))
-
-            # # OLD
-            # closest_target_nid = topo_map.closest_node(*starget.loc)
-            # path = topo_map.shortest_path(srobot.nid, closest_target_nid)
-            # current_gdist = sum(topo_map.edges[eid].grid_dist for eid in path)
-            # for move in self.policy_model.valid_moves(state):
-            #     path = topo_map.shortest_path(move.dst_nid, closest_target_nid)
-            #     next_gdist = sum(topo_map.edges[eid].grid_dist for eid in path)
-            #     if next_gdist < current_gdist:
-            #         preferences.add((move, self.num_visits_init, self.val_init))
-            return preferences | {(Stay(srobot.nid), 0, 0)}
+                # (2) it is a stay, while any object can be observed after the
+                # stay transition (which sets the facing yaw too)
+                if isinstance(move, Stay):
+                    next_srobot = self.policy_model.robot_trans_model.sample(state, move)
+                    next_state = cospomdp.CosState({starget.id: state.s(starget.id),
+                                                    srobot.id: next_srobot})
+                    observation = self.policy_model.observation_model.sample(next_state, move)
+                    for zi in observation:
+                        if zi.loc is not None:
+                            preferences.add((move, self.num_visits_init, self.val_init))
+                            break
+            return preferences
