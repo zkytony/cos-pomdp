@@ -6,11 +6,29 @@ from scipy.spatial.transform import Rotation as R
 from ..utils.math import (to_rad, to_deg, R2d,
                           euclidean_dist, pol2cart,
                           vec, R_quat, R_euler, T,
-                          in_range_inclusive)
+                          in_range_inclusive, closest)
+
+def yaw_facing(robot_pos, target_pos, angles=None):
+    rx, ry = robot_pos
+    tx, ty = target_pos
+    yaw = to_deg(math.atan2(ty - ry,
+                            tx - rx)) % 360
+    if angles is not None:
+        return closest(angles, yaw)
+    else:
+        return yaw
 
 class SensorModel:
     def in_range(self, point, sensor_pose):
         raise NotImplementedError
+
+    def in_range_facing(self, point, sensor_pose,
+                        angular_tolerance=15):
+        """sensor_pose is x, y, th"""
+        desired_yaw = yaw_facing(sensor_pose[:2], point)
+        return self.in_range(point, sensor_pose)\
+            and abs(desired_yaw - sensor_pose[2]) % 360 <= angular_tolerance
+
 
 # sensor_pose is synonymous to robot_pose, outside of this file.
 

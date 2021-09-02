@@ -11,4 +11,9 @@ if __name__ == "__main__":
                           scene="FloorPlan1",
                           num_sims=40,
                           prior='informed',
-                          step_act_cb=step_act_cb)
+                          step_act_cb=step_act_cb,
+                          local_search_params={"num_sims": 100,
+                                               "max_depth": 20,
+                                               "discount_factor": 0.95,
+                                               "exploration_const": 100,
+                                               "show_progress": True})

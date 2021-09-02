@@ -1,17 +1,11 @@
 import math
 from cospomdp.utils.math import to_deg, closest
 from cospomdp.models.transition_model import RobotTransition
+from cospomdp.models.sensors import yaw_facing
 from cospomdp.domain.action import Done
 from cospomdp.domain.state import RobotStatus
 from .action import MoveTopo
 from .state import RobotStateTopo
-
-def _yaw_facing(robot_pos, target_pos, angles):
-    rx, ry = robot_pos
-    tx, ty = target_pos
-    yaw = to_deg(math.atan2(ty - ry,
-                            tx - rx)) % 360
-    return closest(angles, yaw)
 
 class RobotTransitionTopo(RobotTransition):
 
@@ -34,7 +28,7 @@ class RobotTransitionTopo(RobotTransition):
             if srobot.nid == action.src_nid:
                 next_robot_pos = self._topo_map.nodes[action.dst_nid].pos
                 # will sample a yaw facing the target object
-                yaw = _yaw_facing(next_robot_pos, starget.loc, self.h_angles)
+                yaw = yaw_facing(next_robot_pos, starget.loc, self.h_angles)
                 next_pose = (*next_robot_pos, yaw)
                 next_horizon = 0.0 # there is no pitch
                 next_topo_nid = action.dst_nid
