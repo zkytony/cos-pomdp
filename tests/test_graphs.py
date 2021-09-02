@@ -4,6 +4,8 @@ import numpy as np
 from cospomdp.utils.graph import *
 import networkx as nx
 import time
+import pytest
+
 
 def simple_interpret_node(nid, tokens):
     node = Node(nid)
@@ -99,6 +101,10 @@ def setup_fixed():
             i += 1
     return Graph(edges)
 
+@pytest.fixture
+def g():
+    return setup_fixed()
+
 def setup_random(num_nodes, num_edges, multi=False):
     nodes = {}
     for i in range(num_nodes):
@@ -118,7 +124,7 @@ def setup_random(num_nodes, num_edges, multi=False):
 
     return Graph(edges)
 
-def test_partition(graph):
+def _test_partition(graph):
 
     templates = [StarTemplate, ThreeNodeTemplate, SingletonTemplate]
     results, _ = graph.partition_by_templates(templates, super_node_class=SimpleSuperNode, super_edge_class=SimpleSuperEdge)
@@ -129,7 +135,7 @@ def test_partition(graph):
         plt.autoscale()
         ax.set_aspect('equal', 'box')
 
-def test_partition_edges(graph):
+def _test_partition_edges(graph):
     templates = [ThreeRelTemplate, SingleRelTemplate, SingleTemplate, RelTemplate]
     results, _ = graph.partition_by_templates(templates, super_node_class=SimpleSuperNode, super_edge_class=SimpleSuperEdge)
     ax = plt.gca()
@@ -139,7 +145,7 @@ def test_partition_edges(graph):
         plt.autoscale()
         ax.set_aspect('equal', 'box')
 
-def test_g(g):
+def _test_g(g):
     ax = plt.gca()
     g.visualize(ax, list(g.nodes.keys()))
     plt.autoscale()
@@ -163,11 +169,10 @@ def test_to_nx(g):
 
 
 if __name__ == "__main__":
-    g = setup_fixed()#(30, 40, multi=True)
+    #(30, 40, multi=True)
     # test_g(g)
     # g = build_graph("graph_example.graph", simple_interpret_node, simple_interpret_edge)
     # test_g(g)
     # g = setup_random(100, 2000, multi=True)
     # test_g(g)
-
-    test_to_nx(g)
+    _test_to_nx(g)
