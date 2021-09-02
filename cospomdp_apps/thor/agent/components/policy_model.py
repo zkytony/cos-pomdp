@@ -67,7 +67,7 @@ class PolicyModelTopo(cospomdp.PolicyModel):
             topo_map = self.policy_model.topo_map
             srobot = state.s(self.policy_model.robot_id)
             starget = state.s(self.policy_model.target_id)
-            preferences = set()
+            preferences = {(Done(), 0, 0)}
 
             for move in self.policy_model.valid_moves(state):
                 next_srobot = self.policy_model.robot_trans_model.sample(state, move)
@@ -79,8 +79,8 @@ class PolicyModelTopo(cospomdp.PolicyModel):
                         preferences.add((move, self.num_visits_init, self.val_init))
                         break
 
-            if len(preferences) == 0:
-                preferences.add((Stay(srobot.nid), self.num_visits_init, self.val_init))
+            # if len(preferences) == 0:
+            #     preferences.add((Stay(srobot.nid), self.num_visits_init, self.val_init))
 
             # # OLD
             # closest_target_nid = topo_map.closest_node(*starget.loc)
@@ -91,4 +91,4 @@ class PolicyModelTopo(cospomdp.PolicyModel):
             #     next_gdist = sum(topo_map.edges[eid].grid_dist for eid in path)
             #     if next_gdist < current_gdist:
             #         preferences.add((move, self.num_visits_init, self.val_init))
-            return preferences | {(Done(), 0, 0)}
+            return preferences | {(Stay(srobot.nid), 0, 0)}

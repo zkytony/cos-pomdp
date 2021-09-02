@@ -61,7 +61,7 @@ class PolicyModel2D(cospomdp.PolicyModel):
             robot_id = self.policy_model.robot_id
             target_id = self.policy_model.observation_model.target_id
             srobot = state.s(robot_id)
-            preferences = set()
+            preferences = {(Done(), 0, 0)}
             for move in self.policy_model.movements:
                 next_srobot = self.policy_model.robot_trans_model.sample(state, move)
                 next_state = cospomdp.CosState({target_id: state.s(target_id),
@@ -71,5 +71,4 @@ class PolicyModel2D(cospomdp.PolicyModel):
                     if zi.loc is not None:
                         preferences.add((move, self.num_visits_init, self.val_init))
                         break
-            preferences = preferences | {(Done(), 0, 0)}
             return preferences

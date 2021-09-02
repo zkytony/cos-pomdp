@@ -45,8 +45,8 @@ task_setup = {
     "FloorPlan4-1": dict(target="Spatula",
                          other="Microwave",
                          dist=3,
-                         target_range=4,
-                         other_range=6,
+                         target_range=6,
+                         other_range=8,
                          target_accuracy=0.4,
                          other_accuracy=0.8),
     # Living Room

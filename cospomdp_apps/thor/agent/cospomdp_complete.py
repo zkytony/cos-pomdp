@@ -86,7 +86,8 @@ def _sample_topo_map(target_hist,
         target_hist (dict): maps from location to probability
         reachable_positions (list of tuples)
         num_places (int): number of places to sample
-        degrees (int): controls the number of maximum neighbors per place.
+        degree (int): controls the number of maximum neighbors per place.
+            TODO: This is sometimes buggy.
         sep (float): minimum distance between two places (grid cells)
         robot_pos (x,y): If not None, will add a node at where the robot is.
 
@@ -141,6 +142,8 @@ def _sample_topo_map(target_hist,
         neighbor_positions = {nodes[nbnid].pos for nbnid in neighbors}
         candidates = set(places) - {nodes[nid].pos} - neighbor_positions
         degree_needed = degree - len(neighbors)
+        if degree_needed <= 0:
+            continue
         new_neighbors = list(sorted(candidates, key=lambda pos: euclidean_dist(pos, nodes[nid].pos)))[:degree_needed]
         for nbpos in new_neighbors:
             nbnid = pos_to_nid[nbpos]
