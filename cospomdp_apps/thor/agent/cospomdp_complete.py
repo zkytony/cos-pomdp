@@ -210,7 +210,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                  thor_agent_pose,
                  thor_prior={},
                  num_place_samples=10,
-                 topo_map_degree=3,
+                 topo_map_degree=(3,5),
                  places_sep=4.0,
                  topo_cover_thresh=0.5,
                  local_search_type="basic",
