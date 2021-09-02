@@ -79,6 +79,7 @@ class TOS(ThorEnv):
                         self.controller, grid_size)
                     if self.task_config["save_grid_map"]:
                         print("Saving grid map to from {}".format(gmap_path))
+                        os.makedirs(grid_maps_path, exist_ok=True)
                         grid_map.save(gmap_path)
                 output["grid_map"] = grid_map
 
