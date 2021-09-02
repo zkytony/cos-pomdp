@@ -17,7 +17,7 @@ def _test_basic_informed_search(target, other, block=True, **params):
 
 
 if __name__ == "__main__":
-    _test_basic_informed_search('', 'Book',
-                          num_sims=200,
-                          show_progress=True,
-                          exploration_const=100)
+    _test_basic_informed_search('Bowl', 'Book',
+                                num_sims=200,
+                                show_progress=True,
+                                exploration_const=100)
