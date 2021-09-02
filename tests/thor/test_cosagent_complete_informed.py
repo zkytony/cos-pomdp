@@ -1,8 +1,9 @@
 from test_cosagent_complete import _test_complete_search
 
 def step_act_cb(task_env, agent, **kwargs):
-    if agent.belief.b(agent.robot_id).mpe().nid == 1:
-        import pdb; pdb.set_trace()
+    # if agent.belief.b(agent.robot_id).mpe().nid == 1:
+    #     import pdb; pdb.set_trace()
+    pass
 
 
 if __name__ == "__main__":

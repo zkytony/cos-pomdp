@@ -9,7 +9,7 @@ from .action import (MoveTopo, Stay,
                      from_grid_action_to_thor_action_params,
                      from_thor_delta_to_thor_action_params,
                      grid_navigation_actions2d)
-from ..cospomdp_basic import ThorObjectSearchCosAgent
+from ..cospomdp_basic import ThorObjectSearchBasicCosAgent
 
 
 # -------- Goal Handlers -------- #
@@ -159,9 +159,7 @@ class LocalSearchHandler(GoalHandler):
         return True
 
 
-
-
-class LocalSearchBasicHandler(LocalSearchHandler):
+class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent):
     """Even though the search is expected to be local,
     we don't manually restrict a region for the agent
     to operate - the size of the search region is the same,
@@ -170,6 +168,7 @@ class LocalSearchBasicHandler(LocalSearchHandler):
         """
         agent (ThorObjectSearchCosAgent)
         """
+        super().__init__(goal, agent)
         self._parent = agent
         local_robot_state = agent.robot_state()
 
@@ -200,6 +199,7 @@ class LocalSearchBasicHandler(LocalSearchHandler):
                                                   prior=prior)
         self.solver = pomdp_py.POUCT(**params,
                                      rollout_policy=self._local_cos_agent.policy_model)
+        self._done = False
 
 
     def step(self):
@@ -212,7 +212,13 @@ class LocalSearchBasicHandler(LocalSearchHandler):
         """This local agent updates AFTER the COSPOMDP agent.
         Because the two both maintain belief at ground level,
         we can simply sync the beliefs"""
+        # interpret low level action
+        action = self.interpret_action(tos_action)
+        observation = self.interpret_observation(tos_observation)
+        self.solver.update(self._local_cos_agent, action, observation)
+
         self._local_cos_agent.set_belief(self._parent.belief)
+        self._done = tos_action.name.lower() == "done"
 
     @property
     def updates_first(self):
@@ -234,4 +240,4 @@ class LocalSearchBasicHandler(LocalSearchHandler):
 
     @property
     def done(self):
-        raise NotImplementedError
+        return self._done

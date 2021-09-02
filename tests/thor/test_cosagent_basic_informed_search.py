@@ -20,4 +20,9 @@ if __name__ == "__main__":
     _test_basic_informed_search('Bowl', 'Book',
                                 num_sims=200,
                                 show_progress=True,
-                                exploration_const=100)
+                                exploration_const=100,
+                                local_search_params={"num_sims": 100,
+                                                     "max_depth": 20,
+                                                     "discount_factor": 0.95,
+                                                     "exploration_const": 100,
+                                                     "show_progress": True})

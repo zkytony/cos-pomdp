@@ -105,12 +105,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
     def interpret_robot_obz(tos_observation):
         raise NotImplementedError
 
-    def update(self, tos_action, tos_observation):
-        """
-        Given TOS_Action and TOS_Observation, update the agent's belief, etc.
-        """
-        # Because policy_model's movements are already in sync with task movements,
-        # we can directly get the POMDP action from there.
+    def interpret_object_obzs(self, tos_observation):
         objobzs = {}
         for cls in self.detectable_objects:
             objobzs[cls] = cospomdp.Loc(cls, None)
@@ -120,9 +115,21 @@ class ThorObjectSearchCosAgent(ThorAgent):
             thor_x, _, thor_z = loc3d
             x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
             objobzs[cls] = cospomdp.Loc(cls, (x, z))
+        return objobzs
 
+    def interpret_observation(self, tos_observation):
+        objobzs = self.interpret_object_obzs(tos_observation)
         robotobz = self.interpret_robot_obz(tos_observation)
         observation = cospomdp.CosObservation(robotobz, objobzs)
+        return observation
+
+    def update(self, tos_action, tos_observation):
+        """
+        Given TOS_Action and TOS_Observation, update the agent's belief, etc.
+        """
+        # Because policy_model's movements are already in sync with task movements,
+        # we can directly get the POMDP action from there.
+        observation = self.interpret_observation(tos_observation)
         action = self.interpret_action(tos_action)
         self._update_belief(action, observation)
 

@@ -35,6 +35,8 @@ def _test_complete_search(target,
                           num_place_samples=20,
                           discount_factor=0.95,
                           exploration_const=100,
+                          local_search_type="basic",
+                          local_search_params={},
                           show_progress=True,
                           step_act_cb=None,
                           step_act_args={},
@@ -76,6 +78,8 @@ def _test_complete_search(target,
                                                  discount_factor=discount_factor,
                                                  exploration_const=exploration_const,
                                                  show_progress=show_progress)
+    config["agent_config"]["local_search_type"] = local_search_type
+    config["agent_config"]["local_search_params"] = local_search_params
 
     config["visualize"] = True
     config["viz_config"] = {

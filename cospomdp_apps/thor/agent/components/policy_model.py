@@ -3,7 +3,7 @@ from pomdp_py import RolloutPolicy, ActionPrior
 from cospomdp.domain.action import Done
 from cospomdp.utils.math import euclidean_dist
 import cospomdp
-from .action import MoveTopo
+from .action import MoveTopo, Stay
 
 class PolicyModelTopo(cospomdp.PolicyModel):
 
@@ -35,18 +35,7 @@ class PolicyModelTopo(cospomdp.PolicyModel):
         return self._observation_model.target_id
 
     def get_all_actions(self, state, history=None):
-        return self.valid_moves(state) | {Done()}# + [Search(), Done()]
-
-    def rollout(self, state, history=None):
-        if self.action_prior is not None:
-            preferences = self.action_prior.get_preferred_actions(state, history)\
-                | {(Done(), 0, 0)}
-            if len(preferences) > 0:
-                return random.sample(preferences, 1)[0][0]
-            else:
-                return random.sample(self.get_all_actions(state=state), 1)[0]
-        else:
-            return random.sample(self.get_all_actions(state=state), 1)[0]
+        return self.valid_moves(state) | {Done()}
 
     def valid_moves(self, state):
         srobot = state.s(self.robot_id)
@@ -54,7 +43,7 @@ class PolicyModelTopo(cospomdp.PolicyModel):
             return self._legal_moves[srobot]
         else:
             robot_pose = srobot["pose"]
-            valid_moves = set()
+            valid_moves = {Stay(srobot.nid)}  # stay is always a valid 'move'
             for nb_id in self._topo_map.neighbors(srobot.nid):
                 eid = self._topo_map.edge_between(srobot.nid, nb_id)
                 valid_moves.add(MoveTopo(srobot.nid,
@@ -90,6 +79,9 @@ class PolicyModelTopo(cospomdp.PolicyModel):
                         preferences.add((move, self.num_visits_init, self.val_init))
                         break
 
+            if len(preferences) == 0:
+                preferences.add((Stay(srobot.nid), self.num_visits_init, self.val_init))
+
             # # OLD
             # closest_target_nid = topo_map.closest_node(*starget.loc)
             # path = topo_map.shortest_path(srobot.nid, closest_target_nid)
@@ -99,4 +91,4 @@ class PolicyModelTopo(cospomdp.PolicyModel):
             #     next_gdist = sum(topo_map.edges[eid].grid_dist for eid in path)
             #     if next_gdist < current_gdist:
             #         preferences.add((move, self.num_visits_init, self.val_init))
-            return preferences
+            return preferences | {(Done(), 0, 0)}
