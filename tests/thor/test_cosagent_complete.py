@@ -7,6 +7,10 @@ from cospomdp_apps.thor.agent.components.topo_map\
     import TopoMap, draw_edge, draw_topo, mark_cell
 from pomdp_py.utils import TreeDebugger
 
+import os
+ABS_PATH = os.path.dirname(os.path.abspath(__file__))
+GRID_MAP_DATASET_PATH = os.path.join(ABS_PATH, "../../data/thor/grid_maps")
+
 def step_act_cb(task_env, agent, **kwargs):
     # viz = kwargs.get("viz")
     pass
@@ -15,7 +19,6 @@ def step_act_cb(task_env, agent, **kwargs):
     # img = draw_topo(img, agent.topo_map, viz._res, draw_grid_path=True)
     # viz.show_img(img)
     # import pdb; pdb.set_trace()
-
 
 def _test_complete_search(target,
                           other,

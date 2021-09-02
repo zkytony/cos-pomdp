@@ -1,8 +1,21 @@
+import os
 import numpy as np
 import time
 from dataclasses import dataclass, field
 from typing import List
 from . import constants
+
+MODULE_PATH = os.path.dirname(__file__)
+
+# The path to the .pt file for the model
+YOLOV5_MODEL_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../models/best.pt"))
+
+# The path to the .yaml file that specifies the datasets (train and val) of the model
+YOLOV5_DATA_CONFIG = os.path.abspath(os.path.join(MODULE_PATH, "../../data/yolov5/yolov5-dataset.yaml"))
+
+# The path to the saved grid maps
+GRID_MAPS_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../data/thor/grid_maps"))
+
 
 # State, Action, Observation used in object search task
 @dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
@@ -125,6 +138,11 @@ class TaskArgs:
     task_env: str = "ThorObjectSearch"
     agent_class: str = "ThorObjectSearchOptimalAgent"
     max_steps: int = 100
+    grid_maps_path: str = GRID_MAPS_PATH
+    save_grid_map: bool = True
+    use_vision_detector: bool = False
+    yolov5_model_path: str = YOLOV5_MODEL_PATH,
+    yolov5_data_config: object = YOLOV5_DATA_CONFIG,
 
 
 # Make configs
@@ -149,7 +167,14 @@ def make_config(args):
             "step": constants.TOS_REWARD_STEP,
         },
         "discount_factor": 0.99,
+        "paths": {}
     }
+    if args.use_vision_detector:
+        task_config["paths"]["yolov5_model_path"] = args.yolov5_model_path
+        task_config["paths"]["yolov5_data_config"] = args.yolov5_data_config
+    if "grid_map" in args.agent_init_inputs:
+        task_config["paths"]["grid_maps_path"] = args.grid_maps_path
+        task_config["save_grid_map"] = args.save_grid_map
 
     config = {
         "thor": thor_config,

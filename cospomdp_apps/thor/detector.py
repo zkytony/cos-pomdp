@@ -2,14 +2,11 @@
 import torch
 import numpy as np
 import cv2
-import os
 from PIL import Image
 import yaml
 from thortils.vision.plotting import plot_one_box
 from thortils.vision.general import saveimg
-
-VISION_MODULE_PATH = os.path.dirname(__file__)
-PATH_TO_YOLOV5 = os.path.abspath(os.path.join(VISION_MODULE_PATH, "../../external/yolov5"))
+from .common import YOLOV5_REPO_PATH
 
 class Detector:
 
@@ -17,6 +14,7 @@ class Detector:
         """
         Args:
             model_path (str): Path to the .pt YOLOv5 model.
+                This model should be placed under YOLOV5_REPO_PATH/custom
             data_config (str or dict): loaded from dataset yaml file
                 of the dataset used to train the model, or path to
                 that yaml file.
@@ -29,7 +27,7 @@ class Detector:
         self.classes = self.config["names"]
         self.colors = self.config["colors"]
         self.model_path = model_path
-        self.model = torch.hub.load(PATH_TO_YOLOV5, 'custom',
+        self.model = torch.hub.load(YOLOV5_REPO_PATH, 'custom',
                                     path=self.model_path,
                                     source="local")
 

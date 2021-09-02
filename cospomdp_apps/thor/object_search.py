@@ -1,3 +1,4 @@
+import os
 import random
 import math
 import numpy as np
@@ -65,18 +66,33 @@ class TOS(ThorEnv):
         for item in fields:
             if item.lower() == "grid_size":
                 output["grid_size"] = grid_size
+
             elif item.lower() == "grid_map":
-                grid_map = tt.convert_scene_to_grid_map(
-                    self.controller, scene, grid_size)
+                grid_maps_path = self.task_config["paths"]["grid_maps_path"]
+                gmap_path = os.path.join(grid_maps_path, "{}-{}.json".format(scene, grid_size))
+                if os.path.exists(gmap_path):
+                    print("Loading GridMap from {}".format(gmap_path))
+                    grid_map = tt.GridMap.load(gmap_path)
+                else:
+                    print("Converting scene to GridMap...")
+                    grid_map = tt.proper_convert_scene_to_grid_map(
+                        self.controller, grid_size)
+                    if self.task_config["save_grid_map"]:
+                        print("Saving grid map to from {}".format(gmap_path))
+                        grid_map.save(gmap_path)
                 output["grid_map"] = grid_map
+
             elif item.lower() == "agent_pose":
                 agent_pose = tt.thor_agent_pose(self.controller, as_tuple=True)
                 output["thor_agent_pose"] = agent_pose
+
             elif item.lower() == "camera_pose":
                 camera_pose = tt.thor_camera_pose(self.controller, as_tuple=True)
                 output["thor_camera_pose"] = camera_pose
+
             elif item.lower() == "groundtruth_prior":
                 output["thor_prior"] = {self.get_object_loc(self.target) : 1e6}
+
             else:
                 raise ValueError("Invalid field item for getting information: {}".format(item))
         return output
