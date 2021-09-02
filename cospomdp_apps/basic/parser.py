@@ -124,7 +124,7 @@ def create_instance(worldstr):
     reward_model = spec["reward_model"]
     init_robot_state = RobotState2D(robot_id, init_robot_pose)
     robot_trans_model = RobotTransition2D(robot_id, reachable_positions)
-    policy_model = PolicyModel2D(robot_trans_model, reward_model)
+    policy_model = PolicyModel2D(robot_trans_model)
     agent = CosAgent(objects[target_id],
                      init_robot_state,
                      search_region,
