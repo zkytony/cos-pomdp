@@ -61,7 +61,7 @@ def _shortest_path(reachable_positions, gloc1, gloc2):
 def _sample_topo_map(target_hist,
                      reachable_positions,
                      num_samples,
-                     degree=3,
+                     degree=(3,5),
                      sep=4.0,
                      rnd=random,
                      robot_pos=None):
@@ -86,8 +86,12 @@ def _sample_topo_map(target_hist,
         target_hist (dict): maps from location to probability
         reachable_positions (list of tuples)
         num_places (int): number of places to sample
-        degree (int): controls the number of maximum neighbors per place.
-            TODO: This is sometimes buggy.
+        degree (int or tuple): Controls the minimum and maximum degree
+            per topo node in the resulting graph. If only one number is
+            passed, then will make all nodes have the same degree.
+            This assumes there are enough sampled nodes to satisfy this
+            requirement; If not, then all nodes are still guaranteed
+            to have degree less than or equal to the maximum degree.
         sep (float): minimum distance between two places (grid cells)
         robot_pos (x,y): If not None, will add a node at where the robot is.
 
@@ -95,6 +99,14 @@ def _sample_topo_map(target_hist,
         TopologicalMap.
 
     """
+    if type(degree) == int:
+        degree_range = (degree, degree)
+    else:
+        degree_range = degree
+        if len(degree_range) != 2:
+            raise ValueError("Invalid argument for degree {}."
+                             "Accepts int or (int, int)".format(degree))
+
     mapping = {}  # maps from reachable pos to a list of search region locs
     for loc in target_hist:
         closest_reachable_pos = min(reachable_positions,
@@ -141,32 +153,37 @@ def _sample_topo_map(target_hist,
         neighbors = _conns[nid]
         neighbor_positions = {nodes[nbnid].pos for nbnid in neighbors}
         candidates = set(places) - {nodes[nid].pos} - neighbor_positions
-        degree_needed = degree - len(neighbors)
+        degree_needed = degree_range[0] - len(neighbors)
         if degree_needed <= 0:
             continue
         new_neighbors = list(sorted(candidates, key=lambda pos: euclidean_dist(pos, nodes[nid].pos)))[:degree_needed]
         for nbpos in new_neighbors:
             nbnid = pos_to_nid[nbpos]
-            _conns[nid].add(nbnid)
-            if nbnid not in _conns:
-                _conns[nbnid] = set()
-            _conns[nbnid].add(nid)
+            if nbnid not in _conns or len(_conns[nbnid]) < degree_range[1]:
+                _conns[nid].add(nbnid)
+                if nbnid not in _conns:
+                    _conns[nbnid] = set()
+                _conns[nbnid].add(nid)
 
-            path = _shortest_path(reachable_positions,
-                                  nodes[nbnid].pos,
-                                  nodes[nid].pos)
-            if path is None:
-                # Skip this edge because we cannot find path
-                continue
-            eid = len(edges) + 1000
-            edges[eid] = TopoEdge(eid,
-                                  nodes[nid],
-                                  nodes[nbnid],
-                                  path)
+                path = _shortest_path(reachable_positions,
+                                      nodes[nbnid].pos,
+                                      nodes[nid].pos)
+                if path is None:
+                    # Skip this edge because we cannot find path
+                    continue
+                eid = len(edges) + 1000
+                edges[eid] = TopoEdge(eid,
+                                      nodes[nid],
+                                      nodes[nbnid],
+                                      path)
     if len(edges) == 0:
         edges[0] = TopoEdge(0, nodes[next(iter(nodes))], None, [])
 
     topo_map = TopoMap(edges)
+    # Verification
+    for nid in topo_map.nodes:
+        assert len(topo_map.edges_from(nid)) <= degree_range[1]
+
     return topo_map
 
 

@@ -32,7 +32,12 @@ x.....
 ......
 """
 
-def _test_topo_map_sampling(worldstr, num_samples=10, seed=100, sleep=10, sep=2.0):
+def _test_topo_map_sampling(worldstr,
+                            num_samples=10,
+                            seed=100,
+                            sleep=10,
+                            sep=2.0,
+                            degree=2):
     print("Test topo map sampling")
     obstacles = set()
     target_hist = {}
@@ -58,10 +63,13 @@ def _test_topo_map_sampling(worldstr, num_samples=10, seed=100, sleep=10, sep=2.
     topo_map = _sample_topo_map(target_hist,
                                 reachable_positions,
                                 num_samples,
-                                degree=3,
+                                degree=degree,
                                 sep=2.0,
                                 rnd=random.Random(seed))
     print(topo_map.total_prob(target_hist))
+    print("Degrees:")
+    for nid in topo_map.nodes:
+        print("    {}: {}".format(topo_map.nodes[nid], len(topo_map.edges_from(nid))))
 
     grid_map = GridMap(width, length, obstacles)
     viz = GridMapVisualizer(grid_map=grid_map)
@@ -73,9 +81,9 @@ def _test_topo_map_sampling(worldstr, num_samples=10, seed=100, sleep=10, sep=2.
     time.sleep(sleep)
 
 def _test_topo_map_sampling_multiple():
-    _test_topo_map_sampling(worldstr1, seed=100, sleep=1, num_samples=30)
-    _test_topo_map_sampling(worldstr1, seed=200, sleep=1, num_samples=30)
-    _test_topo_map_sampling(worldstr1, seed=300, sleep=1, num_samples=30)
+    _test_topo_map_sampling(worldstr, seed=100, sleep=3, num_samples=30, degree=(2,3))
+    _test_topo_map_sampling(worldstr, seed=200, sleep=3, num_samples=30)
+    _test_topo_map_sampling(worldstr, seed=300, sleep=3, num_samples=30)
 
 if __name__ == "__main__":
     _test_topo_map_sampling_multiple()
