@@ -3,8 +3,10 @@
 # is used for planning at the COS-POMDP level.
 import random
 import cospomdp
+from .action import Move2D, ALL_MOVES_2D, Done
 from pomdp_py import RolloutPolicy, ActionPrior
-from .action import ALL_MOVES_2D, Done
+from cospomdp.utils.math import euclidean_dist
+from cospomdp.models.sensors import yaw_facing
 
 ############################
 # Policy Model
@@ -45,7 +47,6 @@ class PolicyModel2D(cospomdp.PolicyModel):
             return self._legal_moves[srobot]
         else:
             robot_pose = srobot["pose"]
-            # TODO: technically, the action set should be passed in instead of hard-coded
             valid_moves = set(a for a in self.movements
                 if self.robot_trans_model.sample(state, a)["pose"] != robot_pose)
             self._legal_moves[srobot] = valid_moves
@@ -58,12 +59,41 @@ class PolicyModel2D(cospomdp.PolicyModel):
             self.policy_model = policy_model
 
         def get_preferred_actions(self, state, history):
+            # If you have taken done before, you are done. So keep the done.
+            last_action = history[-1][0] if len(history) > 0 else None
+            if isinstance(last_action, Done):
+                return {(Done(), 0, 0)}
+
             robot_id = self.policy_model.robot_id
             target_id = self.policy_model.observation_model.target_id
             srobot = state.s(robot_id)
-            preferences = {(Done(), 0, 0)}
+            starget = state.s(target_id)
+
+            preferences = set()
+
+            current_distance = euclidean_dist(srobot.loc, starget.loc)
+            desired_yaw = yaw_facing(srobot.loc, starget.loc)
+            current_yaw_diff = abs(desired_yaw - srobot.pose[2]) % 360
+
             for move in self.policy_model.movements:
+                # A move is preferred if:
+                # (1) it moves the robot closer to the target
                 next_srobot = self.policy_model.robot_trans_model.sample(state, move)
+                next_distance = euclidean_dist(next_srobot.loc, starget.loc)
+                if next_distance < current_distance:
+                    preferences.add((move, self.num_visits_init, self.val_init))
+                    break
+
+                # (2) if the move rotates the robot to be more facing the target,
+                # unless the previous move was a rotation in an opposite direction;
+                next_yaw_diff = abs(desired_yaw - next_srobot.pose[2]) % 360
+                if next_yaw_diff < current_yaw_diff:
+                    if isinstance(last_action, Move2D) and last_action.delta[1] * move.delta[1] >= 0:
+                        # last action and current are NOT rotations in different directions
+                        preferences.add((move, self.num_visits_init, self.val_init))
+                        break
+
+                # (3) it makes the robot observe any object;
                 next_state = cospomdp.CosState({target_id: state.s(target_id),
                                                 robot_id: next_srobot})
                 observation = self.policy_model.observation_model.sample(next_state, move)
