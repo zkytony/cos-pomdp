@@ -177,11 +177,6 @@ if __name__ == "__main__":
     # Object classes
     if len(args.object_classes) == 0:
         print("Will gather training data for object classes defined in constants.py:")
-        print("Kitchen:", constants.KITCHEN_OBJECT_CLASSES, "\n")
-        print("Living Room:", constants.LIVING_ROOM_OBJECT_CLASSES, "\n")
-        print("Bedroom:", constants.BEDROOM_OBJECT_CLASSES, "\n")
-        print("Bathroom:", constants.BATHROOM_OBJECT_CLASSES, "\n")
-
         if "kitchen" in args.scene_types:
             object_classes.extend(constants.KITCHEN_OBJECT_CLASSES)
         if "living_room" in args.scene_types or "living-room" in args.scene_types:
@@ -190,6 +185,7 @@ if __name__ == "__main__":
             object_classes.extend(constants.BEDROOM_OBJECT_CLASSES)
         if "bathroom" in args.scene_types:
             object_classes.extend(constants.BATHROOM_OBJECT_CLASSES)
+        print(object_classes)
     else:
         print("Will gather training data for objects:", args.object_classes)
         object_classes = args.object_classes
