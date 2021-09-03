@@ -191,6 +191,7 @@ if __name__ == "__main__":
         if "bathroom" in args.scene_types:
             object_classes.extend(constants.BATHROOM_OBJECT_CLASSES)
     else:
+        print("Will gather training data for objects:", args.object_classes)
         object_classes = args.object_classes
 
     # Scenes
