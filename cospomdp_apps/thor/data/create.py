@@ -158,6 +158,8 @@ if __name__ == "__main__":
                         "Default: same name as the model")
     parser.add_argument("--scene-types", type=str, nargs="+", help="Scene types.",
                         default=["kitchen"])
+    parser.add_argument("--object-classes", type=str, nargs="+", help="Object classes.",
+                        default=[])
     parser.add_argument("--num-train-samples", type=int, help="Number of training."
                         "samples per scene", default=120)
     parser.add_argument("--num-val-samples", type=int, help="Number of validation."
@@ -171,20 +173,37 @@ if __name__ == "__main__":
             raise ValueError("Unrecognized scene type", scene_type)
     object_classes = []  # classes to collect data for
     scenes = {"train": [], "val": []}
+
+    # Object classes
+    if len(args.object_classes) == 0:
+        print("Will gather training data for object classes defined in constants.py:")
+        print("Kitchen:", constants.KITCHEN_OBJECT_CLASSES, "\n")
+        print("Living Room:", constants.LIVING_ROOM_OBJECT_CLASSES, "\n")
+        print("Bedroom:", constants.BEDROOM_OBJECT_CLASSES, "\n")
+        print("Bathroom:", constants.BATHROOM_OBJECT_CLASSES, "\n")
+
+        if "kitchen" in args.scene_types:
+            object_classes.extend(constants.KITCHEN_OBJECT_CLASSES)
+        if "living_room" in args.scene_types or "living-room" in args.scene_types:
+            object_classes.extend(constants.LIVING_ROOM_OBJECT_CLASSES)
+        if "bedroom" in args.scene_types:
+            object_classes.extend(constants.BEDROOM_OBJECT_CLASSES)
+        if "bathroom" in args.scene_types:
+            object_classes.extend(constants.BATHROOM_OBJECT_CLASSES)
+    else:
+        object_classes = args.object_classes
+
+    # Scenes
     if "kitchen" in args.scene_types:
-        object_classes.extend(constants.KITCHEN_OBJECT_CLASSES)
         scenes["train"].extend(constants.KITCHEN_TRAIN_SCENES)
         scenes["val"].extend(constants.KITCHEN_VAL_SCENES)
     if "living_room" in args.scene_types or "living-room" in args.scene_types:
-        object_classes.extend(constants.LIVING_ROOM_OBJECT_CLASSES)
         scenes["train"].extend(constants.LIVING_ROOM_TRAIN_SCENES)
         scenes["val"].extend(constants.LIVING_ROOM_VAL_SCENES)
     if "bedroom" in args.scene_types:
-        object_classes.extend(constants.BEDROOM_OBJECT_CLASSES)
         scenes["train"].extend(constants.BEDROOM_TRAIN_SCENES)
         scenes["val"].extend(constants.BEDROOM_VAL_SCENES)
     if "bathroom" in args.scene_types:
-        object_classes.extend(constants.BATHROOM_OBJECT_CLASSES)
         scenes["train"].extend(constants.BATHROOM_TRAIN_SCENES)
         scenes["val"].extend(constants.BATHROOM_VAL_SCENES)
 
