@@ -301,64 +301,69 @@ DIAG_MOVE = True
 GOAL_DISTANCE = 1.0
 
 KITCHEN_OBJECT_CLASSES = [
-    # Small objects
-    "Apple",
-    "Potato",
-    "Tomato",
-    "Egg",
-    "Lettuce",
-    "PepperShaker",
-    "ButterKnife",
-    "Cup",
-    "Fork",
-    "Ladle",
-    "SaltShaker",
+    # small objects
     "Spatula",
-    # Medium objects
-    "Pot",
-    "Kettle",
-    "Bread",
-    "Book",
-    "Bowl",
     "Toaster",
-    "Statue",
-    "Pan",
+    "Bread",
+    "Mug",
     "CoffeeMachine",
-    "Microwave",
-    # Large objects
-    "Chair",
-    "Cabinet",
-    "Drawer",
-    "DiningTable",
-    "CoffeeTable",
+    "Apple",
+    # larger objects
     "Fridge",
-    "Shelf",
-    "CounterTop",
     "StoveBurner",
-    "Sink"
+    "Microwave",
+    "TableTop",
+    "Sink",
+    "CounterTop",
+    "Shelf"
 ]
 
 LIVING_ROOM_OBJECT_CLASSES = [
-    "Pillow",
+    # small objects
+    "Painting",
     "Laptop",
     "Television",
-    "GarbageCan",
-    "Box",
-    "Bowl",
-]
-
-BATHROOM_OBJECT_CLASSES = [
-    "HousePlant",
-    "Lamp",
-    "Book",
-    "AlarmClock"
+    "RemoteControl",
+    "Vase",
+    "ArmChair",
+    # larger objects
+    "Drawer",
+    "Shelf",
+    "TableTop",
+    "Sofa",
+    "FloorLamp"
 ]
 
 BEDROOM_OBJECT_CLASSES = [
-    "Sink",
+    # smaller objects
+    "Blinds",
+    "DeskLamp",
+    "Pillow",
+    "AlarmClock",
+    "CD",
+    # larger objects
+    "Shelf",
+    "Dresser",
+    "NightStand",
+    "Drawer",
+    "Desk",
+    "Bed"
+]
+
+BATHROOM_OBJECT_CLASSES = [
+    # smaller objects
+    "Mirror",
     "ToiletPaper",
-    "SoapBottle",
-    "LightSwitch"
+    "SoapBar",
+    "Towel",
+    "SprayBottle"
+    # larger objects
+    "CounterTop",
+    "Cabinet",
+    "Drawer",
+    "ShowerDoor",
+    "Toilet",
+    "Bathtub"
 ]
 
 ALL_OBJECT_CLASSES = KITCHEN_OBJECT_CLASSES +\
