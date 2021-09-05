@@ -27,6 +27,6 @@ train_yolov5()
 
 # Train kitchen
 train_yolov5 yolov5-kitchen
-# train_yolov5 yolov5-living_room
-# train_yolov5 yolov5-bedroom
-# train_yolov5 yolov5-bathroom
+train_yolov5 yolov5-living_room
+train_yolov5 yolov5-bedroom
+train_yolov5 yolov5-bathroom
