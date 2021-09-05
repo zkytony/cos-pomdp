@@ -1,15 +1,15 @@
 cd external/
-DATASET_NAME="yolov5"
-DATASET_YAML_FILE="../data/yolov5/$DATASET_NAME-dataset.yaml"
-VALIDATION_MODEL_WEIGHTS="../results/$DATASET_NAME/runs/train/exp2/weights/best.pt"
-IMG_SIZE=600
+dataset_name="yolov5"
+dataset_yaml_file="../data/yolov5/$dataset_name-dataset.yaml"
+validation_model_weights="../results/$dataset_name/runs/train/exp2/weights/best.pt"
+img_size=600
 python yolov5/val.py\
-       --data $DATASET_YAML_FILE\
-       --img $IMG_SIZE\
-       --weights $VALIDATION_MODEL_WEIGHTS\
+       --data $dataset_yaml_file\
+       --img $img_size\
+       --weights $validation_model_weights\
        --save-txt\
        --save-hybrid\
        --save-conf\
        --save-json\
-       --project "../results/$DATASET_NAME/runs/val"\
+       --project "../results/$dataset_name/runs/val"\
        --name "exp"

@@ -1,16 +1,32 @@
 cd external/
-DATASET_NAME="yolov5"
-DATASET_YAML_FILE="../data/yolov5/$DATASET_NAME-dataset.yaml"
-IMG_SIZE=600
-EPOCS=1
-BATCH_SIZE=16
-PRETRAINED_MODEL_WEIGHTS="yolov5/yolov5s.pt"
+img_size=600
+epocs=30
+batch_size=16
+pretrained_model_weights="yolov5/yolov5s.pt"
+GPU=0  # RTX 3080
 
-python yolov5/train.py\
-       --img $IMG_SIZE\
-       --batch $BATCH_SIZE\
-       --epochs $EPOCS\
-       --data $DATASET_YAML_FILE\
-       --weights $PRETRAINED_MODEL_WEIGHTS\
-       --project "../results/$DATASET_NAME/runs/train"\
-       --name "exp"
+timestamp() {
+  date +"%Y%m%d-%H%M%S" # current time
+}
+exp_name="exp_$(timestamp)"
+
+train_yolov5()
+{
+    dataset_name=$1
+    dataset_yaml_file="../data/$dataset_name/$dataset_name-dataset.yaml"
+    python yolov5/train.py\
+           --img $img_size\
+           --batch $batch_size\
+           --epochs $epocs\
+           --data $dataset_yaml_file\
+           --weights $pretrained_model_weights\
+           --project "../results/$dataset_name/runs/train"\
+           --name $exp_name
+           --device $GPU
+}
+
+# Train kitchen
+train_yolov5 yolov5-kitchen
+# train_yolov5 yolov5-living_room
+# train_yolov5 yolov5-bedroom
+# train_yolov5 yolov5-bathroom

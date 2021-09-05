@@ -430,7 +430,6 @@ BATHROOM_OBJECT_CLASSES = ['Cabinet',
                            'Towel',
                            'TowelHolder',
                            'Window']
-]
 
 
 ALL_OBJECT_CLASSES = KITCHEN_OBJECT_CLASSES +\
