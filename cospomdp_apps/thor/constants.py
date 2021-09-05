@@ -300,71 +300,138 @@ DIAG_MOVE = True
 
 GOAL_DISTANCE = 1.0
 
-KITCHEN_OBJECT_CLASSES = [
-    # small objects
-    "Spatula",
-    "Toaster",
-    "Bread",
-    "Mug",
-    "CoffeeMachine",
-    "Apple",
-    # larger objects
-    "Fridge",
-    "StoveBurner",
-    "Microwave",
-    "TableTop",
-    "Sink",
-    "CounterTop",
-    "Shelf"
+# This is a list of object classes that apper in all kitchen scenes; not sure
+# if they lie in the open or inside containers.
+KITCHEN_OBJECT_CLASSES = ['Apple',
+                          'Book',
+                          'Bowl',
+                          'Bread',
+                          'ButterKnife',
+                          'Cabinet',
+                          'CellPhone',
+                          'CoffeeMachine',
+                          'CounterTop',
+                          'CreditCard',
+                          'Cup',
+                          'DishSponge',
+                          'Egg',
+                          'EggCracked*',
+                          'Faucet',
+                          'Floor',
+                          'Fork',
+                          'Fridge',
+                          'GarbageCan',
+                          'HousePlant',
+                          'Knife',
+                          'Lettuce',
+                          'LightSwitch',
+                          'Microwave',
+                          'Mirror',
+                          'Mug',
+                          'Pan',
+                          'Pen',
+                          'Pencil',
+                          'PepperShaker',
+                          'Plate',
+                          'Pot',
+                          'Potato',
+                          'SaltShaker',
+                          'Sink',
+                          'SinkBasin',
+                          'SoapBottle',
+                          'Spatula',
+                          'Spoon',
+                          'SprayBottle',
+                          'StoveBurner',
+                          'StoveKnob',
+                          'Toaster',
+                          'Tomato',
+                          'Window']
+
+LIVING_ROOM_OBJECT_CLASSES = ['Book',
+                              'Bowl',
+                              'Box',
+                              'Cabinet',
+                              'Candle',
+                              'CellPhone',
+                              'CreditCard',
+                              'DeskLamp',
+                              'Floor',
+                              'FloorLamp',
+                              'GarbageCan',
+                              'HousePlant',
+                              'KeyChain',
+                              'Laptop',
+                              'LightSwitch',
+                              'Mirror',
+                              'Painting',
+                              'Pen',
+                              'Pencil',
+                              'Pillow',
+                              'Plate',
+                              'RemoteControl',
+                              'Sofa',
+                              'Television',
+                              'Window']
+
+BEDROOM_OBJECT_CLASSES = ['AlarmClock',
+                          'Bed',
+                          'Book',
+                          'Bowl',
+                          'Box',
+                          'Cabinet',
+                          'CD',
+                          'CellPhone',
+                          'Cloth',
+                          'CounterTop',
+                          'CreditCard',
+                          'DeskLamp',
+                          'Floor',
+                          'GarbageCan',
+                          'HousePlant',
+                          'KeyChain',
+                          'Laptop',
+                          'LightSwitch',
+                          'Mirror',
+                          'Mug',
+                          'Painting',
+                          'Pen',
+                          'Pencil',
+                          'Pillow',
+                          'RemoteControl',
+                          'Sofa',
+                          'Television',
+                          'Window']
+
+BATHROOM_OBJECT_CLASSES = ['Cabinet',
+                           'Candle',
+                           'Cloth',
+                           'CounterTop',
+                           'DishSponge',
+                           'Faucet',
+                           'Floor',
+                           'GarbageCan',
+                           'HandTowel',
+                           'HandTowelHolder',
+                           'HousePlant',
+                           'LightSwitch',
+                           'Mirror',
+                           'Painting',
+                           'Plunger',
+                           'ScrubBrush',
+                           'Sink',
+                           'SinkBasin',
+                           'SoapBar',
+                           'SoapBottle',
+                           'SprayBottle',
+                           'Toilet',
+                           'ToiletPaper',
+                           'ToiletPaperHanger',
+                           'Towel',
+                           'TowelHolder',
+                           'Window']
 ]
 
-LIVING_ROOM_OBJECT_CLASSES = [
-    # small objects
-    "Painting",
-    "Laptop",
-    "Television",
-    "RemoteControl",
-    "Vase",
-    "ArmChair",
-    # larger objects
-    "Drawer",
-    "Shelf",
-    "TableTop",
-    "Sofa",
-    "FloorLamp"
-]
-
-BEDROOM_OBJECT_CLASSES = [
-    # smaller objects
-    "Blinds",
-    "DeskLamp",
-    "Pillow",
-    "AlarmClock",
-    "CD",
-    # larger objects
-    "Shelf",
-    "Dresser",
-    "NightStand",
-    "Drawer",
-    "Desk",
-    "Bed"
-]
-
-BATHROOM_OBJECT_CLASSES = [
-    # smaller objects
-    "Mirror",
-    "ToiletPaper",
-    "SoapBar",
-    "Towel",
-    "SprayBottle"
-    # larger objects
-    "CounterTop",
-    "Cabinet",
-    "Drawer",
-    "ShowerDoor",
-    "Toilet",
-    "Bathtub"
-]
 
 ALL_OBJECT_CLASSES = KITCHEN_OBJECT_CLASSES +\
                      LIVING_ROOM_OBJECT_CLASSES +\
