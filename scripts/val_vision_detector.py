@@ -1,26 +1,42 @@
+"""
+Evaluating a detector on a dataset, and compute the true positive,
+false positive rates for all classes. It appears that the rates
+I computed here, even though over the same validation dataset,
+is different from yolov5's confusion matrix plot. The difference
+is not too significant. It could be a difference in thresholding,
+or someway to treat the input to the network (yolov5 does that in
+with multiple pre-processing steps). The iou threshold is 0.7 by
+default. I will use my code because I know how it works.
+
+Here is how I count the true/false positive/negatives.
+
+    For each frame,
+        For each detectable object class,
+            if it is not present in annotated bounding boxes,
+                AND if it is not present in detections, then we have a True Negative
+                for this class.
+
+                BUT if it is present in detections, all bounding boxes
+                    for this class are false positives.
+
+            else (it is present in the annotated bounding box)
+                AND if it is present in the detections, then for each
+                    detected bounding box, if the IOU >= thresh, it's a TP.
+                    otherwise, it is a FP.
+
+                BUT if it is not present in detections, we have a FN.
+"""
+
+
 import os
 import sys
 import argparse
-import torch
 import pandas as pd
-import seaborn as sns
-import matplotlib.ticker as ticker
-import matplotlib.pyplot as plt
 from tqdm import tqdm
-from thortils import (launch_controller,
-                      thor_place_agent_randomly,
-                      thor_object_type,
-                      thor_agent_position,
-                      thor_object_position,
-                      ithor_scene_names,
-                      ithor_scene_type)
-from thortils.constants import KITCHEN_TRAIN_SCENES, KITCHEN_VAL_SCENES
 from thortils.vision.metrics import simple_box_iou
 from thortils.vision.general import normalized_xywh_to_xyxy
 from cospomdp_apps.thor.detector import Detector
 from cospomdp_apps.thor.data.browse import yolo_load_info, yolo_load_one
-from cospomdp.utils.math import euclidean_dist
-from cospomdp.utils.pandas import flatten_index
 
 
 # Validate vision detector. My own script.
