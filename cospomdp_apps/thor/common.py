@@ -1,17 +1,18 @@
 import os
 import numpy as np
 import time
+from thortils.scene import ithor_scene_type
 from dataclasses import dataclass, field
 from typing import List
 from . import constants
 
 MODULE_PATH = os.path.dirname(__file__)
 
-# The path to the .pt file for the model
-YOLOV5_MODEL_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../models/best.pt"))
+# The path to the directory to models
+YOLOV5_MODEL_DIR = os.path.abspath(os.path.join(MODULE_PATH, "../../models/"))
 
-# The path to the .yaml file that specifies the datasets (train and val) of the model
-YOLOV5_DATA_CONFIG = os.path.abspath(os.path.join(MODULE_PATH, "../../data/yolov5/yolov5-dataset.yaml"))
+# The path to the directory of data
+YOLOV5_DATA_DIR = os.path.abspath(os.path.join(MODULE_PATH, "../../data/"))
 
 # The path to the yolov5 repository
 YOLOV5_REPO_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../external/yolov5/"))
@@ -144,8 +145,8 @@ class TaskArgs:
     grid_maps_path: str = GRID_MAPS_PATH
     save_grid_map: bool = True
     use_vision_detector: bool = False
-    yolov5_model_path: str = YOLOV5_MODEL_PATH,
-    yolov5_data_config: object = YOLOV5_DATA_CONFIG,
+    yolov5_model_dir: str = YOLOV5_MODEL_DIR,
+    yolov5_data_dir: object = YOLOV5_DATA_DIR,
 
 
 # Make configs
@@ -173,8 +174,12 @@ def make_config(args):
         "paths": {}
     }
     if args.use_vision_detector:
-        task_config["paths"]["yolov5_model_path"] = args.yolov5_model_path
-        task_config["paths"]["yolov5_data_config"] = args.yolov5_data_config
+        # yolov5 model path is the path to models/directory
+        scene_type = ithor_scene_type(args.scene)
+        model_path = os.path.join(args.yolov5_model_dir, f"yolov5-{scene_type}", "best.pt")
+        data_config = os.path.join(args.yolov5_data_dir, f"yolov5-{scene_type}", f"yolov5-{scene_type}-dataset.yaml")
+        task_config["paths"]["yolov5_model_path"] = model_path
+        task_config["paths"]["yolov5_data_config"] = data_config
     if "grid_map" in args.agent_init_inputs:
         task_config["paths"]["grid_maps_path"] = args.grid_maps_path
         task_config["save_grid_map"] = args.save_grid_map
