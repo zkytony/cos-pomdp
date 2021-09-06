@@ -96,6 +96,8 @@ The current script trains one model per scene category.
 Note the `val_yolov5.sh` script is useless. See [this github issue](https://github.com/ultralytics/yolov5/issues/4199).
 All the results that YOLOv5 generates are for the validation datasets already
 
+### Replot YOLO results
+
 ## AI2-Thor Setup
 
 Compare with:
