@@ -64,6 +64,18 @@ class Methods:
                 else:
                     raise ValueError("Does not understand correlation type: {}".format(method["corr_type"]))
 
+OBJECTS = {
+    "kitchen": {"target": ["SaltShaker", "Mug", "DishSponge"],
+                "corr": ["StoveBurner", "Microwave", "CoffeeMachine", "Fridge", "SoapBottle"]},
+    "living_room": {"target": ["KeyChain", "CreditCard", "Laptop"],
+                    "corr": ["FloorLamp", "HousePlant", "Television", "Painting", "Sofa"]},
+    "bedroom": {"target": ["CellPhone", "Book", "CD"],
+                "corr": ["DeskLamp", "Laptop", "Mirror", "Pillow", "GarbageCan"]}
+    "bathroom": {"target": ["Candle", "ScrubBrush", "Plunger"],
+                 "corr": ["Toilet", "Towel", "Mirror", "HandTowel", "SprayBottle"]}
+}
+
+
 
 def make_trial(run_num, scene_type, scene, target, corr_objects,
                correlations, detector_models, method, max_steps=constants.MAX_STEPS):

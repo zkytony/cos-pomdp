@@ -165,7 +165,11 @@ def process(args, detectable_classes):
         print("--- counts ---")
         print(scounts.sort_values(dfrates.columns[0]))
         print("--- rates ---")
-        print(dfrates.sort_values(dfrates.columns[0]))
+        dfrates = dfrates.sort_values(dfrates.columns[0])
+        print("|{}|".format("|".join(dfrates.columns)))
+        for index, row in dfrates.iterrows():
+            print("|{}|".format("|".join(map(str, row))))
+
 
 if __name__ == "__main__":
     os.makedirs(OUTDIR, exist_ok=True)
