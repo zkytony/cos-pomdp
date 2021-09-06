@@ -2,6 +2,7 @@ import os
 import copy
 import random
 import math
+import pandas as pd
 from datetime import datetime as dt
 
 from sciex import Experiment
@@ -64,7 +65,7 @@ class Methods:
                 else:
                     raise ValueError("Does not understand correlation type: {}".format(method["corr_type"]))
 
-OBJECTS = {
+OBJECT_CLASSES = {
     "kitchen": {"target": ["SaltShaker", "Mug", "DishSponge"],
                 "corr": ["StoveBurner", "Microwave", "CoffeeMachine", "Fridge", "SoapBottle"]},
     "living_room": {"target": ["KeyChain", "CreditCard", "Laptop"],
@@ -74,8 +75,6 @@ OBJECTS = {
     "bathroom": {"target": ["Candle", "ScrubBrush", "Plunger"],
                  "corr": ["Toilet", "Towel", "Mirror", "HandTowel", "SprayBottle"]}
 }
-
-
 
 def make_trial(run_num, scene_type, scene, target, corr_objects,
                correlations, detector_models, method, max_steps=constants.MAX_STEPS):
@@ -126,6 +125,19 @@ def make_trial(run_num, scene_type, scene, target, corr_objects,
     trial = ThorObjectSearchTrial(trial_name, config, verbose=True)
     return trial
 
+def read_detector_params(filepath=os.path.join(ABS_PATH, "detector_params.csv")):
+    detector_models = {}
+    df = pd.read_csv(filepath)
+    for scene_type in OBJECT_CLASSES:
+        for cls in (OBJECT_CLASSES[scene_type]['target'] + OBJECT_CLASSES[scene_type]['corr']):
+            row = df.loc[(df['scene_type'] == scene_type) & (df['class'] == cls)]
+            quality_params = (row["TP_rate"], row["FP_rate"], 0.1)
+            max_range = row["dist"] / constants.GRID_SIZE
+            detector_models[cls] = ("fan-simplefp",
+                                    dict(fov=constants.FOV, min_range=1, max_range=max_range),
+                                    quality_params)
+    return detector_models
+
 
 def EXPERIMENT_THOR(split=10, num_trials=3):
     """
@@ -139,15 +151,7 @@ def EXPERIMENT_THOR(split=10, num_trials=3):
             corr_objects = CLASSES[scene]["supports"]
 
             # make detector models
-            detector_models = {}
-            for target, tp_rate, avg_det_dist_meter in targets:
-                detector_models[target] =\
-                    ("fan-nofp", dict(fov=constants.FOV,
-                                      min_range=1,
-                                      max_range=avg_det_dist_meter / constants.GRID_SIZE,
-                                      (tp_rate, 0.1)))
-
-
+            detector_models = read_detector_params()
 
             for target, true_positive_rate, avg_detection_range in targets:
 
