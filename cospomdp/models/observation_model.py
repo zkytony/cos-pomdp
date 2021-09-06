@@ -327,6 +327,83 @@ class CosObservationModel(ObservationModel):
         return pr_joint
 
 
+class FanModelSimpleFP(DetectionModel):
+    """Intended for 2D-level observation; Pr(zi | si, srobot')
+
+    Considers false positive rate during belief update, but not when
+    sampling. You could say there is an implicit variable in the distribution
+    that indicates whether it is evaluating a probability or sampling.
+    It is therefore valid to define such a distribution.
+
+    Pros: semantic parameter;
+    Cons: false positive is not sampled & out of context
+    """
+    def __init__(self, objid, fan_params, quality_params, round_to="int"):
+        """
+        Args:
+            objid (int) object id to detect
+            fan_params; (detection_prob, false_pos_rate, sigma);
+                detection_prob is essentially true positive rate.
+        """
+        self.sensor = FanSensor(**fan_params)
+        self.params = quality_params
+        super().__init__(objid, round_to)
+
+    @property
+    def detection_prob(self):
+        return self.params[0]
+
+    @property
+    def sigma(self):
+        return self.params[1]
+
+    def probability(self, zi, si, srobot, a=None):
+        """
+        zi (LocDetection)
+        si (HLObjectstate)
+        srobot (HLObjectstate)
+        """
+        in_range = self.sensor.in_range(si["loc"], srobot["pose"])
+        if in_range:
+            if zi.loc is None:
+                # false negative
+                return 1.0 - self.detection_prob
+            else:
+                # True positive; gaussian centered at object loc
+                gaussian = Gaussian(list(si["loc"]),
+                                    [[self.sigma**2, 0],
+                                     [0, self.sigma**2]])
+                return self.detection_prob * gaussian[zi.loc]
+        else:
+            if zi.loc is None:
+                # True negative; we are not modeling false positives
+                return 1.0 - self.false_pos_rate
+            else:
+                return self.false_pos_rate / self.sensor.sensing_region_size
+
+
+    def sample(self, si, srobot, a=None, return_event=False):
+        in_range = self.sensor.in_range(si["loc"], srobot["pose"])
+        if in_range:
+            if random.uniform(0,1) <= self.detection_prob:
+                # sample according to gaussian
+                gaussian = Gaussian(list(si["loc"]),
+                                    [[self.sigma**2, 0],
+                                     [0, self.sigma**2]])
+                loc = tuple(fround(self._round_to, gaussian.random()))
+                zi = Loc(si.id, loc)
+                event = "detected"
+
+            else:
+                zi = Loc(si.id, None)
+                event = "missed"
+        else:
+            zi = Loc(si.id, None)
+            event = "out_of_range"
+        if return_event:
+            return zi, event
+        else:
+            return zi
 
 # The 3D occlusion stuff is not yet complete or needed
 # class DetectionModelFull:
