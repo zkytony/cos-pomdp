@@ -13,6 +13,9 @@ YOLOV5_MODEL_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../models/best
 # The path to the .yaml file that specifies the datasets (train and val) of the model
 YOLOV5_DATA_CONFIG = os.path.abspath(os.path.join(MODULE_PATH, "../../data/yolov5/yolov5-dataset.yaml"))
 
+# The path to the yolov5 repository
+YOLOV5_REPO_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../external/yolov5/"))
+
 # The path to the saved grid maps
 GRID_MAPS_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../data/thor/grid_maps"))
 

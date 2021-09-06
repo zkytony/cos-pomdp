@@ -1,4 +1,5 @@
 import os
+import argparse
 import torch
 import pandas as pd
 import seaborn as sns
@@ -17,25 +18,21 @@ from cospomdp_apps.thor.detector import Detector
 from cospomdp.utils.math import euclidean_dist
 from cospomdp.utils.pandas import flatten_index
 
-# Some constant configs
-IOU_THRES = 0.5
-NUM_SAMPLES_PER_SCENE = 30
 
-# Load detector
-MODEL_PATH = "../models/yolov5-25epoch.pt"
-DATA_CONFIG = "../data/yolov5/yolov5-dataset.yaml"
+OUTDIR = "../results/test_vision_detect_in_action"
 
-OUTDIR = "../results/test_vision_detector_in_action"
-
-def run():
+def run(args):
     # Randomly place the agent in each environment for N times.
     # Then run the detector and record the detections in `results`.
     # Each row is [cls, xyxy, conf, outcome, agent_distance]
-    detector = Detector(MODEL_PATH, DATA_CONFIG)
+    detector = Detector(args.model_path, args.data_yaml)
     results = []
-    for scene in KITCHEN_VAL_SCENES:
+
+    scenes = ithor_scene_names(args.scene_type, levels=range(21,31))
+
+    for scene in scenes:
         controller = launch_controller(dict(scene=scene))
-        for i in tqdm(range(NUM_SAMPLES_PER_SCENE)):
+        for i in tqdm(range(args.num_samples)):
             event = thor_place_agent_randomly(controller)
             agent_pos = thor_agent_position(event, as_tuple=True)
             detections = detector.detect(event.frame)
@@ -49,7 +46,7 @@ def run():
                 for objid in gtbboxes:
                     bbox2D = gtbboxes[objid]
                     iou = simple_box_iou(bbox2D, xyxy)
-                    if thor_object_type(objid) == cls and iou >= IOU_THRES:
+                    if thor_object_type(objid) == cls and iou >= args.iou_thres:
                         # This box corresponds to cls and the detection is close enough
                         # to the groundtruth labeling
                         outcome = "TP" # True positive
@@ -67,10 +64,10 @@ def run():
     # Saves results as DataFrame. Use
     df = pd.DataFrame(results,
                       columns=["class", "box", "conf", "outcome", "agent_dist"])
-    df.to_pickle(os.path.join(OUTDIR, "_desired_results.pkl"))
+    df.to_pickle(os.path.join(OUTDIR, "_desired_results_{}.pkl".format(args.scene_type)))
 
-def plot():
-    df = pd.read_pickle(os.path.join(OUTDIR, "_desired_results.pkl"))
+def plot(args):
+    df = pd.read_pickle(os.path.join(OUTDIR, "_desired_results_{}.pkl".format(args.scene_type)))
     scounts = df.groupby(["class", "outcome"]).count()["box"]
     scounts = flatten_index(scounts).rename(columns={"box": "count"})
 
@@ -111,5 +108,14 @@ def plot():
 
 if __name__ == "__main__":
     os.makedirs(OUTDIR, exist_ok=True)
-    run()
+
+    parser = argparse.ArgumentParser(description="Run vision detector in action")
+    parser.add_argument("model_path", type=str, help="path to the detector model")
+    parser.add_argument("data_yaml", type=str, help="path to the dataset yaml file")
+    parser.add_argument("scene_type", type=str, help="scene_type, e.g. kitchen")
+    parser.add_argument("--iou-thres", type=float, default=0.7)
+    parser.add_argument("-n", "--num-samples", type=int, default=30)
+    args = parser.parse_args()
+
+    run(args)
     plot()

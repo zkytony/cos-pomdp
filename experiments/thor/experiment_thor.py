@@ -2,15 +2,16 @@ import os
 import copy
 import random
 import math
+from datetime import datetime as dt
 
+from sciex import Experiment
 import thortils as tt
 
 from cospomdp_apps.thor.common import TaskArgs, make_config
 from cospomdp_apps.thor import agent as agentlib
 from cospomdp_apps.thor.trial import ThorObjectSearchTrial
 
-from datetime import datetime as dt
-from sciex import Experiment
+from detector_settings import CLASSES
 
 # Configurations
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -119,30 +120,35 @@ def EXPERIMENT_THOR(split=10, num_trials=3):
     all_trials = []
     for scene_type in ['kitchen', 'living_room', 'bedroom', 'bathroom']:
         for scene in tt.ithor_scene_names(scene_type, levels=(21,31)):  # use the last 10 for evaluation
-            for run_num in range(num_trials):
-                # TODO: obtain target, corr objects, detector models and correlations
-                hier_corr_gt = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                          correlations, detector_models, Methods.HIERARCHICAL_CORR_GT)
-                hier_corr_lrn = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                          correlations, detector_models, Methods.HIERARCHICAL_CORR_LRN)
-                hier_corr_wrg = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                          correlations, detector_models, Methods.HIERARCHICAL_CORR_WRG)
-                hier_target = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                         correlations, detector_models, Methods.HIERARCHICAL_TARGET)
-                flat_corr_gt = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                          correlations, detector_models, Methods.FLAT_POUCT_CORR_GT)
-                flat_target_gt = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                            correlations, detector_models, Methods.FLAT_POUCT_TARGET_GT)
-                greedynbv = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                       correlations, detector_models, Methods.GREEDY_NBV)
-                random = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                    correlations, detector_models, Methods.RANDOM)
-                all_trials.extend([hier_corr_gt,
-                                   hier_target,
-                                   flat_corr_gt,
-                                   flat_target_gt,
-                                   greedynbv,
-                                   random])
+
+            targets = CLASSES[scene]["targets"]
+            corr_objects = CLASSES[scene]["supports"]
+            for target, true_positive_rate in targets:
+
+                for run_num in range(num_trials):
+                    # TODO: detector models and correlations
+                    hier_corr_gt = make_trial(run_num, scene_type, scene, target, corr_objects,
+                                              correlations, detector_models, Methods.HIERARCHICAL_CORR_GT)
+                    hier_corr_lrn = make_trial(run_num, scene_type, scene, target, corr_objects,
+                                              correlations, detector_models, Methods.HIERARCHICAL_CORR_LRN)
+                    hier_corr_wrg = make_trial(run_num, scene_type, scene, target, corr_objects,
+                                              correlations, detector_models, Methods.HIERARCHICAL_CORR_WRG)
+                    hier_target = make_trial(run_num, scene_type, scene, target, corr_objects,
+                                             correlations, detector_models, Methods.HIERARCHICAL_TARGET)
+                    flat_corr_gt = make_trial(run_num, scene_type, scene, target, corr_objects,
+                                              correlations, detector_models, Methods.FLAT_POUCT_CORR_GT)
+                    flat_target_gt = make_trial(run_num, scene_type, scene, target, corr_objects,
+                                                correlations, detector_models, Methods.FLAT_POUCT_TARGET_GT)
+                    greedynbv = make_trial(run_num, scene_type, scene, target, corr_objects,
+                                           correlations, detector_models, Methods.GREEDY_NBV)
+                    random = make_trial(run_num, scene_type, scene, target, corr_objects,
+                                        correlations, detector_models, Methods.RANDOM)
+                    all_trials.extend([hier_corr_gt,
+                                       hier_target,
+                                       flat_corr_gt,
+                                       flat_target_gt,
+                                       greedynbv,
+                                       random])
     exp_name = "ExperimentThor-AA"
     exp = Experiment(exp_name,
                      all_trials,
