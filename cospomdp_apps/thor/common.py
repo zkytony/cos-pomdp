@@ -141,7 +141,7 @@ class TaskArgs:
     target: str = "Apple"
     task_env: str = "ThorObjectSearch"
     agent_class: str = "ThorObjectSearchOptimalAgent"
-    max_steps: int = 100
+    max_steps: int = constants.MAX_STEPS
     grid_maps_path: str = GRID_MAPS_PATH
     save_grid_map: bool = True
     use_vision_detector: bool = False

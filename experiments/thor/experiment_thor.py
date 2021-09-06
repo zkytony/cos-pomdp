@@ -10,6 +10,7 @@ import thortils as tt
 from cospomdp_apps.thor.common import TaskArgs, make_config
 from cospomdp_apps.thor import agent as agentlib
 from cospomdp_apps.thor.trial import ThorObjectSearchTrial
+from cospomdp_apps.thor import constants
 
 from detector_settings import CLASSES
 
@@ -65,7 +66,7 @@ class Methods:
 
 
 def make_trial(run_num, scene_type, scene, target, corr_objects,
-               correlations, detector_models, method):
+               correlations, detector_models, method, max_steps=constants.MAX_STEPS):
     """
     Args:
         scene: scene to search in
@@ -87,7 +88,8 @@ def make_trial(run_num, scene_type, scene, target, corr_objects,
                     scene=scene,
                     target=target,
                     agent_class=method["agent"],
-                    task_env="ThorObjectSearch")
+                    task_env="ThorObjectSearch",
+                    max_steps=max_steps)
     config = make_config(args)
     config["agent_config"]["corr_specs"] = {}
     config["agent_config"]["detector_specs"] = {
@@ -123,7 +125,19 @@ def EXPERIMENT_THOR(split=10, num_trials=3):
 
             targets = CLASSES[scene]["targets"]
             corr_objects = CLASSES[scene]["supports"]
-            for target, true_positive_rate in targets:
+
+            # make detector models
+            detector_models = {}
+            for target, tp_rate, avg_det_dist_meter in targets:
+                detector_models[target] =\
+                    ("fan-nofp", dict(fov=constants.FOV,
+                                      min_range=1,
+                                      max_range=avg_det_dist_meter / constants.GRID_SIZE,
+                                      (tp_rate, 0.1)))
+
+
+
+            for target, true_positive_rate, avg_detection_range in targets:
 
                 for run_num in range(num_trials):
                     # TODO: detector models and correlations

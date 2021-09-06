@@ -31,6 +31,10 @@ class Detector:
                                     path=self.model_path,
                                     source="local")
 
+    @property
+    def detectable_classes(self):
+        return self.config["names"]
+
     def detect(self, frame):
         """
         Args:
