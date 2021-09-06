@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument("model_path", type=str, help="path to the detector model")
     parser.add_argument("data_yaml", type=str, help="path to the dataset yaml file")
     parser.add_argument("scene_type", type=str, help="scene_type, e.g. kitchen")
-    parser.add_argument("--iou-thres", type=float, default=0.7)
+    parser.add_argument("--iou-thres", type=float, default=0.5)
     parser.add_argument("-n", "--num-samples", type=int, default=30)
     args = parser.parse_args()
 

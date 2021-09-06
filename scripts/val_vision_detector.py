@@ -30,13 +30,14 @@ Here is how I count the true/false positive/negatives.
 
 import os
 import sys
+import cv2
 import argparse
 import pandas as pd
 from tqdm import tqdm
 from thortils.vision.metrics import simple_box_iou
-from thortils.vision.general import normalized_xywh_to_xyxy
+from thortils.vision.general import normalized_xywh_to_xyxy, xyxy_to_normalized_xywh
 from cospomdp_apps.thor.detector import Detector
-from cospomdp_apps.thor.data.browse import yolo_load_info, yolo_load_one
+from cospomdp_apps.thor.data.browse import yolo_load_info, yolo_load_one, yolo_plot_one
 
 
 # Validate vision detector. My own script.
@@ -108,6 +109,28 @@ def run(args):
                                     is_tp = True
                                     break
                             if not is_tp:
+                                ######## DEBUGGING
+                                if args.debug and cls == "StoveBurner":
+                                    xywh = xyxy_to_normalized_xywh(xyxy, img.shape[:2])
+                                    annots = []
+                                    for bbox2D in gtbboxes[cls]:
+                                        xywh_gt = xyxy_to_normalized_xywh(bbox2D, img.shape[:2])
+                                        annots.append([classes.index(cls), *xywh_gt])
+                                    img = yolo_plot_one(img,
+                                                        annots,
+                                                        classes,
+                                                        colors)
+                                    old_color = colors[classes.index(cls)]
+                                    colors[classes.index(cls)] = [200.0, 0.0, 0.0]
+                                    img = yolo_plot_one(img,
+                                                        [[classes.index(cls), *xywh]],
+                                                        classes,
+                                                        colors)
+                                    colors[classes.index(cls)] = old_color
+                                    img_rgb = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                                    cv2.imshow(cls, img_rgb)
+                                    cv2.waitKey(0)
+
                                 results.append([cls, "FP", 1])
 
     # Saves results as DataFrame. Use
@@ -132,17 +155,17 @@ def process(args, detectable_classes):
             tn = scounts.loc[(cls, "TN")]['count']
             true_pos_rate = tp / (tp + fn)
             false_pos_rate = fp / (fp + tn)
-            rates.append([cls, true_pos_rate, false_pos_rate])
+            rates.append([cls, tp, fn, true_pos_rate, fp, tn, false_pos_rate])
         except:
             print(f"Cannot get statistic for {cls}")
-    dfrates = pd.DataFrame(rates, columns=["class", "TP_rate", "FP_rate"])
+    dfrates = pd.DataFrame(rates, columns=["class", "TP", "FN", "TP_rate", "FP", "TN", "FP_rate"])
 
     print("##### True Positive and False Positive Counts and Rates ({}) #####".format(args.scene_type))
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
         print("--- counts ---")
-        print(scounts)
+        print(scounts.sort_values(dfrates.columns[0]))
         print("--- rates ---")
-        print(dfrates)
+        print(dfrates.sort_values(dfrates.columns[0]))
 
 if __name__ == "__main__":
     os.makedirs(OUTDIR, exist_ok=True)
@@ -151,7 +174,8 @@ if __name__ == "__main__":
     parser.add_argument("model_path", type=str, help="path to the detector model")
     parser.add_argument("data_yaml", type=str, help="path to the dataset yaml file")
     parser.add_argument("scene_type", type=str, help="scene_type, e.g. kitchen")
-    parser.add_argument("--iou-thres", type=float, default=0.7)
+    parser.add_argument("--iou-thres", type=float, default=0.5)
+    parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 
     detectable_classes = run(args)
