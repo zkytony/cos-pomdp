@@ -11,7 +11,8 @@ from thortils import (launch_controller,
                       thor_object_type,
                       thor_agent_position,
                       thor_object_position,
-                      ithor_scene_names)
+                      ithor_scene_names,
+                      ithor_scene_type)
 from thortils.constants import KITCHEN_TRAIN_SCENES, KITCHEN_VAL_SCENES
 from thortils.vision.metrics import simple_box_iou
 from cospomdp_apps.thor.detector import Detector
@@ -96,7 +97,13 @@ def plot(args):
                 orient="h", order=order, palette="light:#5A9")
     ax.set_xlabel("Distance to Agent (m)")
     ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
     ax.grid(axis='y')
+
+    print("--- Average TP Detection Distance to Agent ({}) ---".format(args.scene_type))
+    df_mean = df.groupby(["class"]).mean()
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        print(df_mean)
 
     # # TP/FP plot
     ax2 = ax.twiny()
@@ -104,7 +111,7 @@ def plot(args):
     sns.stripplot(x="count", y="class", hue="outcome", order=order,
                   data=scounts, ax=ax2, linewidth=1, size=5)
     ax2.xaxis.set_major_locator(ticker.MultipleLocator(25))
-    plt.savefig(os.path.join(OUTDIR, "_detection_distances.png"))
+    plt.savefig(os.path.join(OUTDIR, "_detection_distances_{}.png".format(args.scene_type)))
 
 if __name__ == "__main__":
     os.makedirs(OUTDIR, exist_ok=True)
