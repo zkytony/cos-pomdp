@@ -60,3 +60,9 @@ def collect_for(scene_type, for_train=True):
 if __name__ == "__main__":
     collect_for("kitchen", for_train=True)
     collect_for("kitchen", for_train=False)
+    collect_for("living_room", for_train=True)
+    collect_for("living_room", for_train=False)
+    collect_for("bedroom", for_train=True)
+    collect_for("bedroom", for_train=False)
+    collect_for("bathroom", for_train=True)
+    collect_for("bathroom", for_train=False)
