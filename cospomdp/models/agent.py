@@ -50,19 +50,9 @@ class CosAgent(pomdp_py.Agent):
         self.init_robot_state = init_robot_state
 
         transition_model = CosTransitionModel(target_id, robot_trans_model)
+        observation_model = build_cos_observation_model(corr_dists, detectors,
+                                                        robot_id, target_id)
 
-        omodels = {}
-        for objid in detectors:
-            if objid == target_id:
-                omodel_i = CosObjectObservationModel(
-                    target_id, target_id,
-                    robot_id, detectors[objid])
-            else:
-                omodel_i = CosObjectObservationModel(
-                    objid, target_id,
-                    robot_id, detectors[objid], corr_dist=corr_dists[objid])
-            omodels[objid] = omodel_i
-        observation_model = CosObservationModel(robot_id, target_id, omodels)
         policy_model.set_observation_model(observation_model,
                                            use_heuristic=use_heuristic)
         super().__init__(init_belief, policy_model,
@@ -94,6 +84,22 @@ class CosAgent(pomdp_py.Agent):
         new_belief = CosJointBelief({self.robot_id: new_brobot,
                                      self.target_id: new_btarget})
         self.set_belief(new_belief)
+
+def build_cos_observation_model(corr_dists, detectors, robot_id, target_id):
+    """Construct CosObservationModel"""
+    omodels = {}
+    for objid in detectors:
+        if objid == target_id:
+            omodel_i = CosObjectObservationModel(
+                target_id, target_id,
+                robot_id, detectors[objid])
+        else:
+            omodel_i = CosObjectObservationModel(
+                objid, target_id,
+                robot_id, detectors[objid], corr_dist=corr_dists[objid])
+        omodels[objid] = omodel_i
+    observation_model = CosObservationModel(robot_id, target_id, omodels)
+    return observation_model
 
 def initialize_robot_belief(init_robot_state):
     """The robot state is known"""
