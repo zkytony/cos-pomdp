@@ -127,6 +127,12 @@ class ThorObjectSearchCosAgent(ThorAgent):
             xyxy, conf, cls, loc3d = detection
             thor_x, _, thor_z = loc3d
             x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
+            if (x,z) not in self.search_region.locations:
+                # we don't want to lose this detection because it is at 'unknown'.
+                # so we will map it to the closest one
+                x, z = min(self.search_region.locations,
+                           key=lambda l: euclidean_dist(l, (x,z)))
+
             objobzs[cls] = cospomdp.Loc(cls, (x, z))
         return objobzs
 

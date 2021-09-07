@@ -67,7 +67,7 @@ class GreedyNbvAgent:
     """
     def __init__(self, target, init_robot_state,
                  search_region, reachable_positions,
-                 corr_dists, detectors, h_angles,
+                 corr_dists, detectors, detectable_objects, h_angles,
                  goal_distance, num_particles=100, prior={},
                  done_thres=0.9,
                  num_viewpoint_samples=10,
@@ -76,6 +76,7 @@ class GreedyNbvAgent:
         prior: Maps from object_id to a map from search region location to a float.
         detectors: Maps from objid to a DetectionModel Pr(zi | si, srobot')
             Must contain an entry for the target object
+        detectable_objects: Maps from objid to (objid, objclass)
         corr_dists: Maps from objid to CorrelationDist Pr(si | starget)
             Does not need to contain an entry for the target object
         reachable_positions (list): List of 2D (x,y) locations that are
@@ -88,7 +89,6 @@ class GreedyNbvAgent:
         self._init_robot_state = init_robot_state
         self.target = target
         self.brobot = pomdp_py.WeightedParticles([(self._init_robot_state, 1.0)])
-        self.particle_beliefs = {}
         self._num_particles = num_particles
         self._done_thres = 0.9
         self._h_angles = h_angles
@@ -96,8 +96,8 @@ class GreedyNbvAgent:
         self._decision_params = decision_params
         self._goal_distance = goal_distance
         # initialize particle beliefs.
-        for objid in detectors:
-            self.particle_beliefs[objid] = self._init_belief(objid, prior=prior.get(objid, {}))
+        self.particle_beliefs = self.init_beliefs(detectable_objects)
+        self.detectable_objects = detectable_objects
 
         # Constructs the CosObservationModel
         self.observation_model = build_cos_observation_model(
@@ -122,11 +122,15 @@ class GreedyNbvAgent:
     def target_id(self):
         return self.target[0]
 
-    @property
-    def detectable_objects(self):
-        return list(self.detectors.keys())
+    def init_beliefs(self, detectable_objects, prior={}):
+        particle_beliefs = {}
+        for objid in detectable_objects:
+            objid, cls = detectable_objects[objid]
+            particle_beliefs[objid] =\
+                self._init_obj_belief(objid, cls, prior=prior.get(objid, {}))
+        return particle_beliefs
 
-    def _init_belief(self, objid, prior={}):
+    def _init_obj_belief(self, objid, cls, prior={}):
         """prior: Maps from search region location to a float."""
         # For every detectable object, maintain a set of particle beliefs
         # The initial belief is
@@ -135,18 +139,17 @@ class GreedyNbvAgent:
         else:
             hist = None
         particles = []
-        for cls in self.detectable_objects:
-            for i in range(self._num_particles):
-                if hist is not None:
-                    loc = hist.random()
-                    weight = hist[loc]
-                else:
-                    loc = random.sample(self.search_region.locations, 1)[0]
-                    weight = 1.0 / len(self.search_region.locations)
-                si = self.search_region.object_state(
-                    objid, cls, loc
-                )
-                particles.append((si, weight))
+        for i in range(self._num_particles):
+            if hist is not None:
+                loc = hist.random()
+                weight = hist[loc]
+            else:
+                loc = random.sample(self.search_region.locations, 1)[0]
+                weight = 1.0 / len(self.search_region.locations)
+            si = self.search_region.object_state(
+                objid, cls, loc
+            )
+            particles.append((si, weight))
         return pomdp_py.WeightedParticles(particles)
 
     def update(self, action, observation):
@@ -172,7 +175,7 @@ class GreedyNbvAgent:
                 new_particle_beliefs[objid] = next_bobj
         self.particle_beliefs = new_particle_beliefs
 
-    def _reinvigorate(self, particles):
+    def _reinvigorate(self, objid, particles):
         """
         Quote from paper:
         To deal with particle decay, we reinvigorate the particles of each o i by
@@ -185,7 +188,13 @@ class GreedyNbvAgent:
         Args:
             particles (WeightedParticles)
         """
-        particles = particles.condense()
+        try:
+            particles = particles.condense()
+        except ZeroDivisionError:
+            print("Particle depletion. Reinvigorate all particles.")
+            cls = self.detectable_objects[objid][1]
+            return self._init_obj_belief(objid, cls)
+
         _srnd = particles.random()
         _objid = _srnd.id
         _cls = _srnd.objclass
@@ -221,7 +230,7 @@ class GreedyNbvAgent:
             resampled_particles.append((starget, weight))
 
         belief = pomdp_py.WeightedParticles(resampled_particles)
-        return self._reinvigorate(belief)
+        return self._reinvigorate(self.target_id, belief)
 
     def _update_object_particles(self, objid, bobj, observation, next_btarget, next_srobot, num_particles):
         """Particle Filter that follows
@@ -234,10 +243,12 @@ class GreedyNbvAgent:
         _temp_particles = []
         for _ in range(num_particles):
             starget = next_btarget.random()
-            dist_si = self.observation_model.z(objid).corr_cond_dist(starget)
-            si = dist_si.sample()
+            zi_model = self.observation_model.zi_models[objid]
+            dist_si = zi_model.corr_cond_dist(starget)
+            si = dist_si.sample()[objid]
             zi = observation.z(objid)
-            zi_prob = self.observation_model.z(objid).detection_model.probability(zi, si, next_srobot)
+            zi_detection_model = zi_model.detection_model
+            zi_prob = zi_detection_model.probability(zi, si, next_srobot)
             weight = zi_prob
             _temp_particles.append((si, weight))
         _temp_particles = pomdp_py.WeightedParticles(_temp_particles)
@@ -247,7 +258,7 @@ class GreedyNbvAgent:
             weight = _temp_particles[starget]
             resampled_particles.append((si, weight))
         belief = pomdp_py.WeightedParticles(resampled_particles)
-        return self._reinvigorate(belief)
+        return self._reinvigorate(objid, belief)
 
     def act(self):
         """Quote from Zeng et al. 2020
@@ -314,10 +325,11 @@ class GreedyNbvAgent:
                     # sample other object locations conditioned on target location
                     zi_model = self.observation_model.zi_models[objid]
                     dist_si = zi_model.corr_cond_dist(starget)
-                    si = dist_si.sample()
+                    si = dist_si.sample()[objid]
                     # check if the robot can observe this object
-                    imagined_srobot = self._init_belief.__class__(self.robot_id, robot_pose)
-                    zi = self.observation_model.z(objid).sample(si, imagined_srobot)
+                    imagined_srobot = self._init_robot_state.__class__(self.robot_id, robot_pose)
+                    zi_detection_model = self.observation_model.zi_models[objid].detection_model
+                    zi = zi_detection_model.sample(si, imagined_srobot)
                     if zi.loc is not None:
                         identity = 1.0
                     else:
@@ -389,7 +401,7 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
         goal_distance = task_config["nav_config"]["goal_distance"] / grid_map.grid_size
         self.greedy_agent = GreedyNbvAgent(target, init_robot_state,
                                            search_region, reachable_positions,
-                                           corr_dists, detectors, h_angles,
+                                           corr_dists, detectors, detectable_objects, h_angles,
                                            goal_distance=goal_distance,
                                            num_particles=num_particles,
                                            done_thres=done_thres,

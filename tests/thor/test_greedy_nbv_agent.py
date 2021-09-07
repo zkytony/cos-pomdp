@@ -12,7 +12,6 @@ def step_act_cb(task_env, agent, **kwargs):
         img = viz.draw_robot(img, *vpt, color=(100, 100, 250))
     img = viz.draw_robot(img, *bestvpt, color=(136, 9, 171))
     viz.show_img(img)
-    # import pdb; pdb.set_trace()
 
 def _test_greedy_agent(target,
                        other=None,
@@ -26,7 +25,11 @@ def _test_greedy_agent(target,
                        max_steps=100):
     print("Test cospomdp_random agent")
     agent_init_inputs = ["grid_map", "agent_pose"]
-    args = TaskArgs(detectables=[target],
+    if other is None:
+        detectables = [target]
+    else:
+        detectables = [target, other]
+    args = TaskArgs(detectables=detectables,
                     scene='FloorPlan1',
                     target=target,
                     agent_class="ThorObjectSearchGreedyNbvAgent",
@@ -44,8 +47,7 @@ def _test_greedy_agent(target,
         config["agent_config"]["detector_specs"][other] =\
             ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
 
-    config["agent_config"]["num_particles"] = 1000
-
+    config["agent_config"]["num_particles"] = 200
 
     config["visualize"] = True
     config["viz_config"] = {
@@ -56,4 +58,4 @@ def _test_greedy_agent(target,
     trial.run(step_act_cb=step_act_cb)
 
 if __name__ == "__main__":
-    _test_greedy_agent('Bowl')
+    _test_greedy_agent('Fridge')
