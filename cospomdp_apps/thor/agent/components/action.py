@@ -48,6 +48,11 @@ class Stay(MoveTopo):
     def __init__(self, nid, cost_scaling_factor=1.0):
         super().__init__(nid, nid, gdist=0.0, cost_scaling_factor=1.0, atype="stay")
 
+class MoveViewpoint(Motion):
+    def __init__(self, dst_pose):
+        self.dst_pose = dst_pose
+        super().__init__("move_to_viewpoint({})".format(dst_pose))
+
 
 def grid_navigation_actions2d(movement_params, grid_size):
     """

@@ -16,19 +16,23 @@ do not have access to conditionals between other objects)
 searching for the target object based on the maintained belief.
 (We do not do this but do something along a similar line_
 """
+import math
 import pomdp_py
 import random
 from ..common import TOS_Action, ThorAgent
 from .cospomdp_basic import ThorObjectSearchCosAgent, GridMapSearchRegion
 from cospomdp.models.agent import build_cos_observation_model
+from cospomdp.models.sensors import yaw_facing
 from cospomdp.domain.state import CosState
+from cospomdp.utils.math import euclidean_dist
+from .cospomdp_complete import shortest_path
+from .components.action import MoveViewpoint
 
 class GreedyNbvAgent:
     """Greedy next-best-view agent.
     The agent maintains a set of weighted particles for
-    each object. Select view point based on expected entropy.
-    (this is a different strategy, but a similar vein)
-    about the joint belief space of all objects.
+    each object. Select view point based on a "hybrid utility"
+    (this may not be exactly the same, but it is their idea)
 
     The implementation here assumes operating in grid map coordinates.
 
@@ -56,21 +60,34 @@ class GreedyNbvAgent:
     Pr(si' | B, a, z) = Pr(si' | starget', B, a, z) Pr(starget' | B, a, z)
                       = Pr(si' | starget') Pr(starget' | B, a, z)
     """
-    def __init__(self, target, init_robot_state, search_region, corr_dists, detectors,
-                 num_particles=100, prior={}):
+    def __init__(self, target, init_robot_state,
+                 search_region, reachable_positions,
+                 corr_dists, detectors, h_angles,
+                 num_particles=100, prior={},
+                 done_thres=0.9,
+                 num_view_point_samples=10,
+                 decision_params={}):
         """
         prior: Maps from object_id to a map from search region location to a float.
         detectors: Maps from objid to a DetectionModel Pr(zi | si, srobot')
             Must contain an entry for the target object
         corr_dists: Maps from objid to CorrelationDist Pr(si | starget)
             Does not need to contain an entry for the target object
+        reachable_positions (list): List of 2D (x,y) locations that are
+             possible locations for the robot to reach
+        alpha, beta, sigma are parameters from the paper.
         """
         self.search_region = search_region
+        self.reachable_positions = reachable_positions
         self._init_robot_state = init_robot_state
         self.target = target
         self.brobot = pomdp_py.WeightedParticles([(self._init_robot_state, 1.0)])
         self.particle_beliefs = {}
         self._num_particles = num_particles
+        self._done_thres = 0.9
+        self._num_other_object_samples = num_other_object_samples
+        self._h_angles = h_angles
+        self._decision_params = decision_params
         # initialize particle beliefs.
         for objid in detectors:
             self.particle_beliefs[objid] = self._init_belief(objid, prior=prior.get(objid, {}))
@@ -78,6 +95,13 @@ class GreedyNbvAgent:
         # Constructs the CosObservationModel
         self.observation_model = build_cos_observation_model(
             corr_dists, detectors, self.robot_id, target[0])
+
+        self._current_goal = None
+
+    @property
+    def belief(self):
+        return pomdp_py.OOBelief({**self.particle_beliefs,
+                                  **{self.robot_id: self.brobot}})
 
     @property
     def robot_id(self):
@@ -124,7 +148,7 @@ class GreedyNbvAgent:
         rstate_class = self._init_robot_state.__class__
         next_srobot = rstate_class.from_obz(robotobz)
         next_brobot = pomdp_py.WeightedParticles([(next_srobot, 1.0)])
-        self.brobot = next_brobot
+        self._brobot = next_brobot
 
         btarget = self.particle_beliefs[self.target_id]
         next_btarget = self._update_particle_belief(btarget, observation, is_target=True)
@@ -140,7 +164,7 @@ class GreedyNbvAgent:
 
     def _update_target_particles(self, btarget, next_srobot, observation, num_particles):
         _temp_particles = []
-        for i in range(num_particles):
+        for _ in range(num_particles):
             starget = btarget.random()
             next_state = CosState({self.target_id: starget,
                                    next_srobot.id: next_srobot})
@@ -149,7 +173,7 @@ class GreedyNbvAgent:
         # resampling
         _temp_particles = pomdp_py.WeightedParticles(_temp_particles)
         resampled_particles = []
-        for i in range(num_particles):
+        for _ in range(num_particles):
             starget = _temp_particles.random()
             weight = _temp_particles[starget]
             resampled_particles.append((starget, weight))
@@ -164,7 +188,7 @@ class GreedyNbvAgent:
 
         Note that Pr(starget' | B, a, z) has been updated already."""
         _temp_particles = []
-        for i in range(num_particles):
+        for _ in range(num_particles):
             starget = next_btarget.random()
             dist_si = self.observation_model.z(objid).corr_cond_dist(starget)
             si = dist_si.sample()
@@ -174,11 +198,86 @@ class GreedyNbvAgent:
             _temp_particles.append((si, weight))
         _temp_particles = pomdp_py.WeightedParticles(_temp_particles)
         resampled_particles = []
-        for i in range(num_particles):
+        for _ in range(num_particles):
             si = _temp_particles.random()
             weight = _temp_particles[starget]
             resampled_particles.append((si, weight))
         return pomdp_py.WeightedParticles(resampled_particles)
+
+    def act(self):
+        """Quote from Zeng et al. 2020
+
+        UHS encourages the robot to explore promising areas that could
+        contain the target object and/or any landmark object, while accounting
+        for navigation cost
+
+        0. If the highest belief is above some threshold, then Done.
+        1. If currently not moving towards a viewpoint, then selects view points
+        2. Decides which view point to visit based on a "hybrid utility function"
+          - This will be a high-level goal; The A* planner is expected to handle
+           this. Will not replan when the A* goal is not reached.
+        """
+        btarget = self._particle_beliefs[self.target]
+        starget_mpe = btarget.mpe()
+        if btarget[starget_mpe] > self._done_thresh:
+            return Done()
+
+        if self._current_goal is not None:
+            return self._current_goal
+
+        # sample view points based on belief over the target location
+        srobot = self._brobot.mpe()
+        viewpoints = []
+        for _ in range(self._num_view_point_samples):
+            starget = btarget.random()
+            # a view point is a pose. Get the position from starget,
+            # and choose the robot reachable position closest to the target,
+            # then get the yaw facing the target
+            robot_pos = min(self.reachable_positions, key=lambda p: euclidean_dist(p, starget.loc))
+            yaw = yaw_facing(srobot.loc, starget.loc, self._h_angles)
+            robot_pose = (*robot_pos, yaw)
+            viewpoints.append((robot_pose, starget, btarget[starget]))
+
+        # decide which view point to visit
+        best_score = float('-inf')
+        best_viewpoint = None
+        alpha = self._decision_params.get("alpha", 0.1)
+        beta = self._decision_params.get("beta", 0.4)
+        sigma = self._decision_params.get("sigma", 0.5)
+        for robot_pose, starget, weight_target in viewpoints:
+            # because path is over grid map, its length is the length of the path
+            navigation_distance = len(shortest_path(self.reachable_positions,
+                                                    srobot.loc, robot_pose[:2]))
+            # Trades off going for the target with any other object.
+            # We sample other object states conditioned on the target object location.
+            # and check if the robot can observe them from the view point
+            weight_observing_other_object = 0
+            for objid in self._particle_beliefs:
+                if objid != self.target:
+                    # sample other object locations conditioned on target location
+                    dist_si = self.observation_model.z(objid).corr_cond_dist(starget)
+                    si = dist_si.sample()
+                    # check if the robot can observe this object
+                    imagined_srobot = self._init_belief.__class__(self.robot_id, robot_pose)
+                    zi = self.observation_model.z(objid).sample(si, imagined_srobot)
+                    if zi.loc is not None:
+                        identity = 1.0
+                    else:
+                        identity = 0.0
+                    weight_si = dist_si[si]
+                    weight_observing_other_object = max(weight_observing_other_object,
+                                                        weight_si * identity)
+
+            score = weight_target + alpha * 1 / (sigma * math.atan(navigation_distance))\
+                + beta * weight_observing_other_object
+            if score > best_score:
+                best_viewpoint = robot_pose
+
+        self._current_goal = MoveViewpoint(robot_pose)
+        return self._current_goal
+
+    def clear_goal(self):
+        self._current_goal = None
 
 
 class ThorObjectSearchGreedyNbvAgent(ThorAgent):

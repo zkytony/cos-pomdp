@@ -29,8 +29,6 @@ class CosAgent(pomdp_py.Agent):
                 with +x as th=0 and th increases counterclockwise.
             target (tuple): target_id, target_class
             search_region (SearchRegion2D): possible locations for the target
-            reachable_positions (list): List of 2D (x,y) locations that are
-                possible locations for the robot to reach
             corr_dists: Maps from objid to CorrelationDist Pr(si | starget)
                 Does not need to contain an entry for the target object
             detectors: Maps from objid to a DetectionModel Pr(zi | si, srobot')
