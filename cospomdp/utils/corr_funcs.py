@@ -18,6 +18,10 @@ class ConditionalSpatialCorrelation:
         target (ID, class): the target object
         other (ID, class): the other object
         """
+        if type(target) == str:
+            target = (target, target)  # just to be consistent with other code
+        if type(other) == str:
+            other = (other, other)
         self.target = target
         self.other = other
 

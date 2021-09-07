@@ -12,8 +12,7 @@ from cospomdp_apps.thor.common import TaskArgs, make_config
 from cospomdp_apps.thor import agent as agentlib
 from cospomdp_apps.thor.trial import ThorObjectSearchTrial
 from cospomdp_apps.thor import constants
-
-from detector_settings import CLASSES
+from cospomdp.utils.corr_funcs import ConditionalSpatialCorrelation
 
 # Configurations
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -73,7 +72,7 @@ OBJECT_CLASSES = {
     "living_room": {"target": ["KeyChain", "CreditCard", "Laptop"],
                     "corr": ["FloorLamp", "HousePlant", "Television", "Painting", "Sofa"]},
     "bedroom": {"target": ["CellPhone", "Book", "CD"],
-                "corr": ["DeskLamp", "Laptop", "Mirror", "Pillow", "GarbageCan"]}
+                "corr": ["DeskLamp", "Laptop", "Mirror", "Pillow", "GarbageCan"]},
     "bathroom": {"target": ["Candle", "ScrubBrush", "Plunger"],
                  "corr": ["Toilet", "Towel", "Mirror", "HandTowel", "SprayBottle"]}
 }
@@ -159,6 +158,10 @@ def EXPERIMENT_THOR(split=10, num_trials=3):
             detector_models = read_detector_params()
 
             for target, true_positive_rate, avg_detection_range in targets:
+
+                # correlations
+                for corr_object in corr_objects:
+                    ConditionalSpatialCorrelation(target, corr_object)
 
                 for run_num in range(num_trials):
                     hier_corr_crt = make_trial(Methods.HIERARCHICAL_CORR_CRT,
