@@ -31,6 +31,12 @@ MAX_STEPS = 100
 TOPO_PLACE_SAMPLES = 20  # specific to hierarchical methods
 
 class Methods:
+    # Here is what I mean by "groundtruth correlation"
+    # Pr(si | starget) returns 1.0 (or with some little noise, gaussian noise?)
+    # if si is the **True** target state, regardless
+    # of starget's value. Basically, as long as you observe the correlated object,
+    # your belief will be updated so that it'll be highest on the true target location.
+    # This is the best correlation can ever do.
     HIERARCHICAL_CORR_GT = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, corr_type="groundtruth")
     HIERARCHICAL_CORR_LRN = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, corr_type="learned")
     HIERARCHICAL_CORR_WRG = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, corr_type="wrong")
@@ -76,8 +82,9 @@ OBJECT_CLASSES = {
                  "corr": ["Toilet", "Towel", "Mirror", "HandTowel", "SprayBottle"]}
 }
 
-def make_trial(run_num, scene_type, scene, target, corr_objects,
-               correlations, detector_models, method, max_steps=constants.MAX_STEPS):
+def make_trial(method, run_num, scene_type, scene,
+               target, detector_models,
+               corr_objects=None, correlations=None, max_steps=constants.MAX_STEPS):
     """
     Args:
         scene: scene to search in
@@ -89,6 +96,8 @@ def make_trial(run_num, scene_type, scene, target, corr_objects,
 
         method_name: a string, e.g. "HIERARCHICAL_CORR_GT"
     """
+    if corr_objects is None:
+        corr_objects = set()
     detectables = set(target) | set(corr_objects)
 
     agent_init_inputs = []
@@ -110,7 +119,7 @@ def make_trial(run_num, scene_type, scene, target, corr_objects,
     if method["use_corr"]:
         for other in corr_objects:
             config["agent_config"]["corr_specs"][(target, other)] = correlations[(target, other)]
-            config["agent_config"]]["detector_specs"][other] = detector_models[other]
+            config["agent_config"]["detector_specs"][other] = detector_models[other]
 
     config["agent_config"]["solver"] = "pomdp_py.POUCT"
     config["agent_config"]["solver_args"] = POUCT_ARGS
@@ -147,8 +156,8 @@ def EXPERIMENT_THOR(split=10, num_trials=3):
     for scene_type in ['kitchen', 'living_room', 'bedroom', 'bathroom']:
         for scene in tt.ithor_scene_names(scene_type, levels=(21,31)):  # use the last 10 for evaluation
 
-            targets = CLASSES[scene]["targets"]
-            corr_objects = CLASSES[scene]["supports"]
+            targets = OBJECT_CLASSES[scene]["target"]
+            corr_objects = OBJECT_CLASSES[scene]["corr"]
 
             # make detector models
             detector_models = read_detector_params()
@@ -156,9 +165,12 @@ def EXPERIMENT_THOR(split=10, num_trials=3):
             for target, true_positive_rate, avg_detection_range in targets:
 
                 for run_num in range(num_trials):
-                    # TODO: detector models and correlations
-                    hier_corr_gt = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                              correlations, detector_models, Methods.HIERARCHICAL_CORR_GT)
+                    hier_corr_gt = make_trial(Methods.HIERARCHICAL_CORR_GT,
+                                              run_num, scene_type, scene,
+                                              target, detector_models,
+                                              corr_objects=corr_objects,
+                                              correlations=correlations)
+
                     hier_corr_lrn = make_trial(run_num, scene_type, scene, target, corr_objects,
                                               correlations, detector_models, Methods.HIERARCHICAL_CORR_LRN)
                     hier_corr_wrg = make_trial(run_num, scene_type, scene, target, corr_objects,

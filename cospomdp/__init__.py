@@ -18,7 +18,8 @@ from cospomdp.models.observation_model import (CosObjectObservationModel,
                                                CosObservationModel,
                                                DetectionModel,
                                                FanModelYoonseon,
-                                               FanModelNoFP)
+                                               FanModelNoFP,
+                                               FanModelSimpleFP)
 # from cospomdp.models.policy_model import PolicyModel2D
 from cospomdp.models.reward_model import ObjectSearchRewardModel, NavRewardModel
 
