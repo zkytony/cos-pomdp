@@ -2,6 +2,7 @@ import os
 import copy
 import random
 import math
+import json
 import pandas as pd
 from datetime import datetime as dt
 
@@ -79,7 +80,7 @@ OBJECT_CLASSES = {
 
 def make_trial(method, run_num, scene_type, scene,
                target, detector_models,
-               corr_objects=None, correlations=None, max_steps=constants.MAX_STEPS):
+               corr_objects=None, max_steps=constants.MAX_STEPS, rnd=random):
     """
     Args:
         scene: scene to search in
@@ -113,13 +114,14 @@ def make_trial(method, run_num, scene_type, scene,
 
     if method["use_corr"]:
         for other in corr_objects:
-            config["agent_config"]["corr_specs"][(target, other)] = correlations[(target, other)]
+            spcorr = load_correlation(scene, scene_type, other, method["corr_type"], rnd=rnd)
+            config["agent_config"]["corr_specs"][(target, other)] = spcorr.func
             config["agent_config"]["detector_specs"][other] = detector_models[other]
 
     config["agent_config"]["solver"] = "pomdp_py.POUCT"
     config["agent_config"]["solver_args"] = POUCT_ARGS
 
-    if "CompleteCosAgent" in method[agent]:
+    if "CompleteCosAgent" in method['agent']:
         config["agent_config"]["num_place_samples"] = TOPO_PLACE_SAMPLES
         config["agent_config"]["local_search_type"] = "basic"
         config["agent_config"]["local_search_params"] = LOCAL_POUCT_ARGS
@@ -142,12 +144,34 @@ def read_detector_params(filepath=os.path.join(ABS_PATH, "detector_params.csv"))
                                     quality_params)
     return detector_models
 
+CORR_DATASET = os.path.join(ABS_PATH, "../../data/thor/corrs")
+def load_correlation(scene, scene_type, target, corr_object, corr_type, rnd=random):
+    if corr_type == "correct":
+        fname = f"distances_{scene_type}_{target}-{corr_object}_{scene}.json"
+    elif corr_type == "learned":
+        fname = f"distances_{scene_type}_{target}-{corr_object}_train.json"
+    elif corr_type == "wrong":
+        # For the wrong correlation, instead of taking target and corr_object,
+        # we randomly choose another corr_object instead, as the correlation
+        # for the given `target`, `corr_object`. This will be a wrong correlation,
+        # but not the worst.
+        another_corr_object = rnd.sample(CLASSES[scene]['corr'], 1)[0]
+        fname = f"distances_{scene_type}_{target}-{another_corr_object}_{scene}.json"
+    else:
+        raise ValueError("Unknown corr type {}".format(corr_type))
+
+    with open(os.path.join(CORR_DATASET, fname)) as f:
+        dd = json.load(f)
+    spcorr = ConditionalSpatialCorrelation(target, corr_object, dd["distances"])
+    return spcorr
+
 
 def EXPERIMENT_THOR(split=10, num_trials=3):
     """
     Each object is search `num_trials` times
     """
     all_trials = []
+    rnd = random.Random(1000) # this is used to generated deterministic trials
     for scene_type in ['kitchen', 'living_room', 'bedroom', 'bathroom']:
         for scene in tt.ithor_scene_names(scene_type, levels=(21,31)):  # use the last 10 for evaluation
 
@@ -159,31 +183,27 @@ def EXPERIMENT_THOR(split=10, num_trials=3):
 
             for target, true_positive_rate, avg_detection_range in targets:
 
-                # correlations
-                for corr_object in corr_objects:
-                    ConditionalSpatialCorrelation(target, corr_object)
-
                 for run_num in range(num_trials):
                     hier_corr_crt = make_trial(Methods.HIERARCHICAL_CORR_CRT,
-                                              run_num, scene_type, scene,
-                                              target, detector_models,
-                                              corr_objects=corr_objects,
-                                              correlations=correlations)
+                                               run_num, scene_type, scene,
+                                               target, detector_models,
+                                               corr_objects=corr_objects,
+                                               rnd=rnd)
 
                     hier_corr_lrn = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                              correlations, detector_models, Methods.HIERARCHICAL_CORR_LRN)
+                                              detector_models, Methods.HIERARCHICAL_CORR_LRN)
                     hier_corr_wrg = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                              correlations, detector_models, Methods.HIERARCHICAL_CORR_WRG)
+                                              detector_models, Methods.HIERARCHICAL_CORR_WRG)
                     hier_target = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                             correlations, detector_models, Methods.HIERARCHICAL_TARGET)
+                                             detector_models, Methods.HIERARCHICAL_TARGET)
                     flat_corr_crt = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                              correlations, detector_models, Methods.FLAT_POUCT_CORR_CRT)
+                                              detector_models, Methods.FLAT_POUCT_CORR_CRT)
                     flat_target_crt = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                                correlations, detector_models, Methods.FLAT_POUCT_TARGET_CRT)
+                                                detector_models, Methods.FLAT_POUCT_TARGET_CRT)
                     greedynbv = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                           correlations, detector_models, Methods.GREEDY_NBV)
+                                           detector_models, Methods.GREEDY_NBV)
                     random = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                        correlations, detector_models, Methods.RANDOM)
+                                        detector_models, Methods.RANDOM)
                     all_trials.extend([hier_corr_crt,
                                        hier_target,
                                        flat_corr_crt,
