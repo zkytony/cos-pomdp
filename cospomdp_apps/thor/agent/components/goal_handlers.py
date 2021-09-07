@@ -108,7 +108,10 @@ class MacroMoveHandler(GoalHandler):
 
     @property
     def done(self):
-        return self._index >= len(self._plan)
+        if self._plan:
+            return self._index >= len(self._plan)
+        else:
+            return True
 
     @property
     def ispomdp(self):

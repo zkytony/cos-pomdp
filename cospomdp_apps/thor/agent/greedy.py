@@ -200,17 +200,31 @@ class GreedyNbvAgent:
         _cls = _srnd.objclass
         new_particles = [p for p in particles.particles]
         if len(particles) <= self._num_particles:
+            add_from_belief = True
             for _ in range(self._num_particles - len(particles)):
-                # sample in the search region
-                loc = random.sample(self.search_region.locations, 1)[0]
-                si = self.search_region.object_state(
-                    _objid, _cls, loc
-                )
-                if si in particles:
+                # sample according to current belief
+                if add_from_belief:
+                    si = particles.random()
                     weight = particles[si]
+                    # add random shift
+                    si = si.__class__(si.id, si.objclass,
+                                      (si.loc[0] + random.randint(0,2),
+                                       si.loc[1] + random.randint(0,2)))
+                    if si.loc in self.search_region:
+                        new_particles.append((si, weight))
                 else:
-                    weight = 1.0 / len(self.search_region.locations)
-                new_particles.append((si, weight))
+                    # sample in the search region
+                    # sample in the search region
+                    loc = random.sample(self.search_region.locations, 1)[0]
+                    si = self.search_region.object_state(
+                        _objid, _cls, loc
+                    )
+                    if si in particles:
+                        weight = particles[si]
+                    else:
+                        weight = 1.0 / len(self.search_region.locations)
+                    new_particles.append((si, weight))
+                add_from_belief = not add_from_belief  # alternate
         return pomdp_py.WeightedParticles(new_particles)
 
     def _update_target_particles(self, btarget, next_srobot, observation, num_particles):
