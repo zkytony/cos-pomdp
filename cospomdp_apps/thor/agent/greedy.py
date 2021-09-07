@@ -104,6 +104,7 @@ class GreedyNbvAgent:
             corr_dists, detectors, self.robot_id, target[0])
 
         self._current_goal = None
+        self.last_viewpoints = []
 
     def sensor(self, objid):
         return self.observation_model.zi_models[objid].detection_model.sensor
@@ -171,6 +172,38 @@ class GreedyNbvAgent:
                 new_particle_beliefs[objid] = next_bobj
         self.particle_beliefs = new_particle_beliefs
 
+    def _reinvigorate(self, particles):
+        """
+        Quote from paper:
+        To deal with particle decay, we reinvigorate the particles of each o i by
+        sampling in known room areas, as well as around other objects o j based on B(Ri
+        j). In step 5, j ∈ Γ(i) only if 1−B(Ri j = Disjoint) > 0.2. Across our
+        experiments, we use 100 particles for each object.
+
+        Because we don't have B(Rj), we will only do the first kind of reinvigoration
+
+        Args:
+            particles (WeightedParticles)
+        """
+        particles = particles.condense()
+        _srnd = particles.random()
+        _objid = _srnd.id
+        _cls = _srnd.objclass
+        new_particles = [p for p in particles.particles]
+        if len(particles) <= self._num_particles:
+            for _ in range(self._num_particles - len(particles)):
+                # sample in the search region
+                loc = random.sample(self.search_region.locations, 1)[0]
+                si = self.search_region.object_state(
+                    _objid, _cls, loc
+                )
+                if si in particles:
+                    weight = particles[si]
+                else:
+                    weight = 1.0 / len(self.search_region.locations)
+                new_particles.append((si, weight))
+        return pomdp_py.WeightedParticles(new_particles)
+
     def _update_target_particles(self, btarget, next_srobot, observation, num_particles):
         _temp_particles = []
         for _ in range(num_particles):
@@ -186,7 +219,9 @@ class GreedyNbvAgent:
             starget = _temp_particles.random()
             weight = _temp_particles[starget]
             resampled_particles.append((starget, weight))
-        return pomdp_py.WeightedParticles(resampled_particles)
+
+        belief = pomdp_py.WeightedParticles(resampled_particles)
+        return self._reinvigorate(belief)
 
     def _update_object_particles(self, objid, bobj, observation, next_btarget, next_srobot, num_particles):
         """Particle Filter that follows
@@ -211,7 +246,8 @@ class GreedyNbvAgent:
             si = _temp_particles.random()
             weight = _temp_particles[starget]
             resampled_particles.append((si, weight))
-        return pomdp_py.WeightedParticles(resampled_particles)
+        belief = pomdp_py.WeightedParticles(resampled_particles)
+        return self._reinvigorate(belief)
 
     def act(self):
         """Quote from Zeng et al. 2020
@@ -234,6 +270,7 @@ class GreedyNbvAgent:
         srobot = self.brobot.mpe()
         btarget = self.particle_beliefs[self.target_id]
         starget_mpe = btarget.mpe()
+        print("MPE belief:", btarget[starget_mpe])
         if btarget[starget_mpe] > self._done_thres:
             if euclidean_dist(starget_mpe.loc, srobot.loc) <= self._goal_distance\
                and self.sensor(self.target_id).in_range_facing(
@@ -294,7 +331,8 @@ class GreedyNbvAgent:
             if score > best_score:
                 best_viewpoint = robot_pose
 
-        self._current_goal = MoveViewpoint(robot_pose)
+        self._current_goal = MoveViewpoint(robot_pose, )
+        self.last_viewpoints = ([pt[0] for pt in viewpoints], best_viewpoint)
         return self._current_goal
 
     def clear_goal(self):
@@ -378,9 +416,15 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
             assert isinstance(goal, MoveViewpoint)
             self._goal_handler = MacroMoveHandler(goal.dst_pose[:2], self,
                                                   rot=(0, goal.dst_pose[2], 0),
-                                                  angle_tolerance=5)
-        action = self._goal_handler.step()
-        return action
+                                                  angle_tolerance=5,
+                                                  goal=goal)
+
+            if self._goal_handler.done:
+                # goal handler is done (immediately when it is created)
+                self._goal_handler = DoneHandler(goal, self)
+                return self._goal_handler.step()
+
+        return self._goal_handler.step()
 
     def update(self, tos_action, tos_observation):
         if self._goal_handler.updates_first:

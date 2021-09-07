@@ -84,15 +84,11 @@ class MacroMoveHandler(GoalHandler):
                                        diagonal_ok=agent.task_config["nav_config"]["diagonal_ok"],
                                        angle_tolerance=angle_tolerance,
                                        debug=True)
-        print(plan)
         self._plan = plan
         self._index = 0
 
     def step(self):
-        try:
-            action_name, action_delta = self._plan[self._index]["action"]
-        except:
-            import pdb; pdb.set_trace()
+        action_name, action_delta = self._plan[self._index]["action"]
         params = from_thor_delta_to_thor_action_params(action_name, action_delta)
         return TOS_Action(action_name, params)
 

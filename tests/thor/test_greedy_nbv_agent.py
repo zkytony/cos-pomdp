@@ -2,6 +2,18 @@ from cospomdp_apps.thor.trial import ThorObjectSearchTrial
 from cospomdp_apps.thor.common import TaskArgs, make_config
 from cospomdp.utils.corr_funcs import around
 
+def step_act_cb(task_env, agent, **kwargs):
+    viz = kwargs.get("viz")
+    step = kwargs.get("step")
+    vpts, bestvpt = agent.greedy_agent.last_viewpoints
+    img = viz.render(task_env, agent, step)
+
+    for vpt in vpts:
+        img = viz.draw_robot(img, *vpt, color=(100, 100, 250))
+    img = viz.draw_robot(img, *bestvpt, color=(136, 9, 171))
+    viz.show_img(img)
+    # import pdb; pdb.set_trace()
+
 def _test_greedy_agent(target,
                        other=None,
                        scene="FloorPlan1",
@@ -32,6 +44,8 @@ def _test_greedy_agent(target,
         config["agent_config"]["detector_specs"][other] =\
             ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
 
+    config["agent_config"]["num_particles"] = 1000
+
 
     config["visualize"] = True
     config["viz_config"] = {
@@ -39,7 +53,7 @@ def _test_greedy_agent(target,
     }
     trial = ThorObjectSearchTrial("test_greedy", config, verbose=True)
     print("Trial created")
-    trial.run()
+    trial.run(step_act_cb=step_act_cb)
 
 if __name__ == "__main__":
     _test_greedy_agent('Bowl')
