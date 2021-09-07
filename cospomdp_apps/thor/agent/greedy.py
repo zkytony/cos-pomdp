@@ -188,9 +188,7 @@ class GreedyNbvAgent:
         Args:
             particles (WeightedParticles)
         """
-        try:
-            particles = particles.condense()
-        except ZeroDivisionError:
+        if len(particles) == 0:
             print("Particle depletion. Reinvigorate all particles.")
             cls = self.detectable_objects[objid][1]
             return self._init_obj_belief(objid, cls)
@@ -199,32 +197,17 @@ class GreedyNbvAgent:
         _objid = _srnd.id
         _cls = _srnd.objclass
         new_particles = [p for p in particles.particles]
-        if len(particles) <= self._num_particles:
-            add_from_belief = True
+        if len(particles) <= self._num_particles * 0.2:
             for _ in range(self._num_particles - len(particles)):
-                # sample according to current belief
-                if add_from_belief:
-                    si = particles.random()
-                    weight = particles[si]
-                    # add random shift
-                    si = si.__class__(si.id, si.objclass,
-                                      (si.loc[0] + random.randint(0,2),
-                                       si.loc[1] + random.randint(0,2)))
-                    if si.loc in self.search_region:
-                        new_particles.append((si, weight))
-                else:
-                    # sample in the search region
-                    # sample in the search region
-                    loc = random.sample(self.search_region.locations, 1)[0]
-                    si = self.search_region.object_state(
-                        _objid, _cls, loc
-                    )
-                    if si in particles:
-                        weight = particles[si]
-                    else:
-                        weight = 1.0 / len(self.search_region.locations)
+                # Most of the time, sample according to current belief
+                si = particles.random()
+                weight = particles[si]
+                # add random shift
+                si = si.__class__(si.id, si.objclass,
+                                  (si.loc[0] + random.randint(0,1),
+                                   si.loc[1] + random.randint(0,1)))
+                if si.loc in self.search_region:
                     new_particles.append((si, weight))
-                add_from_belief = not add_from_belief  # alternate
         return pomdp_py.WeightedParticles(new_particles)
 
     def _update_target_particles(self, btarget, next_srobot, observation, num_particles):
@@ -243,7 +226,8 @@ class GreedyNbvAgent:
             weight = _temp_particles[starget]
             resampled_particles.append((starget, weight))
 
-        belief = pomdp_py.WeightedParticles(resampled_particles)
+        belief = pomdp_py.WeightedParticles(resampled_particles).condense()
+        print(belief.mpe(), belief[belief.mpe()])
         return self._reinvigorate(self.target_id, belief)
 
     def _update_object_particles(self, objid, bobj, observation, next_btarget, next_srobot, num_particles):
@@ -271,7 +255,7 @@ class GreedyNbvAgent:
             si = _temp_particles.random()
             weight = _temp_particles[starget]
             resampled_particles.append((si, weight))
-        belief = pomdp_py.WeightedParticles(resampled_particles)
+        belief = pomdp_py.WeightedParticles(resampled_particles).condense()
         return self._reinvigorate(objid, belief)
 
     def act(self):
