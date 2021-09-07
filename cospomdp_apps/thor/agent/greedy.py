@@ -253,7 +253,7 @@ class GreedyNbvAgent:
         resampled_particles = []
         for _ in range(num_particles):
             si = _temp_particles.random()
-            weight = _temp_particles[starget]
+            weight = _temp_particles[si]
             resampled_particles.append((si, weight))
         belief = pomdp_py.WeightedParticles(resampled_particles).condense()
         return self._reinvigorate(objid, belief)
