@@ -46,12 +46,16 @@ class GoalHandler:
         the COSPOMDP agent is updated"""
         return True
 
+class MacroMoveHandler(GoalHandler):
+    def __init__(self, dest_pos, agent, rot=None, angle_tolerance=15, goal=None):
+        """
+        dest_pos (position of the destination); Assume to be a 2D grid position.
+        """
+        if goal is None:
+            super().__init__(dest_pos, agent)
+        else:
+            super().__init__(goal, agent)
 
-class MoveTopoHandler(GoalHandler):
-    """Deals with navigating along an edge on the topological map."""
-    def __init__(self, goal, agent):
-        assert isinstance(goal, MoveTopo)
-        super().__init__(goal, agent)
         # Plans a sequence of actions to go from where
         # the robot is currently to the dst node.
         robot_pose = agent.belief.random().s(agent.robot_id).pose
@@ -60,10 +64,14 @@ class MoveTopoHandler(GoalHandler):
         thor_rx, thor_rz, thor_rth = agent.grid_map.to_thor_pose(*robot_pose)
         thor_start_position = (thor_rx, 0, thor_rz)
         thor_start_rotation = (0, thor_rth, 0)
-        _goal_pos = agent.topo_map.nodes[goal.dst_nid].pos
+        _goal_pos = dest_pos
         thor_gx, thor_gz = agent.grid_map.to_thor_pos(*_goal_pos)
         thor_goal_position = (thor_gx, 0, thor_gz)
-        thor_goal_rotation = (0, 0, 0)  # we don't care about rotation here
+        if rot is None:
+            thor_goal_rotation = (0, 0, 0)  # we don't care about rotation here
+            angle_tolerance = 360
+        else:
+            thor_goal_rotation = rot
         thor_reachable_positions = [agent.grid_map.to_thor_pos(*p)
                                     for p in agent.reachable_positions]
         navigation_actions = get_navigation_actions(agent.thor_movement_params)
@@ -73,11 +81,10 @@ class MoveTopoHandler(GoalHandler):
                                        thor_reachable_positions,
                                        grid_size=agent.grid_map.grid_size,
                                        diagonal_ok=agent.task_config["nav_config"]["diagonal_ok"],
-                                       angle_tolerance=360,
+                                       angle_tolerance=angle_tolerance,
                                        debug=True)
         self._plan = plan
         self._index = 0
-
 
     def step(self):
         action_name, action_delta = self._plan[self._index]["action"]
@@ -105,6 +112,15 @@ class MoveTopoHandler(GoalHandler):
     @property
     def ispomdp(self):
         return False
+
+
+class MoveTopoHandler(MacroMoveHandler):
+    """Deals with navigating along an edge on the topological map."""
+    #
+    def __init__(self, goal, agent):
+        assert isinstance(goal, MoveTopo)
+        super().__init__(agent.topo_map.nodes[goal.dst_nid].pos,
+                         agent, rot=None, goal=goal) # we don't care about rotation here
 
 
 class DoneHandler(GoalHandler):
