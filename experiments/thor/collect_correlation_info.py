@@ -26,11 +26,12 @@ def collect_for(scene_type, for_train=True):
         controller = tt.launch_controller({**constants.CONFIG, **{"scene": scene}})
         for target in OBJECT_CLASSES[scene_type]['target']:
             for corr_object in OBJECT_CLASSES[scene_type]['corr']:
-                distances = tt.thor_distances_in_scene(controller, target, corr_object)
+                distances = tt.thor_distances_in_scene(controller.last_event, target, corr_object)
                 key = (target, corr_object)
                 if key not in cc:
                     cc[key] = {}
                 cc[key][scene] = distances
+        controller.stop()
 
     savedir = os.path.join(OUTPUT_DIR, "thor", "corrs")
     os.makedirs(savedir, exist_ok=True)
