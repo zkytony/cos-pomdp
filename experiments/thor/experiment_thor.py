@@ -80,7 +80,9 @@ OBJECT_CLASSES = {
 
 def make_trial(method, run_num, scene_type, scene,
                target, detector_models,
-               corr_objects=None, max_steps=constants.MAX_STEPS, rnd=random):
+               corr_objects=None,
+               max_steps=constants.MAX_STEPS,
+               rnd=random, visualize=False, viz_res=20):
     """
     Args:
         scene: scene to search in
@@ -114,7 +116,7 @@ def make_trial(method, run_num, scene_type, scene,
 
     if method["use_corr"]:
         for other in corr_objects:
-            spcorr = load_correlation(scene, scene_type, other, method["corr_type"], rnd=rnd)
+            spcorr = load_correlation(scene, scene_type, target, other, method["corr_type"], rnd=rnd)
             config["agent_config"]["corr_specs"][(target, other)] = spcorr.func
             config["agent_config"]["detector_specs"][other] = detector_models[other]
 
@@ -126,7 +128,10 @@ def make_trial(method, run_num, scene_type, scene,
         config["agent_config"]["local_search_type"] = "basic"
         config["agent_config"]["local_search_params"] = LOCAL_POUCT_ARGS
 
-    config["visualize"] = False
+    config["visualize"] = visualize
+    config["viz_config"] = {
+        'res': viz_res
+    }
     trial_name = f"{scene_type}-{scene}-{target}_{run_num:0>3}_{Methods.get_name(method)}"
     trial = ThorObjectSearchTrial(trial_name, config, verbose=True)
     return trial
@@ -155,7 +160,7 @@ def load_correlation(scene, scene_type, target, corr_object, corr_type, rnd=rand
         # we randomly choose another corr_object instead, as the correlation
         # for the given `target`, `corr_object`. This will be a wrong correlation,
         # but not the worst.
-        another_corr_object = rnd.sample(CLASSES[scene]['corr'], 1)[0]
+        another_corr_object = rnd.sample(OBJECT_CLASSES[scene]['corr'], 1)[0]
         fname = f"distances_{scene_type}_{target}-{another_corr_object}_{scene}.json"
     else:
         raise ValueError("Unknown corr type {}".format(corr_type))

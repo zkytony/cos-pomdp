@@ -21,7 +21,7 @@ def collect_for(scene_type, for_train=True):
     else:
         scenes = tt.ithor_scene_names(scene_type, levels=range(21, 31))
 
-    cc = {}
+    cc = {}  # maps {(target, corr_object) -> {scene -> [distances]}}
     for scene in tqdm(scenes):
         controller = tt.launch_controller({**constants.CONFIG, **{"scene": scene}})
         for target in OBJECT_CLASSES[scene_type]['target']:
@@ -45,12 +45,13 @@ def collect_for(scene_type, for_train=True):
             target, corr_object = key
             result.append({"key": [target, corr_object],
                            "distances": all_distances})
-        with open(os.path.join(savedir, f"distances_{scene_type}_{target}-{corr_object}_train.json"), 'w') as f:
-            json.dump(result, f, indent=4, sort_keys=True)
+            with open(os.path.join(savedir, f"distances_{scene_type}_{target}-{corr_object}_train.json"), 'w') as f:
+                json.dump(result, f, indent=4, sort_keys=True)
 
     else:
         # save individually per validation scene
         for key in cc:
+            target, corr_object = key
             for scene in cc[key]:
                 distances = cc[key][scene]
                 with open(os.path.join(savedir, f"distances_{scene_type}_{target}-{corr_object}_{scene}.json"), 'w') as f:
