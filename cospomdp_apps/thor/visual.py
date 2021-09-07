@@ -6,7 +6,8 @@ from cospomdp_apps.basic.visual import GridMapVisualizer, BasicViz2D
 from cospomdp.domain.state import RobotState2D
 from .agent.components.topo_map import draw_topo
 from .agent import (ThorObjectSearchCosAgent,
-                    ThorObjectSearchRandomAgent)
+                    ThorObjectSearchRandomAgent,
+                    ThorObjectSearchGreedyNbvAgent)
 from . import constants
 
 

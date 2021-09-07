@@ -3,3 +3,4 @@ from .cospomdp_complete import ThorObjectSearchCompleteCosAgent
 from .optimal import ThorObjectSearchOptimalAgent
 from .external import ThorObjectSearchExternalAgent
 from .random import ThorObjectSearchRandomAgent
+from .greedy import ThorObjectSearchGreedyNbvAgent

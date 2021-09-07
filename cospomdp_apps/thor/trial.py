@@ -15,7 +15,8 @@ from .agent import (ThorObjectSearchOptimalAgent,
                     ThorObjectSearchBasicCosAgent,
                     ThorObjectSearchExternalAgent,
                     ThorObjectSearchCompleteCosAgent,
-                    ThorObjectSearchRandomAgent)
+                    ThorObjectSearchRandomAgent,
+                    ThorObjectSearchGreedyNbvAgent)
 from .replay import ReplaySolver
 from .result_types import PathResult, HistoryResult
 from .common import make_config, TaskArgs

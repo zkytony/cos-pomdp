@@ -60,9 +60,14 @@ class ThorObjectSearchCosAgent(ThorAgent):
         return self.cos_agent.detectable_objects
 
     def _build_detectors(self, detector_specs):
+        return ThorObjectSearchCosAgent.build_detectors(
+            self.task_config["detectables"], detector_specs)
+
+    @staticmethod
+    def build_detectors(detectables, detector_specs):
         detectable_objects = {}  # objects we care about are detectable objects
         detectors = {}
-        for obj in self.task_config["detectables"]:
+        for obj in detectables:
             if len(obj) == 2:
                 object_id, object_class = obj
             else:
@@ -83,7 +88,12 @@ class ThorObjectSearchCosAgent(ThorAgent):
         return detectors, detectable_objects
 
     def _build_corr_dists(self, corr_specs, objects):
-        target_id = self.target[0]
+        return ThorObjectSearchCosAgent.build_corr_dists(
+            self.target[0], self.search_region,
+            corr_specs, objects)
+
+    @staticmethod
+    def build_corr_dists(target_id, search_region, corr_specs, objects):
         corr_dists = {}
         for key in corr_specs:
             obj1, obj2 = key
@@ -100,7 +110,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
                     corr_func = eval(corr_func)
                 corr_dists[other] = cospomdp.CorrelationDist(objects[other],
                                                              objects[target_id],
-                                                             self.search_region,
+                                                             search_region,
                                                              corr_func,
                                                              corr_func_args=corr_func_args)
         return corr_dists
@@ -169,7 +179,6 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         solver_args (dict): arguments for the solver
         thor_prior: dict mapping from thor location to probability; If empty, then the prior will be uniform.
         """
-
         robot_id = task_config['robot_id']
         search_region = GridMapSearchRegion(grid_map)
         reachable_positions = grid_map.free_locations
@@ -183,12 +192,12 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
             thor_agent_pose[1][1]   #yaw
         )
 
-        # TODO: SIMPLIFY - just use target_class
         if task_config["task_type"] == 'class':
             target_id = task_config['target']
             target_class = task_config['target']
             target = (target_id, target_class)
         else:
+            # This situation is not tested :todo:
             target = task_config['target']  # (target_id, target_class)
             target_id = target[0]
         self.task_config = task_config

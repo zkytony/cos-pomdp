@@ -21,7 +21,7 @@ def _test_random_agent(target,
     config["viz_config"] = {
         'res': 30
     }
-    trial = ThorObjectSearchTrial("test_cosagent-basic", config, verbose=True)
+    trial = ThorObjectSearchTrial("test_random", config, verbose=True)
     print("Trial created")
     trial.run()
 
