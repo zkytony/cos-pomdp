@@ -31,19 +31,15 @@ MAX_STEPS = 100
 TOPO_PLACE_SAMPLES = 20  # specific to hierarchical methods
 
 class Methods:
-    # Here is what I mean by "groundtruth correlation"
-    # Pr(si | starget) returns 1.0 (or with some little noise, gaussian noise?)
-    # if si is the **True** target state, regardless
-    # of starget's value. Basically, as long as you observe the correlated object,
-    # your belief will be updated so that it'll be highest on the true target location.
-    # This is the best correlation can ever do.
-    HIERARCHICAL_CORR_GT = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, corr_type="groundtruth")
+    # correct: the distance used to form spatial correlation comes from the actual distance between instances
+    # in the validation scene directly, instead of learned from training as _LRN does.
+    HIERARCHICAL_CORR_CRT = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, corr_type="correct")
     HIERARCHICAL_CORR_LRN = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, corr_type="learned")
     HIERARCHICAL_CORR_WRG = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, corr_type="wrong")
     HIERARCHICAL_TARGET = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=False)
-    FLAT_POUCT_CORR_GT = dict(agent="ThorObjectSearchBasicCosAgent", use_corr=True, corr_type="groundtruth")
-    FLAT_POUCT_TARGET_GT = dict(agent="ThorObjectSearchBasicCosAgent", use_corr=False, corr_type="groundtruth")
-    GREEDY_NBV = dict(agent="ThorObjectSearchGreedyNbvAgent", use_corr=True, corr_type="groundtruth")
+    FLAT_POUCT_CORR_CRT = dict(agent="ThorObjectSearchBasicCosAgent", use_corr=True, corr_type="correct")
+    FLAT_POUCT_TARGET_CRT = dict(agent="ThorObjectSearchBasicCosAgent", use_corr=False, corr_type="correct")
+    GREEDY_NBV = dict(agent="ThorObjectSearchGreedyNbvAgent", use_corr=True, corr_type="correct")
     RANDOM = dict(agent="ThorObjectSearchRandomAgent", use_corr=False)
 
     @staticmethod
@@ -56,13 +52,13 @@ class Methods:
             if not method['use_corr']:
                 return "flat#target-only"
             else:
-                assert method['corr_type'] == "groundtruth"
+                assert method['corr_type'] == "correct"
                 return "flat#corr"
         if "complete" in method['agent'].lower():
             if not method["use_corr"]:
                 return "hierarchical#target-only"
             else:
-                if method["corr_type"] == "groundtruth":
+                if method["corr_type"] == "correct":
                     return "hierarchical#corr"
                 elif method["corr_type"] == "learned":
                     return "hierarchical#corr-learned"
@@ -94,7 +90,7 @@ def make_trial(method, run_num, scene_type, scene,
         detector_models (dict): Maps from object class to a detector models configuration used for POMDP planning;
             e.g. {"Apple": dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))}
 
-        method_name: a string, e.g. "HIERARCHICAL_CORR_GT"
+        method_name: a string, e.g. "HIERARCHICAL_CORR_CRT"
     """
     if corr_objects is None:
         corr_objects = set()
@@ -165,7 +161,7 @@ def EXPERIMENT_THOR(split=10, num_trials=3):
             for target, true_positive_rate, avg_detection_range in targets:
 
                 for run_num in range(num_trials):
-                    hier_corr_gt = make_trial(Methods.HIERARCHICAL_CORR_GT,
+                    hier_corr_crt = make_trial(Methods.HIERARCHICAL_CORR_CRT,
                                               run_num, scene_type, scene,
                                               target, detector_models,
                                               corr_objects=corr_objects,
@@ -177,18 +173,18 @@ def EXPERIMENT_THOR(split=10, num_trials=3):
                                               correlations, detector_models, Methods.HIERARCHICAL_CORR_WRG)
                     hier_target = make_trial(run_num, scene_type, scene, target, corr_objects,
                                              correlations, detector_models, Methods.HIERARCHICAL_TARGET)
-                    flat_corr_gt = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                              correlations, detector_models, Methods.FLAT_POUCT_CORR_GT)
-                    flat_target_gt = make_trial(run_num, scene_type, scene, target, corr_objects,
-                                                correlations, detector_models, Methods.FLAT_POUCT_TARGET_GT)
+                    flat_corr_crt = make_trial(run_num, scene_type, scene, target, corr_objects,
+                                              correlations, detector_models, Methods.FLAT_POUCT_CORR_CRT)
+                    flat_target_crt = make_trial(run_num, scene_type, scene, target, corr_objects,
+                                                correlations, detector_models, Methods.FLAT_POUCT_TARGET_CRT)
                     greedynbv = make_trial(run_num, scene_type, scene, target, corr_objects,
                                            correlations, detector_models, Methods.GREEDY_NBV)
                     random = make_trial(run_num, scene_type, scene, target, corr_objects,
                                         correlations, detector_models, Methods.RANDOM)
-                    all_trials.extend([hier_corr_gt,
+                    all_trials.extend([hier_corr_crt,
                                        hier_target,
-                                       flat_corr_gt,
-                                       flat_target_gt,
+                                       flat_corr_crt,
+                                       flat_target_crt,
                                        greedynbv,
                                        random])
     exp_name = "ExperimentThor-AA"
