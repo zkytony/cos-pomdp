@@ -69,7 +69,7 @@ class GreedyNbvAgent:
                  search_region, reachable_positions,
                  corr_dists, detectors, detectable_objects, h_angles,
                  goal_distance, num_particles=100, prior={},
-                 done_thres=0.9,
+                 done_check_thres=0.2,
                  num_viewpoint_samples=10,
                  decision_params={}):
         """
@@ -82,6 +82,10 @@ class GreedyNbvAgent:
         reachable_positions (list): List of 2D (x,y) locations that are
              possible locations for the robot to reach
         alpha, beta, sigma are parameters from the paper.
+        done_check_thres: If the most likely belief is above this threshold,
+            will check if should take Done. Because usually there is a blob
+            of particles, this threshold doesn't need to be very high,
+            otherwise the robot may be very hesitant and finds nothing.
         """
         self.search_region = search_region
         self.reachable_positions = reachable_positions
@@ -90,7 +94,7 @@ class GreedyNbvAgent:
         self.target = target
         self.brobot = pomdp_py.WeightedParticles([(self._init_robot_state, 1.0)])
         self._num_particles = num_particles
-        self._done_thres = 0.9
+        self._done_check_thres = done_check_thres
         self._h_angles = h_angles
         self._num_viewpoint_samples = num_viewpoint_samples
         self._decision_params = decision_params
@@ -272,26 +276,19 @@ class GreedyNbvAgent:
           - This will be a high-level goal; The A* planner is expected to handle
            this. Will not replan when the A* goal is not reached.
         """
-        if self._current_goal is not None:
-            return self._current_goal
-
         # sample view points based on belief over the target location
         srobot = self.brobot.mpe()
         btarget = self.particle_beliefs[self.target_id]
         starget_mpe = btarget.mpe()
         print("MPE belief:", btarget[starget_mpe])
-        if btarget[starget_mpe] > self._done_thres:
+        if btarget[starget_mpe] > self._done_check_thres:
             if euclidean_dist(starget_mpe.loc, srobot.loc) <= self._goal_distance\
                and self.sensor(self.target_id).in_range_facing(
                    starget_mpe.loc, srobot.pose):
                 return cospomdp.Done()
-            else:
-                # set the view point to be location closest to the target.
-                robot_pos = min(self.reachable_positions,
-                                key=lambda p: euclidean_dist(p, starget_mpe.loc))
-                yaw = yaw_facing(srobot.loc, starget_mpe.loc, self._h_angles)
-                self._current_goal = MoveViewpoint((*robot_pos, yaw))
-                return self._current_goal
+
+        if self._current_goal is not None:
+            return self._current_goal
 
         viewpoints = []
         for _ in range(self._num_viewpoint_samples):
@@ -357,10 +354,7 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                  detector_specs,
                  grid_map,
                  thor_agent_pose,
-                 num_particles=100,
-                 done_thres=0.9,
-                 num_viewpoint_samples=10,
-                 decision_params={}):
+                 **greedy_params):
         """
         thor_prior: dict mapping from thor location to probability; If empty, then the prior will be uniform.
         """
@@ -401,10 +395,7 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                                            search_region, reachable_positions,
                                            corr_dists, detectors, detectable_objects, h_angles,
                                            goal_distance=goal_distance,
-                                           num_particles=num_particles,
-                                           done_thres=done_thres,
-                                           num_viewpoint_samples=num_viewpoint_samples,
-                                           decision_params=decision_params)
+                                           **greedy_params)
         self._goal_handler = None
 
     @property

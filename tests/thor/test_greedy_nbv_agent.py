@@ -58,4 +58,4 @@ def _test_greedy_agent(target,
     trial.run(step_act_cb=step_act_cb)
 
 if __name__ == "__main__":
-    _test_greedy_agent('Fridge', 'CoffeeMachine')
+    _test_greedy_agent('PepperShaker', 'StoveBurner')
