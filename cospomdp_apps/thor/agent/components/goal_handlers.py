@@ -50,6 +50,7 @@ class MacroMoveHandler(GoalHandler):
     def __init__(self, dest_pos, agent, rot=None, angle_tolerance=15, goal=None):
         """
         dest_pos (position of the destination); Assume to be a 2D grid position.
+        rot (rotation): Assume to be in grid map coordinates
         """
         if goal is None:
             super().__init__(dest_pos, agent)
@@ -71,7 +72,7 @@ class MacroMoveHandler(GoalHandler):
             thor_goal_rotation = (0, 0, 0)  # we don't care about rotation here
             angle_tolerance = 360
         else:
-            thor_goal_rotation = rot
+            thor_goal_rotation = (rot[0], agent.grid_map.to_thor_yaw(rot[1]), rot[2])
         thor_reachable_positions = [agent.grid_map.to_thor_pos(*p)
                                     for p in agent.reachable_positions]
         navigation_actions = get_navigation_actions(agent.thor_movement_params)
@@ -83,11 +84,15 @@ class MacroMoveHandler(GoalHandler):
                                        diagonal_ok=agent.task_config["nav_config"]["diagonal_ok"],
                                        angle_tolerance=angle_tolerance,
                                        debug=True)
+        print(plan)
         self._plan = plan
         self._index = 0
 
     def step(self):
-        action_name, action_delta = self._plan[self._index]["action"]
+        try:
+            action_name, action_delta = self._plan[self._index]["action"]
+        except:
+            import pdb; pdb.set_trace()
         params = from_thor_delta_to_thor_action_params(action_name, action_delta)
         return TOS_Action(action_name, params)
 

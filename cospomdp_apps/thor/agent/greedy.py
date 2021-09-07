@@ -19,16 +19,19 @@ searching for the target object based on the maintained belief.
 import math
 import pomdp_py
 import random
-from ..common import TOS_Action, ThorAgent
-from .cospomdp_basic import ThorObjectSearchCosAgent, GridMapSearchRegion
+
 from cospomdp.models.agent import build_cos_observation_model
 from cospomdp.models.sensors import yaw_facing
-from cospomdp.domain.state import CosState, RobotState2D
-from cospomdp.domain.action import Done
 from cospomdp.utils.math import euclidean_dist
+import cospomdp
+
+from ..common import TOS_Action, ThorAgent
+from .cospomdp_basic import (ThorObjectSearchCosAgent,
+                             GridMapSearchRegion,
+                             ThorObjectSearchBasicCosAgent)
 from .cospomdp_complete import _shortest_path
 from .components.action import MoveViewpoint
-from .components.goal_handlers import MacroMoveHandler
+from .components.goal_handlers import MacroMoveHandler, DoneHandler
 
 class GreedyNbvAgent:
     """Greedy next-best-view agent.
@@ -65,7 +68,7 @@ class GreedyNbvAgent:
     def __init__(self, target, init_robot_state,
                  search_region, reachable_positions,
                  corr_dists, detectors, h_angles,
-                 num_particles=100, prior={},
+                 goal_distance, num_particles=100, prior={},
                  done_thres=0.9,
                  num_viewpoint_samples=10,
                  decision_params={}):
@@ -81,6 +84,7 @@ class GreedyNbvAgent:
         """
         self.search_region = search_region
         self.reachable_positions = reachable_positions
+        self.detectors = detectors
         self._init_robot_state = init_robot_state
         self.target = target
         self.brobot = pomdp_py.WeightedParticles([(self._init_robot_state, 1.0)])
@@ -88,7 +92,9 @@ class GreedyNbvAgent:
         self._num_particles = num_particles
         self._done_thres = 0.9
         self._h_angles = h_angles
+        self._num_viewpoint_samples = num_viewpoint_samples
         self._decision_params = decision_params
+        self._goal_distance = goal_distance
         # initialize particle beliefs.
         for objid in detectors:
             self.particle_beliefs[objid] = self._init_belief(objid, prior=prior.get(objid, {}))
@@ -128,17 +134,16 @@ class GreedyNbvAgent:
         else:
             hist = None
         particles = []
-        for objid in self.detectable_objects:
-            objclass = self.detectable_objects[objid][1]
+        for cls in self.detectable_objects:
             for i in range(self._num_particles):
                 if hist is not None:
                     loc = hist.random()
+                    weight = hist[loc]
                 else:
                     loc = random.sample(self.search_region.locations, 1)[0]
-
-                weight = hist[loc]
+                    weight = 1.0 / len(self.search_region.locations)
                 si = self.search_region.object_state(
-                    objid, objclass, loc
+                    objid, cls, loc
                 )
                 particles.append((si, weight))
         return pomdp_py.WeightedParticles(particles)
@@ -155,10 +160,10 @@ class GreedyNbvAgent:
         self.brobot = next_brobot
 
         btarget = self.particle_beliefs[self.target_id]
-        next_btarget = self._update_particle_belief(btarget, observation, is_target=True)
+        next_btarget = self._update_target_particles(btarget, next_srobot, observation, self._num_particles)
         new_particle_beliefs = {self.target_id : next_btarget}
         for objid in self.particle_beliefs:
-            if objid != self.targte_id:
+            if objid != self.target_id:
                 bobj = self.particle_beliefs[objid]
                 next_bobj = self._update_object_particles(objid, bobj, observation,
                                                           next_btarget, next_srobot,
@@ -170,8 +175,8 @@ class GreedyNbvAgent:
         _temp_particles = []
         for _ in range(num_particles):
             starget = btarget.random()
-            next_state = CosState({self.target_id: starget,
-                                   next_srobot.id: next_srobot})
+            next_state = cospomdp.CosState({self.target_id: starget,
+                                            next_srobot.id: next_srobot})
             weight = self.observation_model.probability(observation, next_state)
             _temp_particles.append((starget, weight))
         # resampling
@@ -215,22 +220,33 @@ class GreedyNbvAgent:
         contain the target object and/or any landmark object, while accounting
         for navigation cost
 
-        0. If the highest belief is above some threshold, then Done.
+        0. If the highest belief is above some threshold,
+           and the robot is within goal distance facing the object, then Done.
         1. If currently not moving towards a viewpoint, then selects view points
         2. Decides which view point to visit based on a "hybrid utility function"
           - This will be a high-level goal; The A* planner is expected to handle
            this. Will not replan when the A* goal is not reached.
         """
-        btarget = self.particle_beliefs[self.target]
-        starget_mpe = btarget.mpe()
-        if btarget[starget_mpe] > self._done_thresh:
-            return Done()
-
         if self._current_goal is not None:
             return self._current_goal
 
         # sample view points based on belief over the target location
         srobot = self.brobot.mpe()
+        btarget = self.particle_beliefs[self.target_id]
+        starget_mpe = btarget.mpe()
+        if btarget[starget_mpe] > self._done_thres:
+            if euclidean_dist(starget_mpe.loc, srobot.loc) <= self._goal_distance\
+               and self.sensor(self.target_id).in_range_facing(
+                   starget_mpe.loc, srobot.pose):
+                return cospomdp.Done()
+            else:
+                # set the view point to be location closest to the target.
+                robot_pos = min(self.reachable_positions,
+                                key=lambda p: euclidean_dist(p, starget_mpe.loc))
+                yaw = yaw_facing(srobot.loc, starget_mpe.loc, self._h_angles)
+                self._current_goal = MoveViewpoint((*robot_pos, yaw))
+                return self._current_goal
+
         viewpoints = []
         for _ in range(self._num_viewpoint_samples):
             starget = btarget.random()
@@ -245,7 +261,7 @@ class GreedyNbvAgent:
         # decide which view point to visit
         best_score = float('-inf')
         best_viewpoint = None
-        alpha = self._decision_params.get("alpha", 0.1)
+        alpha = self._decision_params.get("alpha", 0.1) # numbers from the paper
         beta = self._decision_params.get("beta", 0.4)
         sigma = self._decision_params.get("sigma", 0.5)
         for robot_pose, starget, weight_target in viewpoints:
@@ -257,9 +273,10 @@ class GreedyNbvAgent:
             # and check if the robot can observe them from the view point
             weight_observing_other_object = 0
             for objid in self.particle_beliefs:
-                if objid != self.target:
+                if objid != self.target_id:
                     # sample other object locations conditioned on target location
-                    dist_si = self.observation_model.z(objid).corr_cond_dist(starget)
+                    zi_model = self.observation_model.zi_models[objid]
+                    dist_si = zi_model.corr_cond_dist(starget)
                     si = dist_si.sample()
                     # check if the robot can observe this object
                     imagined_srobot = self._init_belief.__class__(self.robot_id, robot_pose)
@@ -322,17 +339,20 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
             target_id = target[0]
         self.task_config = task_config
         self.target = target
+        self.thor_movement_params = task_config["nav_config"]["movement_params"]
 
         detectors, detectable_objects = ThorObjectSearchCosAgent.build_detectors(
             self.task_config["detectables"], detector_specs)
         corr_dists = ThorObjectSearchCosAgent.build_corr_dists(
             self.target[0], self.search_region, corr_specs, detectable_objects)
 
-        init_robot_state = RobotState2D(robot_id, init_robot_pose)
+        init_robot_state = cospomdp.RobotState2D(robot_id, init_robot_pose)
         h_angles = self.task_config['nav_config']['h_angles']
+        goal_distance = task_config["nav_config"]["goal_distance"] / grid_map.grid_size
         self.greedy_agent = GreedyNbvAgent(target, init_robot_state,
                                            search_region, reachable_positions,
                                            corr_dists, detectors, h_angles,
+                                           goal_distance=goal_distance,
                                            num_particles=num_particles,
                                            done_thres=done_thres,
                                            num_viewpoint_samples=num_viewpoint_samples,
@@ -348,13 +368,17 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
     def act(self):
         goal = self.greedy_agent.act()
         print("Goal: {}".format(goal))
-        if isinstance(goal, Done):
-            return TOS_Action("done", {})
+        if isinstance(goal, cospomdp.Done):
+            self._goal_handler = DoneHandler(goal, self)
+            return self._goal_handler.step()
 
-        if self._goal_handler is None or goal != self._goal_handler.goal:
+        if self._goal_handler is None\
+           or goal != self._goal_handler.goal\
+           or self._goal_handler.done:
             assert isinstance(goal, MoveViewpoint)
             self._goal_handler = MacroMoveHandler(goal.dst_pose[:2], self,
-                                                  rot=(0, goal.dst_pos[2], 0))
+                                                  rot=(0, goal.dst_pose[2], 0),
+                                                  angle_tolerance=5)
         action = self._goal_handler.step()
         return action
 
@@ -367,6 +391,9 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
         if not self._goal_handler.updates_first:
             self._goal_handler.update(tos_action, tos_observation)
 
+        if self._goal_handler.done:
+            print("Goal reached.")
+            self.greedy_agent.clear_goal()
 
     @property
     def detectable_objects(self):
@@ -378,3 +405,11 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
 
     def _update_belief(self, action, observation):
         self.greedy_agent.update(action, observation)
+
+    def interpret_robot_obz(self, tos_observation):
+        return ThorObjectSearchBasicCosAgent.interpret_robot_obz(self, tos_observation)
+
+    def interpret_action(self, tos_action):
+        # It actually doesn't matter to the greedy what low-level
+        # action is taken by the goal handler.
+        return None

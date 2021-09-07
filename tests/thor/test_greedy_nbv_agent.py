@@ -13,7 +13,7 @@ def _test_greedy_agent(target,
                        target_quality=(0.7, 0.05),
                        max_steps=100):
     print("Test cospomdp_random agent")
-    agent_init_inputs = ["grid_map"]
+    agent_init_inputs = ["grid_map", "agent_pose"]
     args = TaskArgs(detectables=[target],
                     scene='FloorPlan1',
                     target=target,

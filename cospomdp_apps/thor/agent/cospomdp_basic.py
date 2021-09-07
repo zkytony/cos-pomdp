@@ -115,7 +115,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
                                                              corr_func_args=corr_func_args)
         return corr_dists
 
-    def interpret_robot_obz(tos_observation):
+    def interpret_robot_obz(self, tos_observation):
         raise NotImplementedError
 
     def interpret_object_obzs(self, tos_observation):
