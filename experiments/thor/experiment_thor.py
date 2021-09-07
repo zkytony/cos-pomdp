@@ -96,7 +96,7 @@ def make_trial(method, run_num, scene_type, scene,
     """
     if corr_objects is None:
         corr_objects = set()
-    detectables = set(target) | set(corr_objects)
+    detectables = set({target}) | set(corr_objects)
 
     agent_init_inputs = []
     if method["agent"] != "ThorObjectSearchRandomAgent":
@@ -107,7 +107,8 @@ def make_trial(method, run_num, scene_type, scene,
                     target=target,
                     agent_class=method["agent"],
                     task_env="ThorObjectSearch",
-                    max_steps=max_steps)
+                    max_steps=max_steps,
+                    agent_init_inputs=agent_init_inputs)
     config = make_config(args)
     config["agent_config"]["corr_specs"] = {}
     config["agent_config"]["detector_specs"] = {
@@ -117,7 +118,7 @@ def make_trial(method, run_num, scene_type, scene,
     if method["use_corr"]:
         for other in corr_objects:
             spcorr = load_correlation(scene, scene_type, target, other, method["corr_type"], rnd=rnd)
-            config["agent_config"]["corr_specs"][(target, other)] = spcorr.func
+            config["agent_config"]["corr_specs"][(target, other)] = (spcorr.func, {}) # corr_func, corr_func_args
             config["agent_config"]["detector_specs"][other] = detector_models[other]
 
     config["agent_config"]["solver"] = "pomdp_py.POUCT"

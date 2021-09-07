@@ -1,4 +1,5 @@
 from ..probability import JointDist, Event, TabularDistribution
+from tqdm import tqdm
 
 class CorrelationDist(JointDist):
     def __init__(self, corr_object, target, search_region, corr_func_or_dict, corr_func_args={}):
@@ -19,8 +20,9 @@ class CorrelationDist(JointDist):
         super().__init__([self.corr_object_id, self.target_id])
 
         # calculate weights
-        self.dists = {}  # maps from target state to
-        for target_loc in search_region:
+        self.dists = {}  # maps from target state to conditional distributions
+        for target_loc in tqdm(search_region, total=len(search_region.locations),
+                               desc="Creating Pr({} | {})".format(corr_object[1], target[1])):
             target_state = search_region.object_state(
                 self.target_id, self.target_class, target_loc)
             weights = {}

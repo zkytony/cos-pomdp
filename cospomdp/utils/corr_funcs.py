@@ -32,8 +32,6 @@ class ConditionalSpatialCorrelation:
             self._gaussian = pomdp_py.Gaussian([np.mean(distances)],
                                                [np.var(distances)])
 
-
-
     def func(self, target_loc, other_loc, target_id, other_id):
         if target_id != self.target[0]:
             raise ValueError(f"unexpected target id {target_id}")
