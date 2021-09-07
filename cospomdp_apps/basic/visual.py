@@ -14,16 +14,16 @@ class BasicViz2D(Visualizer2D):
         """
         if robot_state is None:
             robot_state = agent.belief.mpe().s(agent.robot_id)
-        target_belief = agent.belief.b(agent.target_id)
 
         if img is None:
             img = self._make_gridworld_image(self._res)
         x, y, th = robot_state["pose"]
         for objid in sorted(objlocs):
             img = self.highlight(img, [objlocs[objid]], self.get_color(objid, colors, alpha=None))
-        target_id = agent.target_id
-        target_color = self.get_color(target_id, colors, alpha=None)
         if draw_belief:
+            target_id = agent.target_id
+            target_color = self.get_color(target_id, colors, alpha=None)
+            target_belief = agent.belief.b(agent.target_id)
             img = self.draw_object_belief(img, target_belief, list(target_color) + [250])
         img = self.draw_robot(img, x, y, th, (255, 20, 20))
         if draw_fov is not None:

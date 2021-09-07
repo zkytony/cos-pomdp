@@ -3,7 +3,10 @@ from os import environ
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'  # hide "hello from pygame community"
 
 from cospomdp_apps.basic.visual import GridMapVisualizer, BasicViz2D
+from cospomdp.domain.state import RobotState2D
 from .agent.components.topo_map import draw_topo
+from .agent import (ThorObjectSearchCosAgent,
+                    ThorObjectSearchRandomAgent)
 from . import constants
 
 
@@ -31,5 +34,14 @@ class ThorObjectSearchViz2D(GridMapVisualizer):
             img = draw_topo(img, agent.topo_map, self._res,
                             draw_grid_path=self._draw_topo_grid_path)
 
-        return BasicViz2D.render(self, agent.cos_agent,
-                                 objlocs, draw_fov=step > 0, img=img)
+        if isinstance(agent, ThorObjectSearchCosAgent):
+            return BasicViz2D.render(self, agent, objlocs, draw_fov=step > 0, img=img)
+        elif isinstance(agent, ThorObjectSearchRandomAgent):
+            thor_robot_pos, thor_robot_rot = task_env.get_state().agent_pose
+            thor_robot_pose2d = (thor_robot_pos[0], thor_robot_pos[2], thor_robot_rot[1])
+            robot_state = RobotState2D(agent.robot_id,
+                                       self._grid_map.to_grid_pose(*thor_robot_pose2d))
+            return BasicViz2D.render(self, agent, objlocs,
+                                     robot_state=robot_state,
+                                     draw_fov=False,
+                                     draw_belief=False, img=img)
