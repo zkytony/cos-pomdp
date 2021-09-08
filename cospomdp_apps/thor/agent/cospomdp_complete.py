@@ -10,7 +10,7 @@ from cospomdp.utils.math import euclidean_dist, normalize
 import cospomdp
 
 from ..constants import GOAL_DISTANCE
-from ..common import ThorAgent, TOS_Action
+from ..common import TOS_Action
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
 from .components.action import Move, MoveTopo, Stay
 from .components.state import RobotStateTopo

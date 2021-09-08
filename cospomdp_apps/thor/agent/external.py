@@ -67,6 +67,7 @@ class ThorObjectSearchExternalAgent(ThorAgent):
         """
         args (MJOLNIR_O_args): mimics the args parsed from command line
         """
+        super().__init__(task_config)
         assert task_config['task_type'] == 'class',\
             "Cannot handle task type: {}".format(task_config['task_type'])
         target_class = task_config['target']

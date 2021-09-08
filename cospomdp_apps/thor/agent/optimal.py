@@ -29,7 +29,7 @@ class ThorObjectSearchOptimalAgent(ThorAgent):
                  controller,
                  task_config):
         """Builds the agent and computes a plan"""
-        super().__init__()
+        super().__init__({})
         self.controller = controller
         self.target = task_config["target"]
         self.task_type = task_config["task_type"]

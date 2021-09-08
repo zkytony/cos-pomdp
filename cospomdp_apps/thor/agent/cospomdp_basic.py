@@ -47,6 +47,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
         """
         Initialize.
         """
+        super().__init__(task_config)
         self.robot_id = task_config["robot_id"]
         scene = task_config["scene"]
         search_region = GridMapSearchRegion(grid_map, scene=scene)

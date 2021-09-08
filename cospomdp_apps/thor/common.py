@@ -2,6 +2,7 @@ import os
 import numpy as np
 import time
 from thortils.scene import ithor_scene_type
+from cospomdp_apps.thor.detector import Detector
 from dataclasses import dataclass, field
 from typing import List
 from . import constants
@@ -120,6 +121,23 @@ class ThorAgent:
     """
     AGENT_USES_CONTROLLER = False
 
+    def __init__(self, task_config):
+        """
+        If task_config['use_vision_detector'] is True, then a YOLOv5 vision detector
+        will be loaded with the model_path and data_config provided
+        in the task_config.
+        """
+        self._vision_detector = None
+        use_vision_detector = task_config.get('use_vision_detector', False)
+        if use_vision_detector:
+            model_path = task_config["yolov5_model_path"]
+            data_config = task_config["yolov5_data_config"]  # the path to the dataset yaml file
+            print("Loading YOLOv5 vision detector...")
+            print(f"    model path: {model_path}")
+            print(f"    data config: {use_vision_detector}")
+            detector = Detector(model_path, data_config)
+            self._vision_detector = detector
+
     def act(self):
         raise NotImplementedError
 
@@ -133,7 +151,7 @@ class ThorAgent:
 
     @property
     def vision_detector(self):
-        return None
+        return self._vision_detector
 
 
 @dataclass(init=True)
@@ -187,6 +205,7 @@ def make_config(args):
         scene_type = ithor_scene_type(args.scene)
         model_path = os.path.join(args.yolov5_model_dir, f"yolov5-{scene_type}", "best.pt")
         data_config = os.path.join(args.yolov5_data_dir, f"yolov5-{scene_type}", f"yolov5-{scene_type}-dataset.yaml")
+        task_config["use_vision_detector"] = True
         task_config["paths"]["yolov5_model_path"] = model_path
         task_config["paths"]["yolov5_data_config"] = data_config
     if "grid_map" in args.agent_init_inputs:

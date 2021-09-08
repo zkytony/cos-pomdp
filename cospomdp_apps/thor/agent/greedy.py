@@ -25,7 +25,7 @@ from cospomdp.models.sensors import yaw_facing
 from cospomdp.utils.math import euclidean_dist
 import cospomdp
 
-from ..common import TOS_Action, ThorAgent
+from ..common import TOS_Action
 from .cospomdp_basic import (ThorObjectSearchCosAgent,
                              GridMapSearchRegion,
                              ThorObjectSearchBasicCosAgent)
