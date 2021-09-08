@@ -8,13 +8,78 @@ import numpy as np
 import cv2
 from PIL import Image
 import yaml
+import thortils as tt
 from thortils.vision.plotting import plot_one_box
-from thortils.vision.general import saveimg
+from thortils.vision.general import saveimg, shrink_bbox
+from thortils.vision import projection as pj
+from thortils.utils.colors import mean_rgb
 from .paths import YOLOV5_REPO_PATH
 
 class Detector:
+    def __init__(self, detectables="any", bbox_margin=0.15):
+        self._bbox_margin = bbox_margin
+        self.detectable_classes = detectables
 
-    def __init__(self, model_path, data_config):
+    def detectable(self, cls):
+        if self.detectable_classes == "any":
+            return True
+        else:
+            return cls in self.detectable_classes
+
+    def detect(self, inpt):
+        """
+        Args:
+            inpt: input to the detector, e.g. image or event.
+        Returns:
+            list of (xyxy, conf, cls); We call such a tuple a detection
+        """
+        raise NotImplementedError
+
+    def detect_project(self, *args, **kwargs):
+        """
+        Returns:
+            list of (xyxy, conf, cls, grid_cells), where grid_cells is a
+            a collection of locations, either in 3D (dim='3d') or in 2D (dim='2d').
+            If 2D, then `grid_map` will need to be provided. If 3D, the coordinates
+            will be in thor
+        """
+        raise NotImplementedError
+
+    def plot_detections(self, frame, detections, include=None, conf=True):
+        """Returns an image with detection boxes plotted;
+
+        `detections` is a list of (xyxy, conf, cls) tuples
+        """
+        img = frame.copy()
+        for detection in detections:
+            xyxy, conf, cls = detection[:3]
+            if include is not None and cls not in include:
+                continue
+            if conf:
+                label = "{} {:.2f}".format(cls, conf)
+            else:
+                label = cls
+            if hasattr(self, "classes"):
+                class_int = self.classes.index(cls)
+                color = self.colors[class_int]
+            else:
+                x1,y1,x2,y2 = xyxy
+                color = mean_rgb(frame[y1:y2, x1:x2]).tolist()
+            img = plot_one_box(img, xyxy, label, color,
+                               line_thickness=2)
+        return img
+
+    def save(self, savepath, frame, detections, **kwargs):
+        """Given a frame and detections (same format as returned
+        by the detect() function), save an image with boxes plotted
+        LEGACY."""
+        img = self.plot_detections(savepath, frame, detections, **kwargs)
+        saveimg(img, savepath)
+
+
+class YOLODetector(Detector):
+
+    def __init__(self, model_path, data_config, **kwargs):
         """
         Args:
             model_path (str): Path to the .pt YOLOv5 model.
@@ -23,6 +88,7 @@ class Detector:
                 of the dataset used to train the model, or path to
                 that yaml file.
         """
+        super().__init__(**kwargs)
         if type(data_config) == str:
             with open(data_config) as f:
                 self.config = yaml.load(f, Loader=yaml.Loader)
@@ -46,8 +112,6 @@ class Detector:
         """
         Args:
             frame: RGB image array
-        Returns:
-            list of (xyxy, conf, cls)
         """
         results = self.model(frame)
         preds = results.pred[0]  # get the prediction tensor
@@ -56,18 +120,56 @@ class Detector:
                  self.classes[int(preds[i][5])])
                 for i in range(len(preds))]
 
-    def save(self, savepath, frame, detections, include=None, conf=True):
-        """Given a frame and detections (same format as returned
-        by the detect() function), save an image with boxes plotted"""
-        img = frame.copy()
-        for xyxy, conf, cls in detections:
-            if include is not None and cls not in include:
+
+class GroundtruthDetector(Detector):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def detect(self, event, get_object_ids=False):
+        """
+        Args:
+            event: ai2thor's Event object.
+        Returns
+            list of (xyxy, conf, cls); We call such a tuple a detection
+        """
+        detections = []
+        bboxes = tt.vision.thor_object_bboxes(event)  # xyxy
+        for objectId in bboxes:
+            cls = tt.thor_object_type(objectId)
+            if not self.detectable(cls):
                 continue
-            if conf:
-                label = "{} {:.2f}".format(cls, conf)
+            conf = 1.0
+            xyxy = bboxes[objectId]
+            if get_object_ids:
+                detections.append((xyxy, conf, objectId))
             else:
-                label = cls
-            class_int = self.classes.index(cls)
-            plot_one_box(img, xyxy, label, self.colors[class_int],
-                         line_thickness=2)
-        saveimg(img, savepath)
+                detections.append((xyxy, conf, cls))
+        return detections
+
+    def detect_project(self, event, camera_intrinsic=None, grid_map=None):
+        detections = self.detect(event, get_object_ids=True)
+
+        single_loc = grid_map is None
+        if not single_loc:
+            camera_pose = tt.thor_camera_pose(event, as_tuple=True)
+            einv = pj.extrinsic_inv(camera_pose)
+
+        results = []
+        for xyxy, conf, objectId in detections:
+            cls = tt.thor_object_type(objectId)
+            locs = []
+            if single_loc:
+                # returns only a single location (3D) at the object's position.
+                loc3d = tt.thor_object_position(event, objectId, as_tuple=True)
+                locs.append(loc3d)
+            else:
+                # returns grid map cells projected from the bounding box
+                xyxy = shrink_bbox(xyxy, self._bbox_margin)
+                grid_points = pj.project_bbox_to_grids(
+                    xyxy, event.depth_frame, grid_map,
+                    camera_intrinsic, downsample=0.01,
+                    einv=einv)
+                locs.extend(grid_points)
+
+            results.append((xyxy, conf, cls, locs))
+        return results

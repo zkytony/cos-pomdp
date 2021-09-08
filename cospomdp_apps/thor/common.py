@@ -2,7 +2,7 @@ import os
 import numpy as np
 import time
 from thortils.scene import ithor_scene_type
-from cospomdp_apps.thor.detector import Detector
+from cospomdp_apps.thor.detector import YOLODetector, GroundtruthDetector
 from dataclasses import dataclass, field
 from typing import List
 from . import constants
@@ -59,7 +59,7 @@ class ThorEnv:
             event = self.controller.step(action="Pass")
 
         next_state = self.get_state(event)
-        observation = self.get_observation(event, action, vision_detector=agent.vision_detector)
+        observation = self.get_observation(event, action, detector=agent.detector)
         reward = self.get_reward(state, action, next_state)
         self.update_history(next_state, action, observation, reward)
         return (observation, reward)
@@ -112,17 +112,23 @@ class ThorAgent:
         in the task_config.
         """
         self._vision_detector = None
-        use_vision_detector = task_config.get('use_vision_detector', False)
+        detector_config = task_config["detector_config"]
+        use_vision_detector = detector_config.get('use_vision_detector', False)
+        bbox_margin = detector_config['bbox_margin']
         if use_vision_detector:
-            if "vision_detector" in task_config:
+            if "vision_detector" in detector_config:
                 # vision detector is already provided
-                self._vision_detector = task_config["vision_detector"]
+                self._detector = detector_config["vision_detector"]
             else:
                 # didn't provide; load our own.
                 model_path = task_config["paths"]["yolov5_model_path"]
                 data_config = task_config["paths"]["yolov5_data_config"]  # the path to the dataset yaml file
-                detector = Detector(model_path, data_config)
-                self._vision_detector = detector
+                detector = YOLODetector(model_path, data_config,
+                                        bbox_margin=bbox_magin)
+                self._detector = detector
+        else:
+            # uses groundtruth detector
+            self._detector = GroundtruthDetector(bbox_margin=bbox_margin)
 
     def act(self):
         raise NotImplementedError
@@ -136,8 +142,8 @@ class ThorAgent:
         return self.task_config["nav_config"]["movement_params"][move_name]
 
     @property
-    def vision_detector(self):
-        return self._vision_detector
+    def detector(self):
+        return self._detector
 
 
 @dataclass(init=True)
@@ -155,10 +161,11 @@ class TaskArgs:
     # use & load corr dists
     save_load_corr: bool = False
     corr_dists_path: str = paths.CORR_DISTS_PATH
-    # yolo
+    # detectors
     use_vision_detector: bool = False
     yolov5_model_dir: str = paths.YOLOV5_MODEL_DIR
     yolov5_data_dir: object = paths.YOLOV5_DATA_DIR
+    bbox_margin: int = 0.15 # percentage of the bbox to exclude along each axis
 
 
 # Make configs
@@ -183,17 +190,21 @@ def make_config(args):
             "lo": constants.TOS_REWARD_LO,
             "step": constants.TOS_REWARD_STEP,
         },
-        "discount_factor": 0.99,
+        "detector_config": {
+            "use_vision_detector": args.use_vision_detector,
+            "bbox_margin": args.bbox_margin
+        }
+        "discount_factor": 0.95,
         "paths": {}
     }
-    if args.use_vision_detector:
+    if task_config["detector_config"]["use_vision_detector"]:
         # yolov5 model path is the path to models/directory
         scene_type = ithor_scene_type(args.scene)
         model_path = os.path.join(args.yolov5_model_dir, f"yolov5-{scene_type}", "best.pt")
         data_config = os.path.join(args.yolov5_data_dir, f"yolov5-{scene_type}", f"yolov5-{scene_type}-dataset.yaml")
-        task_config["use_vision_detector"] = True
         task_config["paths"]["yolov5_model_path"] = model_path
         task_config["paths"]["yolov5_data_config"] = data_config
+
     if "grid_map" in args.agent_init_inputs:
         task_config["paths"]["grid_maps_path"] = args.grid_maps_path
         task_config["save_grid_map"] = args.save_grid_map

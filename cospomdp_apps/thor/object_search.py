@@ -17,6 +17,7 @@ from .result_types import PathResult, HistoryResult
 from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation, ThorAgent
 from .agent import ThorObjectSearchOptimalAgent
 from .visual import ThorObjectSearchViz2D
+from .detector import YOLODetector, GroundtruthDetector
 from . import constants
 
 
@@ -41,8 +42,6 @@ class TOS(ThorEnv):
         self.task_type = task_type
         self.goal_distance = task_config["nav_config"]["goal_distance"]
         self._detectables = self.task_config["detectables"]
-        if self._detectables == "any":
-            self._all_classes = tt.thor_all_object_types(controller)
         if task_type not in {"class", "object"}:
             raise ValueError("Invalid target type: {}".format(task_type))
         super().__init__(controller)
@@ -146,7 +145,7 @@ class TOS(ThorEnv):
             path.append(agent_position)
         return path
 
-    def get_observation(self, event, action, vision_detector=None):
+    def get_observation(self, event, action, detector):
         """
         vision_detector (cosp.vision.Detector or None): vision detector;
             If None, then groundtruth detection will be used
@@ -161,24 +160,13 @@ class TOS(ThorEnv):
         """
         img = tt.vision.thor_img(event)
         img_depth = tt.vision.thor_img_depth(event)
+
+        if isinstance(detector, GroundtruthDetector):
+            detections = detector.detect(event)
+
+
         if vision_detector is None:
             # use groundtruth detection
-            detections = []
-            bboxes = tt.vision.thor_object_bboxes(event)  # xyxy
-            for objectId in bboxes:
-                loc3d = tt.thor_object_position(event, objectId, as_tuple=True)
-                if loc3d is None:
-                    # This is due to objectId, though provided in
-                    # bounding box, is not found in event metadata.
-                    # Perhaps this is a bug in ai2thor
-                    continue
-
-                cls = tt.thor_object_type(objectId)
-                if not self.detectable(cls):
-                    continue
-                conf = 1.0
-                xyxy = bboxes[objectId]
-                detections.append((xyxy, conf, cls, loc3d))  # TODO: loc3d is not a good idea. The right thing to do is to transform from pixels to a set of locations.
         else:
             import pdb; pdb.set_trace()
             detections = vision_detector.detect(img)
@@ -323,20 +311,6 @@ class TOS(ThorEnv):
 
     def visualizer(self, **config):
         return ThorObjectSearchViz2D(**config)
-
-    def detectable(self, cls):
-        if type(self._detectables) == str and self._detectables.lower() == "any":
-            return True
-        else:
-            return cls in self._detectables
-
-    @property
-    def detectables(self):
-        # If self._detectables is 'any', will return all thor classes in the scene.
-        if type(self._detectables) == str and self._detectables.lower() == "any":
-            return self._all_classes
-        else:
-            return self._detectables
 
 # Class naming aliases
 ThorObjectSearch = TOS
