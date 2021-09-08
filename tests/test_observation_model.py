@@ -44,6 +44,7 @@ def show_plots():
     return False
 
 def test_observation_model(search_region, show_plots):
+    """mainly used for testing correlation observation model belief update"""
     target = (0, "target")
     other = (1, "other")
     robot_id = -1

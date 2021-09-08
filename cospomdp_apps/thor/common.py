@@ -167,7 +167,7 @@ class TaskArgs:
     use_vision_detector: bool = False
     yolov5_model_dir: str = paths.YOLOV5_MODEL_DIR
     yolov5_data_dir: object = paths.YOLOV5_DATA_DIR
-    bbox_margin: int = 0.15 # percentage of the bbox to exclude along each axis
+    bbox_margin: float = 0.3 # percentage of the bbox to exclude along each axis
 
 
 # Make configs

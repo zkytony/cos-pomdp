@@ -13,6 +13,7 @@ Overall control flow
 import random
 import time
 import math
+import numpy as np
 import os
 import pomdp_py
 import thortils as tt
@@ -190,14 +191,19 @@ class ThorObjectSearchCosAgent(ThorAgent):
 
         for detection in tos_observation.detections:
             xyxy, conf, cls, locs = detection
-            for thor_x, _, thor_z in locs:
-                x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
-                # we don't want to lose this detection because it is at 'unknown'.
-                # so we will map it to the closest one
-                if (x,z) not in self.search_region.locations:
-                    x, z = min(self.search_region.locations,
-                               key=lambda l: euclidean_dist(l, (x,z)))
-                objobzs[cls] = cospomdp.Loc(cls, (x, z))
+
+            # we will average locs to get an estimate of the
+            # detected object's center, as this is the location
+            # used in collecting distances for correlations.
+            thor_x, _, thor_z = np.mean(np.asarray(locs), axis=0)
+
+            x, z = self.grid_map.to_grid_pos(thor_x, thor_z)
+            # we don't want to lose this detection because it is at 'unknown'.
+            # so we will map it to the closest one
+            if (x,z) not in self.search_region.locations:
+                x, z = min(self.search_region.locations,
+                           key=lambda l: euclidean_dist(l, (x,z)))
+            objobzs[cls] = cospomdp.Loc(cls, (x, z))
         return objobzs
 
     def interpret_observation(self, tos_observation):

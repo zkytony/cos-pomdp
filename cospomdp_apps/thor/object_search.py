@@ -165,9 +165,9 @@ class TOS(ThorEnv):
         img_depth = tt.vision.thor_img_depth(event)
 
         if isinstance(detector, GroundtruthDetector):
-            detections = detector.detect_project(event,
-                                                 self._camera_intrinsic,
-                                                 single_loc=True)
+            detections = detector.detect_project(
+                event, self._camera_intrinsic, single_loc=False)
+
         else:
             detections = detector.detect(img)
 

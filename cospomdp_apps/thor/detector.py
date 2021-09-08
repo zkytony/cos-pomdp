@@ -118,6 +118,10 @@ class YOLODetector(Detector):
                  self.classes[int(preds[i][5])])
                 for i in range(len(preds))]
 
+    def detect_project(self, frame, camera_intrinsic, camera_pose):
+        bbox_detections = self.detect(frame)
+        pass
+
 
 class GroundtruthDetector(Detector):
     def detect(self, event, get_object_ids=False):
@@ -142,14 +146,14 @@ class GroundtruthDetector(Detector):
         return detections
 
     def detect_project(self, event, camera_intrinsic=None, single_loc=True):
-        detections = self.detect(event, get_object_ids=True)
+        bbox_detections = self.detect(event, get_object_ids=True)
 
         if not single_loc:
             camera_pose = tt.thor_camera_pose(event, as_tuple=True)
             einv = pj.extrinsic_inv(camera_pose)
 
         results = []
-        for xyxy, conf, objectId in detections:
+        for xyxy, conf, objectId in bbox_detections:
             cls = tt.thor_object_type(objectId)
             locs = []
             if single_loc:
