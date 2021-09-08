@@ -77,7 +77,9 @@ class Detector:
 
 class YOLODetector(Detector):
 
-    def __init__(self, model_path, data_config, **kwargs):
+    def __init__(self, model_path, data_config,
+                 conf_thres=0.4, keep_most_confident=True,
+                 **kwargs):
         """
         Args:
             model_path (str): Path to the .pt YOLOv5 model.
@@ -92,19 +94,21 @@ class YOLODetector(Detector):
                 self.config = yaml.load(f, Loader=yaml.Loader)
         else:
             self.config = data_config
+        # check the detectable classes are in config
+        if not all(c in self.config["names"] for c in self.detectable_classes):
+            raise ValueError("Not all detectable objects are handled by the YOLO detector")
+
         self.classes = self.config["names"]
         self.colors = self.config["colors"]
         self.model_path = model_path
+        self._conf_thres = conf_thres
+        self._keep_most_confident = keep_most_confident
         print("Loading YOLOv5 vision detector...")
         print(f"    model path: {model_path}")
         print(f"    data config: {data_config}")
         self.model = torch.hub.load(YOLOV5_REPO_PATH, 'custom',
                                     path=self.model_path,
                                     source="local")
-
-    @property
-    def detectable_classes(self):
-        return self.config["names"]
 
     def detect(self, frame):
         """
@@ -113,15 +117,39 @@ class YOLODetector(Detector):
         """
         results = self.model(frame)
         preds = results.pred[0]  # get the prediction tensor
-        return [(torch.round(preds[i][:4]).cpu().detach().numpy(),
-                 float(preds[i][4]),
-                 self.classes[int(preds[i][5])])
-                for i in range(len(preds))]
+        detections = [(torch.round(preds[i][:4]).cpu().detach().numpy(),  # bounding box
+                       float(preds[i][4]),  # confidence
+                       self.classes[int(preds[i][5])])
+                      for i in range(len(preds))]
+        processed1 = {}
+        for d in detections:
+            conf = d[1]
+            cls = d[2]
+            if conf >= self._conf_thres:
+                if cls not in processed1:
+                    processed1[cls] = []
+                processed1[cls].append(d)
+        processed2 = []
+        for cls in processed1:
+            if len(processed1[cls]) > 1:
+                chosen = max(processed1[cls], key=lambda d: d[1])
+                processed2.append(chosen)
+            else:
+                processed2.append(processed1[cls][0])
+        return processed2
 
-    def detect_project(self, frame, camera_intrinsic, camera_pose):
+    def detect_project(self, frame, depth_frame, camera_intrinsic, camera_pose):
         bbox_detections = self.detect(frame)
-        pass
-
+        einv = pj.extrinsic_inv(camera_pose)
+        results = []
+        for xyxy, conf, cls in bbox_detections:
+            xyxy = shrink_bbox(xyxy, self._bbox_margin)
+            thor_points = pj.thor_project_bbox(
+                xyxy, depth_frame,
+                camera_intrinsic, downsample=0.01,
+                einv=einv)
+            results.append([xyxy, conf, cls, thor_points])
+        return results
 
 class GroundtruthDetector(Detector):
     def detect(self, event, get_object_ids=False):
@@ -168,8 +196,5 @@ class GroundtruthDetector(Detector):
                     camera_intrinsic, downsample=0.01,
                     einv=einv)
                 locs.extend(thor_points)
-
-            if locs is None:
-                import pdb; pdb.set_trace()
             results.append((xyxy, conf, cls, locs))
         return results

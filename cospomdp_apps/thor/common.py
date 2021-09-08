@@ -123,8 +123,12 @@ class ThorAgent:
                 # didn't provide; load our own.
                 model_path = task_config["paths"]["yolov5_model_path"]
                 data_config = task_config["paths"]["yolov5_data_config"]  # the path to the dataset yaml file
-                detector = YOLODetector(task_config["detectables"],
-                                        model_path, data_config,
+                keep_most_confident = detector_config["keep_most_confident"]
+                conf_thres = detector_config["conf_thres"]
+                detector = YOLODetector(model_path, data_config,
+                                        conf_thres=conf_thres,
+                                        keep_most_confident=keep_most_confident,
+                                        detectables=task_config["detectables"],
                                         bbox_margin=bbox_margin)
                 self._detector = detector
         else:
@@ -168,6 +172,8 @@ class TaskArgs:
     yolov5_model_dir: str = paths.YOLOV5_MODEL_DIR
     yolov5_data_dir: object = paths.YOLOV5_DATA_DIR
     bbox_margin: float = 0.3 # percentage of the bbox to exclude along each axis
+    conf_thres: float = 0.4
+    keep_most_confident: bool = True  # if multiple bounding boxes for an object, keep only the most confident one
 
 
 # Make configs
@@ -194,7 +200,9 @@ def make_config(args):
         },
         "detector_config": {
             "use_vision_detector": args.use_vision_detector,
-            "bbox_margin": args.bbox_margin
+            "bbox_margin": args.bbox_margin,
+            "conf_thres": args.conf_thres,
+            "keep_most_confident": args.keep_most_confident
         },
         "discount_factor": 0.95,
         "paths": {}

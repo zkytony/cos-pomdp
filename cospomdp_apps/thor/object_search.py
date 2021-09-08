@@ -167,19 +167,11 @@ class TOS(ThorEnv):
         if isinstance(detector, GroundtruthDetector):
             detections = detector.detect_project(
                 event, self._camera_intrinsic, single_loc=False)
-
         else:
-            detections = detector.detect(img)
-
-        # if vision_detector is None:
-        #     # use groundtruth detection
-        # else:
-        #     import pdb; pdb.set_trace()
-        #     detections = vision_detector.detect(img)
-        #     for i in range(len(detections)):
-        #         xyxy = detections[i][0]
-        #         # TODO: COMPLETE
-        #         # pos = projection.inverse_perspective(np.mean(xyxy), ..) # TODO
+            camera_pose = tt.thor_camera_pose(event, as_tuple=True)
+            detections = detector.detect(img, event.depth_frame,
+                                         self._camera_intrinsic,
+                                         camera_pose)
         return TOS_Observation(img,
                                img_depth,
                                detections,
