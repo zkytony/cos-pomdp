@@ -232,7 +232,8 @@ class GroundtruthDetector(Detector):
 
         if self._visualize:
             img = self.plot_detections(event.frame, detections)
-            cv2.imshow("groundtruth", img)
+            img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            cv2.imshow("groundtruth", img_bgr)
             cv2.waitKey(50)
         return detections
 

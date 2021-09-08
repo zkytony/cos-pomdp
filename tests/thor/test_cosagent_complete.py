@@ -119,7 +119,7 @@ if __name__ == "__main__":
                           num_sims=100,
                           target_false_pos=0.15,
                           other_false_pos=0.1,
-                          use_vision_detector=True,
+                          use_vision_detector=False,
                           local_search_params={"num_sims": 200,
                                                "max_depth": 30,
                                                "discount_factor": 0.95,
