@@ -15,7 +15,7 @@ def _test_groundtruth_detector(scene="FloorPlan1"):
     camera_intrinsic = tt.vision.projection.thor_camera_intrinsic(controller)
     detector = GroundtruthDetector(detectables=classes,
                                    bbox_margin=0.15)
-    detections = detector.detect_project(controller.last_event, camera_intrinsic, grid_map)
+    detections = detector.detect_project(controller.last_event, camera_intrinsic, single_loc=False)
     img = detector.plot_detections(controller.last_event.frame, detections)
     img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
@@ -23,9 +23,9 @@ def _test_groundtruth_detector(scene="FloorPlan1"):
     _colors = []
     _img = viz.render()
     for d in detections:
-        locs = d[-1]
+        thor_locs = d[-1]
         color = random_unique_color(_colors)
-        _img = viz.highlight(_img, locs, color=color, alpha=0.05,
+        _img = viz.highlight(_img, thor_locs, color=color, alpha=0.05, thor=True,
                              show_progress=True)  # each cell gets very small alpha
     viz.show_img(_img)
     cv2.imshow("groundtruth", img_bgr)

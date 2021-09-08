@@ -12,6 +12,7 @@ import ai2thor.util.metrics as metrics
 
 import thortils as tt
 from thortils.utils import euclidean_dist
+import thortils.vision.projection as pj
 
 from .result_types import PathResult, HistoryResult
 from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation, ThorAgent
@@ -42,6 +43,7 @@ class TOS(ThorEnv):
         self.task_type = task_type
         self.goal_distance = task_config["nav_config"]["goal_distance"]
         self._detectables = self.task_config["detectables"]
+        self._camera_intrinsic = pj.thor_camera_intrinsic(controller)
         if task_type not in {"class", "object"}:
             raise ValueError("Invalid target type: {}".format(task_type))
         super().__init__(controller)
@@ -162,7 +164,10 @@ class TOS(ThorEnv):
         img_depth = tt.vision.thor_img_depth(event)
 
         if isinstance(detector, GroundtruthDetector):
-            detections = detector.detect(event)
+            detections = detector.detect_project(event, self._camera_intrinsic, )
+
+        else:
+            detections = detector.detect(img)
 
 
         if vision_detector is None:

@@ -38,10 +38,8 @@ class Detector:
     def detect_project(self, *args, **kwargs):
         """
         Returns:
-            list of (xyxy, conf, cls, grid_cells), where grid_cells is a
-            a collection of locations, either in 3D (dim='3d') or in 2D (dim='2d').
-            If 2D, then `grid_map` will need to be provided. If 3D, the coordinates
-            will be in thor
+            list of (xyxy, conf, cls, thor_points), where thor_points is a
+            a collection of locations in thor coordinates.
         """
         raise NotImplementedError
 
@@ -146,10 +144,9 @@ class GroundtruthDetector(Detector):
                 detections.append((xyxy, conf, cls))
         return detections
 
-    def detect_project(self, event, camera_intrinsic=None, grid_map=None):
+    def detect_project(self, event, camera_intrinsic=None, single_loc=True):
         detections = self.detect(event, get_object_ids=True)
 
-        single_loc = grid_map is None
         if not single_loc:
             camera_pose = tt.thor_camera_pose(event, as_tuple=True)
             einv = pj.extrinsic_inv(camera_pose)
@@ -165,11 +162,11 @@ class GroundtruthDetector(Detector):
             else:
                 # returns grid map cells projected from the bounding box
                 xyxy = shrink_bbox(xyxy, self._bbox_margin)
-                grid_points = pj.project_bbox_to_grids(
-                    xyxy, event.depth_frame, grid_map,
+                thor_points = pj.thor_project_bbox(
+                    xyxy, event.depth_frame,
                     camera_intrinsic, downsample=0.01,
                     einv=einv)
-                locs.extend(grid_points)
+                locs.extend(thor_points)
 
             results.append((xyxy, conf, cls, locs))
         return results
