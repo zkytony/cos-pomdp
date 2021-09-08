@@ -123,12 +123,14 @@ class ThorAgent:
                 # didn't provide; load our own.
                 model_path = task_config["paths"]["yolov5_model_path"]
                 data_config = task_config["paths"]["yolov5_data_config"]  # the path to the dataset yaml file
-                detector = YOLODetector(model_path, data_config,
-                                        bbox_margin=bbox_magin)
+                detector = YOLODetector(task_config["detectables"],
+                                        model_path, data_config,
+                                        bbox_margin=bbox_margin)
                 self._detector = detector
         else:
             # uses groundtruth detector
-            self._detector = GroundtruthDetector(bbox_margin=bbox_margin)
+            self._detector = GroundtruthDetector(task_config["detectables"],
+                                                 bbox_margin=bbox_margin)
 
     def act(self):
         raise NotImplementedError
@@ -193,7 +195,7 @@ def make_config(args):
         "detector_config": {
             "use_vision_detector": args.use_vision_detector,
             "bbox_margin": args.bbox_margin
-        }
+        },
         "discount_factor": 0.95,
         "paths": {}
     }

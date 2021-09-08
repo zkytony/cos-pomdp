@@ -120,9 +120,6 @@ class YOLODetector(Detector):
 
 
 class GroundtruthDetector(Detector):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def detect(self, event, get_object_ids=False):
         """
         Args:
@@ -168,5 +165,7 @@ class GroundtruthDetector(Detector):
                     einv=einv)
                 locs.extend(thor_points)
 
+            if locs is None:
+                import pdb; pdb.set_trace()
             results.append((xyxy, conf, cls, locs))
         return results

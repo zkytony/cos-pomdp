@@ -160,25 +160,26 @@ class TOS(ThorEnv):
                     the detected class, `conf` is confidence, `xyxy` is bounding box,
                     'pos' is the 3D position of the detected object.
         """
+        print("Getting observation")
         img = tt.vision.thor_img(event)
         img_depth = tt.vision.thor_img_depth(event)
 
         if isinstance(detector, GroundtruthDetector):
-            detections = detector.detect_project(event, self._camera_intrinsic, )
-
+            detections = detector.detect_project(event,
+                                                 self._camera_intrinsic,
+                                                 single_loc=True)
         else:
             detections = detector.detect(img)
 
-
-        if vision_detector is None:
-            # use groundtruth detection
-        else:
-            import pdb; pdb.set_trace()
-            detections = vision_detector.detect(img)
-            for i in range(len(detections)):
-                xyxy = detections[i][0]
-                # TODO: COMPLETE
-                # pos = projection.inverse_perspective(np.mean(xyxy), ..) # TODO
+        # if vision_detector is None:
+        #     # use groundtruth detection
+        # else:
+        #     import pdb; pdb.set_trace()
+        #     detections = vision_detector.detect(img)
+        #     for i in range(len(detections)):
+        #         xyxy = detections[i][0]
+        #         # TODO: COMPLETE
+        #         # pos = projection.inverse_perspective(np.mean(xyxy), ..) # TODO
         return TOS_Observation(img,
                                img_depth,
                                detections,
@@ -199,7 +200,7 @@ class TOS(ThorEnv):
         agent_pose = tt.thor_agent_pose(event, as_tuple=True)
         horizon = tt.thor_camera_horizon(event)
         objlocs = {}
-        for cls in self.detectables:
+        for cls in self._detectables:
             objlocs[cls] = self.get_object_loc(cls)
         return TOS_State(agent_pose, horizon, objlocs)
 
@@ -297,12 +298,11 @@ class TOS(ThorEnv):
         info = self._history[step]
         s = info['state']
         a = info['action']
-        o = {}
+        o = set()
         for detection in info['detections']:
             cls = detection[2]
-            loc3d = detection[3]
-            o[cls] = list(map(lambda l: "{:.3f}".format(l), loc3d))
-        clses = list(sorted(o.keys()))
+            o.add(cls)
+        clses = list(sorted(o))
         o_str = ",".join(clses)
         r = info['reward']
 
