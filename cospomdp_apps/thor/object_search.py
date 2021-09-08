@@ -14,7 +14,7 @@ import thortils as tt
 from thortils.utils import euclidean_dist
 
 from .result_types import PathResult, HistoryResult
-from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation
+from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation, ThorAgent
 from .agent import ThorObjectSearchOptimalAgent
 from .visual import ThorObjectSearchViz2D
 from . import constants

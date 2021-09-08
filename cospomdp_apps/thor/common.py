@@ -156,6 +156,7 @@ def make_config(args):
     task_config = {
         "robot_id": "robot",
         "task_type": 'class',
+        "scene": args.scene,
         "target": args.target,
         "detectables": args.detectables,
         "nav_config": {

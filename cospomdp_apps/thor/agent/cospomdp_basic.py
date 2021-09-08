@@ -29,24 +29,60 @@ from .. import constants
 
 
 class GridMapSearchRegion(cospomdp.SearchRegion2D):
-    def __init__(self, grid_map):
+    def __init__(self, grid_map, scene=None):
         super().__init__(grid_map.obstacles)
-        # self._obstacles = grid_map.obstacles
+        self.scene = scene
 
 
 class ThorObjectSearchCosAgent(ThorAgent):
 
+    def __init__(self,
+                 task_config,
+                 corr_specs,
+                 detector_specs,
+                 grid_map,
+                 thor_agent_pose):
+        """
+        Initialize.
+        """
+        self.robot_id = task_config["robot_id"]
+        scene = task_config["scene"]
+        search_region = GridMapSearchRegion(grid_map, scene=scene)
+        reachable_positions = grid_map.free_locations
+        self.grid_map = grid_map
+        self.search_region = search_region
+        self.reachable_positions = reachable_positions
+
+        self._init_robot_pose = grid_map.to_grid_pose(
+            thor_agent_pose[0][0],  #x
+            thor_agent_pose[0][2],  #z
+            thor_agent_pose[1][1]   #yaw
+        )
+        self._init_pitch = thor_agent_pose[1][0]
+
+        if task_config["task_type"] == 'class':
+            target_id = task_config['target']
+            target_class = task_config['target']
+            target = (target_id, target_class)
+        else:
+            # This situation is not tested :todo:
+            target = task_config['target']  # (target_id, target_class)
+            target_id = target[0]
+        self.task_config = task_config
+        self.target = target
+        self.target_id = target[0]
+
+        detectors, detectable_objects = self._build_detectors(detector_specs)
+        corr_dists = self._build_corr_dists(corr_specs, detectable_objects)
+        self.detectors = detectors
+        self.corr_dists = corr_dists
+        self.detectable_objects = detectable_objects
+
+        self.thor_movement_params = task_config["nav_config"]["movement_params"]
+
     @property
     def belief(self):
         return self.cos_agent.belief
-
-    @property
-    def robot_id(self):
-        return self.cos_agent.robot_id
-
-    @property
-    def target_id(self):
-        return self.cos_agent.target_id
 
     def sensor(self, objid):
         return self.cos_agent.sensor(objid)
@@ -54,10 +90,6 @@ class ThorObjectSearchCosAgent(ThorAgent):
     def robot_state(self):
         """Since robot state is observable, return the mpe state in belief"""
         return self.cos_agent.belief.b(self.robot_id).mpe()
-
-    @property
-    def detectable_objects(self):
-        return self.cos_agent.detectable_objects
 
     def _build_detectors(self, detector_specs):
         return ThorObjectSearchCosAgent.build_detectors(
@@ -93,7 +125,11 @@ class ThorObjectSearchCosAgent(ThorAgent):
             corr_specs, objects)
 
     @staticmethod
-    def build_corr_dists(target_id, search_region, corr_specs, objects):
+    def build_corr_dists(target_id, search_region, corr_specs, objects, corr_dists_path=None):
+        """
+        corr_dists_path (str): Path to the data/thor/corr_dists/ directory;
+
+        """
         corr_dists = {}
         for key in corr_specs:
             obj1, obj2 = key
@@ -185,52 +221,31 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         solver_args (dict): arguments for the solver
         thor_prior: dict mapping from thor location to probability; If empty, then the prior will be uniform.
         """
-        robot_id = task_config['robot_id']
-        search_region = GridMapSearchRegion(grid_map)
-        reachable_positions = grid_map.free_locations
-        self.grid_map = grid_map
-        self.search_region = search_region
-        self.reachable_positions = reachable_positions
+        super().__init__(task_config,
+                         corr_specs,
+                         detector_specs,
+                         grid_map,
+                         thor_agent_pose)
 
-        init_robot_pose = grid_map.to_grid_pose(
-            thor_agent_pose[0][0],  #x
-            thor_agent_pose[0][2],  #z
-            thor_agent_pose[1][1]   #yaw
-        )
-
-        if task_config["task_type"] == 'class':
-            target_id = task_config['target']
-            target_class = task_config['target']
-            target = (target_id, target_class)
-        else:
-            # This situation is not tested :todo:
-            target = task_config['target']  # (target_id, target_class)
-            target_id = target[0]
-        self.task_config = task_config
-        self.target = target
-
-        detectors, detectable_objects = self._build_detectors(detector_specs)
-        corr_dists = self._build_corr_dists(corr_specs, detectable_objects)
-        self.corr_dists = corr_dists
-
+        goal_distance = (task_config["nav_config"]["goal_distance"]
+                         / self.grid_map.grid_size) * 0.8  # just to make sure we are close enough
         reward_model = cospomdp.ObjectSearchRewardModel(
-            detectors[target_id].sensor,
-            (task_config["nav_config"]["goal_distance"] / grid_map.grid_size) * 0.8,  # just to make sure we are close enough
-            robot_id, target_id,
+            self.detectors[self.target_id].sensor, goal_distance,
+            self.robot_id, self.target_id,
             **task_config["reward_config"])
 
         # Construct CosAgent, the actual POMDP
-        init_robot_state = cospomdp.RobotState2D(robot_id, init_robot_pose)
-        robot_trans_model = RobotTransition2D(robot_id, reachable_positions)
+        init_robot_state = cospomdp.RobotState2D(self.robot_id, self._init_robot_pose)
+        robot_trans_model = RobotTransition2D(self.robot_id, self.reachable_positions)
         movement_params = self.task_config["nav_config"]["movement_params"]
         self.navigation_actions = set(grid_navigation_actions2d(movement_params, grid_map.grid_size))
         policy_model = PolicyModel2D(robot_trans_model,
                                      movements=self.navigation_actions)
         prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
                  for p in thor_prior}
-        self.cos_agent = cospomdp.CosAgent(target, init_robot_state,
-                                           search_region, robot_trans_model, policy_model,
-                                           corr_dists, detectors, reward_model,
+        self.cos_agent = cospomdp.CosAgent(self.target, init_robot_state,
+                                           self.search_region, robot_trans_model, policy_model,
+                                           self.corr_dists, self.detectors, reward_model,
                                            prior=prior)
         # construct solver
         if solver == "pomdp_py.POUCT":
@@ -238,7 +253,6 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
                                          rollout_policy=self.cos_agent.policy_model)
         else:
             self.solver = eval(solver)(**solver_args)
-
 
     def act(self):
         """

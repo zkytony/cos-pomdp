@@ -219,24 +219,14 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         """
         If the probability
         """
-
-        robot_id = task_config["robot_id"]
-        search_region = GridMapSearchRegion(grid_map)
-        reachable_positions = grid_map.free_locations
-        self.search_region = search_region
-        self.grid_map = grid_map
-        self.reachable_positions = reachable_positions  # positions the robot can reach
-
-        # initial robot pose
-        init_robot_pose = grid_map.to_grid_pose(
-            thor_agent_pose[0][0],  #x
-            thor_agent_pose[0][2],  #z
-            thor_agent_pose[1][1]   #yaw
-        )
-        pitch = thor_agent_pose[1][0]
+        super().__init__(task_config,
+                         corr_specs,
+                         detector_specs,
+                         grid_map,
+                         thor_agent_pose)
 
         # Form initial topological graph for navigation.
-        prior = {loc: 1e-12 for loc in search_region}
+        prior = {loc: 1e-12 for loc in self.search_region}
         for thor_loc in thor_prior:
             loc = grid_map.to_grid_pos(thor_loc[0], thor_loc[2])
             prior[loc] = thor_prior[thor_loc]
@@ -247,50 +237,36 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         self._seed = seed
         self._topo_cover_thresh = topo_cover_thresh
         self.topo_map = _sample_topo_map(prior,
-                                         reachable_positions,
+                                         self.reachable_positions,
                                          self._num_place_samples,
                                          degree=self._topo_map_degree,
                                          sep=self._places_sep,
                                          rnd=random.Random(self._seed),
-                                         robot_pos=init_robot_pose[:2])
-        init_topo_nid = self.topo_map.closest_node(*init_robot_pose[:2])
-        init_robot_state = RobotStateTopo(robot_id, init_robot_pose, pitch, init_topo_nid)
+                                         robot_pos=self._init_robot_pose[:2])
+        init_topo_nid = self.topo_map.closest_node(*self._init_robot_pose[:2])
+        init_robot_state = RobotStateTopo(self.robot_id, self._init_robot_pose,
+                                          self._init_pitch, init_topo_nid)
         self.thor_movement_params = task_config["nav_config"]["movement_params"]
 
-        if task_config["task_type"] == 'class':
-            target_id = task_config['target']
-            target_class = task_config['target']
-            target = (target_id, target_class)
-        else:
-            target = task_config['target']  # (target_id, target_class)
-            target_id = target[0]
-        self.task_config = task_config
-        self.target = target
-
-        detectors, detectable_objects = self._build_detectors(detector_specs)
-        corr_dists = self._build_corr_dists(corr_specs, detectable_objects)
-        self.detectors = detectors
-        self.corr_dists = corr_dists
-
-        robot_trans_model = RobotTransitionTopo(robot_id, target[0],
+        robot_trans_model = RobotTransitionTopo(self.robot_id, self.target[0],
                                                 self.topo_map, self.task_config['nav_config']['h_angles'])
+        goal_distance = (task_config["nav_config"]["goal_distance"] / grid_map.grid_size) * 0.8  # just to make sure we are close enough
         reward_model = cospomdp.ObjectSearchRewardModel(
-            detectors[target_id].sensor,
-            (task_config["nav_config"]["goal_distance"] / grid_map.grid_size) * 0.8,  # just to make sure we are close enough
-            robot_id, target_id,
+            self.detectors[self.target_id].sensor,
+            goal_distance,
+            self.robot_id, self.target_id,
             **task_config["reward_config"])
         policy_model = PolicyModelTopo(robot_trans_model, self.topo_map)
-                                       # reward_model,
 
         prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
                  for p in thor_prior}
         self.cos_agent = cospomdp.CosAgent(self.target,
                                            init_robot_state,
-                                           search_region,
+                                           self.search_region,
                                            robot_trans_model,
                                            policy_model,
-                                           corr_dists,
-                                           detectors,
+                                           self.corr_dists,
+                                           self.detectors,
                                            reward_model,
                                            prior=prior)
         self._local_search_type = local_search_type

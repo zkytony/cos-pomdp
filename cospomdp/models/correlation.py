@@ -1,8 +1,10 @@
 from ..probability import JointDist, Event, TabularDistribution
 from tqdm import tqdm
+import pickle
 
 class CorrelationDist(JointDist):
-    def __init__(self, corr_object, target, search_region, corr_func_or_dict, corr_func_args={}):
+    def __init__(self, corr_object, target, search_region,
+                 corr_func_or_dict, corr_func_args={}):
         """
         Models Pr(Si | Starget) = Pr(corr_object_id | target_id)
         Args:
@@ -13,6 +15,8 @@ class CorrelationDist(JointDist):
                 and an object location, and return a value, the greater, the more correlated.
                 Or: a dictionary that maps (target_loc, corr_object_loc) to a float,
                 by default 1e-12.
+
+
         """
         self.corr_object_id, self.corr_object_class = corr_object
         self.target_id, self.target_class = target
@@ -39,6 +43,14 @@ class CorrelationDist(JointDist):
                 weights[Event({self.corr_object_id: object_state})] = prob
             self.dists[target_state] =\
                 TabularDistribution([self.corr_object_id], weights, normalize=True)
+
+    def save(self, savepath):
+        with open(savepath, "wb") as f:
+            pickle.dump(self)
+
+    def load(self, loadpath):
+        with open(loadpath, "rb") as f:
+            return pickle.load(f)
 
     def marginal(self, variables, evidence):
         """Performs marignal inference,

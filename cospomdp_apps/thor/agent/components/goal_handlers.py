@@ -188,29 +188,29 @@ class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent)
         """
         agent (ThorObjectSearchCosAgent)
         """
-        super().__init__(goal, agent)
+        LocalSearchHandler.__init__(self, goal, agent)
         self._parent = agent
         local_robot_state = agent.robot_state()
 
-        robot_id = agent.robot_id
-        target_id = agent.robot_id
+        self.robot_id = agent.robot_id
+        self.target_id = agent.robot_id
 
-        search_region = agent.search_region
+        self.search_region = agent.search_region
         reachable_positions = agent.reachable_positions
 
         movement_params = agent.task_config["nav_config"]["movement_params"]
         self.navigation_actions = grid_navigation_actions2d(movement_params,
                                                        agent.grid_map.grid_size)
-        robot_trans_model = basic.RobotTransition2D(robot_id, reachable_positions)
+        robot_trans_model = basic.RobotTransition2D(self.robot_id, reachable_positions)
         reward_model = agent.cos_agent.reward_model # the reward model is the same
         policy_model = basic.PolicyModel2D(robot_trans_model,
                                            movements=self.navigation_actions)
 
-        _btarget = agent.belief.b(target_id)
+        _btarget = agent.belief.b(self.target_id)
         prior = {s.loc : _btarget[s] for s in _btarget}
         self._local_cos_agent = cospomdp.CosAgent(agent.target,
                                                   local_robot_state,
-                                                  search_region,
+                                                  self.search_region,
                                                   robot_trans_model,
                                                   policy_model,
                                                   agent.corr_dists,
