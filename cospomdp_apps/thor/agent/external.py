@@ -173,14 +173,3 @@ class ThorObjectSearchExternalAgent(ThorAgent):
 
     def update(self, tos_action, tos_observation):
         self._last_observation = tos_observation
-
-
-if __name__ == "__main__":
-    #python -m cospomdp_apps.thor.external
-    print("HELLO.")
-    agent = ThorObjectSearchExternalAgent(
-        None,
-        {'target': 'Apple', 'task_type': 'class'},
-        "MJOLNIR_O",
-        os.path.join(ABS_PATH, "mjolnir", "trained_models", "mjolnir_train_4763_800_2021-08-19_04:03:08.dat"),
-        args=MJOLNIR_O_args())
