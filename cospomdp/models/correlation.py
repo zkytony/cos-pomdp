@@ -51,7 +51,8 @@ class CorrelationDist(JointDist):
     @staticmethod
     def load(loadpath):
         with open(loadpath, "rb") as f:
-            return pickle.load(f)
+            corrdist = pickle.load(f)
+        return corrdist
 
     def marginal(self, variables, evidence):
         """Performs marignal inference,
@@ -72,6 +73,7 @@ class CorrelationDist(JointDist):
             "i.e. set evidence = <some target state>"
         target_state = evidence[self.target_id]
         if target_state not in self.dists:
+            import pdb; pdb.set_trace()
             raise ValueError("Unexpected value for target state in evidence: {}".format(target_state))
         return self.dists[target_state]
 

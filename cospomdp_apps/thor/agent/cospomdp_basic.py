@@ -158,7 +158,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
                     cdist_path = os.path.join(
                         corr_dists_path, f"corr-dist_{scene_type}_{target[1]}-{corr_object[1]}_{scene}.pkl")
                     if os.path.exists(cdist_path):
-                        print(f"Loading corr dist Pr({corr_object[1]} | {target[1]}")
+                        print(f"Loading corr dist Pr({corr_object[1]} | {target[1]})")
                         corr_dists[other] = cospomdp.CorrelationDist.load(cdist_path)
                         loaded = True
 
