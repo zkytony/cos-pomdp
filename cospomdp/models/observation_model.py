@@ -243,16 +243,17 @@ class FanModelNoFP(DetectionModel):
         si (HLObjectstate)
         srobot (HLObjectstate)
         """
-        if zi.loc is not None and not self.sensor.in_range(zi.loc, srobot["pose"]):
-            # the robot would not have received such an observation
-            return 1e-12
-
         in_range = self.sensor.in_range(si["loc"], srobot["pose"])
         if in_range:
             if zi.loc is None:
                 # false negative
                 return 1.0 - self.detection_prob
             else:
+                if self.sensor.in_range(zi.loc, srobot["pose"]):
+                    # the robot would not have received such an observation,
+                    # because it is outside of the FOV.
+                    return 1e-12
+
                 # True positive; gaussian centered at object loc
                 gaussian = Gaussian(list(si["loc"]),
                                     [[self.sigma**2, 0],
@@ -288,7 +289,6 @@ class FanModelNoFP(DetectionModel):
             return zi, event
         else:
             return zi
-
 
 
 class FanModelSimpleFP(DetectionModel):
@@ -331,16 +331,19 @@ class FanModelSimpleFP(DetectionModel):
         si (HLObjectstate)
         srobot (HLObjectstate)
         """
-        if zi.loc is not None and not self.sensor.in_range(zi.loc, srobot["pose"]):
-            # the robot would not have received such an observation
-            return 1e-12
-
         in_range = self.sensor.in_range(si["loc"], srobot["pose"])
         if in_range:
             if zi.loc is None:
                 # false negative
                 return 1.0 - self.detection_prob
             else:
+                if not self.sensor.in_range(zi.loc, srobot["pose"]):
+                    # the robot would not have received such a positive observation,
+                    # because it is outside of the FOV. It is treatd as a false positive,
+                    # that comes uniformly likely outside of the FOV. We estimate the
+                    # size of the world here as the fan sensor isn't provided the grid map.
+                    return self.false_pos_rate / (100 - (self.sensor.sensor_region_size))
+
                 # determin if zi is true positive or true negative.  If it is within
                 # 3*sigma range from si.loc then it is a true positvie. Otherwise,
                 # it is a false positive. The probability of the false positive is
@@ -357,7 +360,6 @@ class FanModelSimpleFP(DetectionModel):
                                          [0, self.sigma**2]])
                     return self.detection_prob * gaussian[zi.loc]
         else:
-            # outside of the field of view - should not detect anything positive ever.
             if zi.loc is None:
                 # True negative;
                 return 1.0 - self.false_pos_rate
