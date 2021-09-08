@@ -355,6 +355,10 @@ class FanModelSimpleFP(DetectionModel):
 
     @property
     def sigma(self):
+        return self.params[2]
+
+    @property
+    def false_pos_rate(self):
         return self.params[1]
 
     def probability(self, zi, si, srobot, a=None):
@@ -379,7 +383,7 @@ class FanModelSimpleFP(DetectionModel):
                 # True negative; we are not modeling false positives
                 return 1.0 - self.false_pos_rate
             else:
-                return self.false_pos_rate / self.sensor.sensing_region_size
+                return self.false_pos_rate / self.sensor.sensor_region_size
 
 
     def sample(self, si, srobot, a=None, return_event=False):

@@ -20,7 +20,7 @@ ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(ABS_PATH, "../../", "results")
 
 POUCT_ARGS = dict(max_depth=30,
-                  num_sims=200,
+                  planning_time=1.5,
                   discount_factor=0.95,
                   exploration_const=100,
                   show_progress=True)
@@ -78,11 +78,10 @@ OBJECT_CLASSES = {
                  "corr": ["Toilet", "Towel", "Mirror", "HandTowel", "SprayBottle"]}
 }
 
-def make_trial(method, run_num, scene_type, scene,
-               target, detector_models,
-               corr_objects=None,
-               max_steps=constants.MAX_STEPS,
-               rnd=random, visualize=False, viz_res=20):
+def make_trial(method, run_num, scene_type, scene, target, detector_models,
+               corr_objects=None, max_steps=constants.MAX_STEPS,
+               use_vision_detector=True, rnd=random, visualize=False,
+               viz_res=20):
     """
     Args:
         scene: scene to search in
@@ -109,7 +108,8 @@ def make_trial(method, run_num, scene_type, scene,
                     task_env="ThorObjectSearch",
                     max_steps=max_steps,
                     agent_init_inputs=agent_init_inputs,
-                    save_load_corr=method['use_corr'])
+                    save_load_corr=method['use_corr'],
+                    use_vision_detector=use_vision_detector)
     config = make_config(args)
     config["agent_config"]["corr_specs"] = {}
     config["agent_config"]["detector_specs"] = {

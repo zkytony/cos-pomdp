@@ -292,6 +292,9 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         if self._goal_handler is None or goal != self._goal_handler.goal:
             # Goal is different now. We try to handle this goal
             self._goal_handler = self.handle(goal)
+            # goal handler is immediately done - plan again.
+            if self._goal_handler.done:
+                return self.act()
 
         action = self._goal_handler.step()
         assert isinstance(action, TOS_Action)

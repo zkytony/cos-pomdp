@@ -21,7 +21,7 @@ def prepare(scene_type):
     return detector_models, targets, corr_objects
 
 
-def _test_hierarchical_corr_crt(scene_type, target_class, scene="FloorPlan21"):
+def _test_method(method, scene_type, target_class, scene="FloorPlan21"):
     valscenes = tt.ithor_scene_names(scene_type, levels=range(21, 31))
     if scene not in valscenes:
         raise ValueError("Only allow validation scenes.")
@@ -30,11 +30,11 @@ def _test_hierarchical_corr_crt(scene_type, target_class, scene="FloorPlan21"):
     if target_class not in targets:
         raise ValueError("{} is not a valid target class".format(target_class))
 
-    trial = make_trial(Methods.HIERARCHICAL_CORR_CRT,
-                       0, scene_type, scene, target_class,
-                       detector_models, corr_objects=corr_objects)
+    trial = make_trial(method, 0, scene_type, scene, target_class,
+                       detector_models, corr_objects=corr_objects,
+                       visualize=True)
     trial.run()
 
 
 if __name__ == "__main__":
-    _test_hierarchical_corr_crt("kitchen", "SaltShaker")
+    _test_method(Methods.HIERARCHICAL_CORR_CRT, "kitchen", "SaltShaker")
