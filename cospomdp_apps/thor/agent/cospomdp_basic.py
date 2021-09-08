@@ -13,6 +13,7 @@ Overall control flow
 import random
 import time
 import math
+import os
 import pomdp_py
 import thortils as tt
 
@@ -35,6 +36,7 @@ class GridMapSearchRegion(cospomdp.SearchRegion2D):
 
 
 class ThorObjectSearchCosAgent(ThorAgent):
+    AGENT_USES_CONTROLLER = False
 
     def __init__(self,
                  task_config,
@@ -73,9 +75,15 @@ class ThorObjectSearchCosAgent(ThorAgent):
         self.target_id = target[0]
 
         detectors, detectable_objects = self._build_detectors(detector_specs)
-        corr_dists = self._build_corr_dists(corr_specs, detectable_objects)
-        self.detectors = detectors
+
+        # load correlation distributions
+        corr_dists_path = None
+        if task_config.get("save_load_corr", False):
+            corr_dists_path = task_config["paths"]["corr_dists_path"]
+        corr_dists = self._build_corr_dists(corr_specs, detectable_objects,
+                                            corr_dists_path=corr_dists_path)
         self.corr_dists = corr_dists
+        self.detectors = detectors
         self.detectable_objects = detectable_objects
 
         self.thor_movement_params = task_config["nav_config"]["movement_params"]
@@ -119,17 +127,17 @@ class ThorObjectSearchCosAgent(ThorAgent):
                 detectors[object_id] = detector
         return detectors, detectable_objects
 
-    def _build_corr_dists(self, corr_specs, objects):
+    def _build_corr_dists(self, corr_specs, objects, corr_dists_path):
         return ThorObjectSearchCosAgent.build_corr_dists(
             self.target[0], self.search_region,
-            corr_specs, objects)
+            corr_specs, objects, corr_dists_path=corr_dists_path)
 
     @staticmethod
     def build_corr_dists(target_id, search_region, corr_specs, objects, corr_dists_path=None):
         """
-        corr_dists_path (str): Path to the data/thor/corr_dists/ directory;
-
+        corr_dists_path (str): Path to the directory that contains corr_dists pickle files
         """
+        target = objects[target_id]
         corr_dists = {}
         for key in corr_specs:
             obj1, obj2 = key
@@ -141,14 +149,34 @@ class ThorObjectSearchCosAgent(ThorAgent):
                 continue
 
             if other not in corr_dists:
-                corr_func, corr_func_args = corr_specs[key]
-                if type(corr_func) == str:
-                    corr_func = eval(corr_func)
-                corr_dists[other] = cospomdp.CorrelationDist(objects[other],
-                                                             objects[target_id],
-                                                             search_region,
-                                                             corr_func,
-                                                             corr_func_args=corr_func_args)
+                corr_object = objects[other]
+
+                loaded = False
+                if corr_dists_path is not None:
+                    scene = search_region.scene
+                    scene_type = tt.ithor_scene_type(scene)
+                    cdist_path = os.path.join(
+                        corr_dists_path, f"corr-dist_{scene_type}_{target[1]}-{corr_object[1]}_{scene}.pkl")
+                    if os.path.exists(cdist_path):
+                        print(f"Loading corr dist Pr({corr_object[1]} | {target[1]}")
+                        corr_dists[other] = cospomdp.CorrelationDist.load(cdist_path)
+                        loaded = True
+
+                if not loaded:
+                    corr_func, corr_func_args = corr_specs[key]
+                    if type(corr_func) == str:
+                        corr_func = eval(corr_func)
+                    corr_dists[other] = cospomdp.CorrelationDist(corr_object,
+                                                                 target,
+                                                                 search_region,
+                                                                 corr_func,
+                                                                 corr_func_args=corr_func_args)
+                    if corr_dists_path is not None:
+                        # save
+                        print(f"Saving corr dist Pr({corr_object[1]} | {target[1]}) to {cdist_path}")
+                        os.makedirs(corr_dists_path, exist_ok=True)
+                        corr_dists[other].save(cdist_path)
+
         return corr_dists
 
     def interpret_robot_obz(self, tos_observation):
@@ -202,7 +230,6 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
     Note that this agent does not make use of LookUp / LookDown actions.
     That's why it is basic!
     """
-    AGENT_USES_CONTROLLER = False
     def __init__(self,
                  task_config,
                  corr_specs,

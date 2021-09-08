@@ -46,9 +46,10 @@ class CorrelationDist(JointDist):
 
     def save(self, savepath):
         with open(savepath, "wb") as f:
-            pickle.dump(self)
+            pickle.dump(self, f)
 
-    def load(self, loadpath):
+    @staticmethod
+    def load(loadpath):
         with open(loadpath, "rb") as f:
             return pickle.load(f)
 

@@ -20,6 +20,9 @@ YOLOV5_REPO_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../external/yol
 # The path to the saved grid maps
 GRID_MAPS_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../data/thor/grid_maps"))
 
+# The path to the saved correlational distribtutions
+CORR_DISTS_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../data/thor/corr_dists"))
+
 
 # State, Action, Observation used in object search task
 @dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
@@ -142,8 +145,13 @@ class TaskArgs:
     task_env: str = "ThorObjectSearch"
     agent_class: str = "ThorObjectSearchOptimalAgent"
     max_steps: int = constants.MAX_STEPS
+    # load grid maps
     grid_maps_path: str = GRID_MAPS_PATH
     save_grid_map: bool = True
+    # use & load corr dists
+    save_load_corr: bool = False
+    corr_dists_path: str = CORR_DISTS_PATH
+    # yolo
     use_vision_detector: bool = False
     yolov5_model_dir: str = YOLOV5_MODEL_DIR,
     yolov5_data_dir: object = YOLOV5_DATA_DIR,
@@ -184,6 +192,10 @@ def make_config(args):
     if "grid_map" in args.agent_init_inputs:
         task_config["paths"]["grid_maps_path"] = args.grid_maps_path
         task_config["save_grid_map"] = args.save_grid_map
+
+    task_config["save_load_corr"] = args.save_load_corr
+    if args.save_load_corr:
+        task_config["paths"]["corr_dists_path"] = args.corr_dists_path
 
     config = {
         "thor": thor_config,
