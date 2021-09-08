@@ -8,6 +8,9 @@ class ObjectState(pomdp_py.ObjectState):
     def __init__(self, objid, objclass, loc):
         super().__init__(objclass, {"loc": loc, "id": objid})
 
+    def __hash__(self):
+        return hash((self.id, self.loc))
+
     @property
     def loc(self):
         return self['loc']
@@ -35,6 +38,9 @@ class RobotState(pomdp_py.ObjectState):
                           "status": status})
     def __str__(self):
         return "{}({}, {})".format(self.__class__, self.pose, self.status)
+
+    def __hash__(self):
+        return hash(self.pose)
 
     @property
     def pose(self):
