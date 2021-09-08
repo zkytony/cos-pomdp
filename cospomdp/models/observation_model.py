@@ -243,6 +243,10 @@ class FanModelNoFP(DetectionModel):
         si (HLObjectstate)
         srobot (HLObjectstate)
         """
+        if zi.loc is not None and not self.sensor.in_range(zi.loc, srobot["pose"]):
+            # the robot would not have received such an observation
+            return 1e-12
+
         in_range = self.sensor.in_range(si["loc"], srobot["pose"])
         if in_range:
             if zi.loc is None:
@@ -327,6 +331,10 @@ class FanModelSimpleFP(DetectionModel):
         si (HLObjectstate)
         srobot (HLObjectstate)
         """
+        if zi.loc is not None and not self.sensor.in_range(zi.loc, srobot["pose"]):
+            # the robot would not have received such an observation
+            return 1e-12
+
         in_range = self.sensor.in_range(si["loc"], srobot["pose"])
         if in_range:
             if zi.loc is None:
