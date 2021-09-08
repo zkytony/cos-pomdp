@@ -27,8 +27,10 @@ def _test_complete_search(target,
                           dist=3,
                           target_range=6,
                           other_range=8,
-                          target_accuracy=0.,
+                          target_accuracy=0.7,
                           other_accuracy=0.8,
+                          target_false_pos=None,
+                          other_false_pos=None,
                           max_depth=30,
                           num_sims=500,
                           max_steps=100,
@@ -62,13 +64,25 @@ def _test_complete_search(target,
     config = make_config(args)
 
     config["agent_config"]["corr_specs"] = {}
+
+    if target_false_pos is not None:
+        quality = (target_accuracy, target_false_pos, 0.5)
+        target_detector = ("fan-simplefp", dict(fov=90, min_range=1, max_range=target_range), quality)
+    else:
+        target_detector = ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))
+
     config["agent_config"]["detector_specs"] = {
-        target: ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))
+        target: target_detector
     }
     if other is not None:
         config["agent_config"]["corr_specs"][(target, other)] = (around, dict(d=dist))
-        config["agent_config"]["detector_specs"][other] =\
-            ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
+
+        if other_false_pos is not None:
+            quality = (other_accuracy, other_false_pos, 0.5)
+            other_detector = ("fan-simplefp", dict(fov=90, min_range=1, max_range=other_range), quality)
+        else:
+            other_detector = ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
+        config["agent_config"]["detector_specs"][other] = other_detector
 
     config["agent_config"]["num_place_samples"] = num_place_samples
 
@@ -100,6 +114,8 @@ if __name__ == "__main__":
                           scene="FloorPlan1",
                           step_act_cb=step_act_cb,
                           num_sims=100,
+                          target_false_pos=0.15,
+                          other_false_pos=0.1,
                           local_search_params={"num_sims": 200,
                                                "max_depth": 30,
                                                "discount_factor": 0.95,

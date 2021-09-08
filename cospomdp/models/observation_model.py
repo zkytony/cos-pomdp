@@ -4,7 +4,7 @@ from pomdp_py.utils import typ
 from pomdp_py import ObservationModel, Gaussian
 
 from .sensors import FanSensor, FrustumCamera
-from ..utils.math import fround
+from ..utils.math import fround, euclidean_dist
 from ..domain.observation import Loc, CosObservation, RobotObservation
 
 
@@ -286,46 +286,6 @@ class FanModelNoFP(DetectionModel):
             return zi
 
 
-class CosObservationModel(ObservationModel):
-    def __init__(self, robot_id, target_id, zi_models):
-        """
-        zi_models: maps from objid to CosObjectObservationModel;
-           each objid is a detectable object
-        """
-        self.robot_id = robot_id
-        self.target_id = target_id
-        self.zi_models = zi_models
-        self.detectable_objects = list(sorted(self.zi_models.keys()))
-
-    def sample(self, next_state, *args):
-        """
-        Args:
-            next_state (CosState2D): joint state of target and robot states
-        """
-        objobzs = {objid : self.zi_models[objid].sample(next_state)
-                  for objid in self.detectable_objects}
-        robotobz = RobotObservation(self.robot_id,
-                                    next_state.s(self.robot_id)['pose'],
-                                    next_state.s(self.robot_id)['status'].copy())
-        return CosObservation(robotobz, objobzs)
-
-    def probability(self, observation, next_state, *args):
-        """
-        Args:
-            observation (CosObservation2D): joint observation of detected
-                object locations (Loc2D)
-            next_state (CosState2D): joint state of target and robot states
-        """
-        if observation.z(self.robot_id).pose != next_state.s(self.robot_id)['pose']:
-            return 1e-12
-        if observation.z(self.robot_id).status != next_state.s(self.robot_id)['status']:
-            return 1e-12
-        pr_joint = 1.0
-        for zi in observation:
-            pr = self.zi_models[zi.objid].probability(zi, next_state)
-            pr_joint *= pr
-        return pr_joint
-
 
 class FanModelSimpleFP(DetectionModel):
     """Intended for 2D-level observation; Pr(zi | si, srobot')
@@ -373,14 +333,25 @@ class FanModelSimpleFP(DetectionModel):
                 # false negative
                 return 1.0 - self.detection_prob
             else:
-                # True positive; gaussian centered at object loc
-                gaussian = Gaussian(list(si["loc"]),
-                                    [[self.sigma**2, 0],
-                                     [0, self.sigma**2]])
-                return self.detection_prob * gaussian[zi.loc]
+                # determin if zi is true positive or true negative.  If it is within
+                # 3*sigma range from si.loc then it is a true positvie. Otherwise,
+                # it is a false positive. The probability of the false positive is
+                # uniform within the sensor field range.
+                if euclidean_dist(zi.loc, si.loc) > 3*self.sigma:
+                    # false positive
+                    return self.false_pos_rate / self.sensor.sensor_region_size
+                else:
+                    # true positive
+                    # True positive; gaussian centered at object loc
+                    # TODO: sigma shouldn't be 0.1 - it's how far off you can tolerate.c
+                    gaussian = Gaussian(list(si["loc"]),
+                                        [[self.sigma**2, 0],
+                                         [0, self.sigma**2]])
+                    return self.detection_prob * gaussian[zi.loc]
         else:
+            # outside of the field of view - should not detect anything positive ever.
             if zi.loc is None:
-                # True negative; we are not modeling false positives
+                # True negative;
                 return 1.0 - self.false_pos_rate
             else:
                 return self.false_pos_rate / self.sensor.sensor_region_size
@@ -408,6 +379,49 @@ class FanModelSimpleFP(DetectionModel):
             return zi, event
         else:
             return zi
+
+
+
+class CosObservationModel(ObservationModel):
+    def __init__(self, robot_id, target_id, zi_models):
+        """
+        zi_models: maps from objid to CosObjectObservationModel;
+           each objid is a detectable object
+        """
+        self.robot_id = robot_id
+        self.target_id = target_id
+        self.zi_models = zi_models
+        self.detectable_objects = list(sorted(self.zi_models.keys()))
+
+    def sample(self, next_state, *args):
+        """
+        Args:
+            next_state (CosState2D): joint state of target and robot states
+        """
+        objobzs = {objid : self.zi_models[objid].sample(next_state)
+                  for objid in self.detectable_objects}
+        robotobz = RobotObservation(self.robot_id,
+                                    next_state.s(self.robot_id)['pose'],
+                                    next_state.s(self.robot_id)['status'].copy())
+        return CosObservation(robotobz, objobzs)
+
+    def probability(self, observation, next_state, *args):
+        """
+        Args:
+            observation (CosObservation2D): joint observation of detected
+                object locations (Loc2D)
+            next_state (CosState2D): joint state of target and robot states
+        """
+        if observation.z(self.robot_id).pose != next_state.s(self.robot_id)['pose']:
+            return 1e-12
+        if observation.z(self.robot_id).status != next_state.s(self.robot_id)['status']:
+            return 1e-12
+        pr_joint = 1.0
+        for zi in observation:
+            pr = self.zi_models[zi.objid].probability(zi, next_state)
+            pr_joint *= pr
+        return pr_joint
+
 
 # The 3D occlusion stuff is not yet complete or needed
 # class DetectionModelFull:
