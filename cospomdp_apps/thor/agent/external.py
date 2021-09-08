@@ -2,20 +2,16 @@ import sys
 import os
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 
-# just so we can import mjolnir stuff
-sys.path.append(os.path.join(ABS_PATH, '../../../external/mjolnir/'))
-from ..mjolnir.datasets.glove import Glove
-from ..mjolnir.utils.class_finder import model_class, agent_class
-from ..mjolnir.utils.net_util import toFloatTensor, resnet_input_transform
-from ..mjolnir.models.model_io import ModelInput, ModelOptions
 from ..mjolnir.datasets.offline_controller_with_small_rotation import ACTIONS_LIST
-
 import torch
 
 from ..common import TOS_Action, ThorAgent
 from cospomdp_apps.basic.action import ALL_MOVES_2D
 
 class Args(object):
+    pass
+
+class MJOLNIR_MODULE(object):
     pass
 
 class StateInfo(object):
@@ -58,6 +54,25 @@ class ThorObjectSearchExternalAgent(ThorAgent):
     input (images, bounding boxes)."""
     AGENT_USES_CONTROLLER = False
 
+    def _import_mjolnir(self):
+        """Import all the mjolnir stuff; don't put this on
+        top of file otherwise it will not work because the path to mjolnir is
+        added to sys.path only after __init__ is called."""
+        from ..mjolnir.datasets.glove import Glove
+        from ..mjolnir.utils.class_finder import model_class, agent_class
+        from ..mjolnir.utils.net_util import toFloatTensor, resnet_input_transform
+        from ..mjolnir.models.model_io import ModelInput, ModelOptions
+        mjolnir = MJOLNIR_MODULE()
+        mjolnir.Glove = Glove
+        mjolnir.model_class = model_class
+        mjolnir.agent_class = agent_class
+        mjolnir.toFloatTensor = toFloatTensor
+        mjolnir.resnet_input_transform = resnet_input_transform
+        mjolnir.ModelInput = ModelInput
+        mjolnir.ModelOptions = ModelOptions
+        return mjolnir
+
+
     def __init__(self,
                  task_config,
                  model_name,
@@ -67,7 +82,13 @@ class ThorObjectSearchExternalAgent(ThorAgent):
         """
         args (MJOLNIR_O_args): mimics the args parsed from command line
         """
+        # NOTE: This ordering of super().__init__(task_config) and sys.path.append..
+        # is important. The yolov5's library is loaded first, so that the detector
+        # model can be loaded. After that, everything else uses `models` from mjolnir.
         super().__init__(task_config)
+        sys.path.insert(0, os.path.join(ABS_PATH, '../../../external/mjolnir/'))
+        mjolnir = self._import_mjolnir()
+
         assert task_config['task_type'] == 'class',\
             "Cannot handle task type: {}".format(task_config['task_type'])
         target_class = task_config['target']
@@ -76,21 +97,22 @@ class ThorObjectSearchExternalAgent(ThorAgent):
 
         print("Setting up {} player".format(model_name))
         if model_name.startswith("MJOLNIR"):
-            model_create_fn = model_class(model_name)
+            model_create_fn = mjolnir.model_class(model_name)
             self.player = self.setup_nonadaptivea3c(
                 model_create_fn,
                 load_model_path,
                 args)
 
         glove_file = args.glove_file
-        glove = Glove(glove_file)
-        self.glove_embedding = toFloatTensor(
+        glove = mjolnir.Glove(glove_file)
+        self.glove_embedding = mjolnir.toFloatTensor(
             glove.glove_embeddings[target_class][:], args.gpu_id
         )
         self._last_observation = None
 
     def setup_nonadaptivea3c(self, model_create_fn, load_model_path, args):
         # Basically following nonadaptivea3c_val, but without any offline business.
+        mjolnir = self._import_mjolnir()
         shared_model = model_create_fn(args)
 
         print("Loading model...")
@@ -103,7 +125,7 @@ class ThorObjectSearchExternalAgent(ThorAgent):
             shared_model.load_state_dict(load_model_path)
 
         agent_type = "NavigationAgent"
-        agent_create_fn = agent_class("NavigationAgent")
+        agent_create_fn = mjolnir.agent_class("NavigationAgent")
         player = agent_create_fn(model_create_fn,
                                  args, args.rank, args.gpu_ids[0])
         player.sync_with_shared(shared_model)
@@ -112,7 +134,8 @@ class ThorObjectSearchExternalAgent(ThorAgent):
         return player
 
     def act(self):
-        model_options = ModelOptions()  # this is meant to be nothing
+        mjolnir = self._import_mjolnir()
+        model_options = mjolnir.ModelOptions()  # this is meant to be nothing
         if self._last_observation is None:
             # This is the first time we call act. Pass in order to
             # receive observation from update.
@@ -135,8 +158,8 @@ class ThorObjectSearchExternalAgent(ThorAgent):
             # Note that this feature vector is not used by MJOLNIR_O,
             # which uses object bounding boxes directly instead.
             state_info.resnet_features =\
-                resnet_input_transform(self._last_observation.img,
-                                       224)
+                mjolnir.resnet_input_transform(self._last_observation.img,
+                                               224)
             action_int, log_prob = self.player.action(
                 model_options, False,
                 state_info=state_info,
