@@ -13,12 +13,14 @@ from cospomdp.models.sensors import yaw_facing
 ############################
 class PolicyModel2D(cospomdp.PolicyModel):
     def __init__(self, robot_trans_model,
+                 reward_model,
                  movements=ALL_MOVES_2D,
                  **kwargs):
         super().__init__(robot_trans_model,
                          **kwargs)
         self._legal_moves = {}
         self.movements = movements
+        self.reward_model = reward_model
 
     def set_observation_model(self, observation_model,
                               use_heuristic=True):
@@ -53,12 +55,14 @@ class PolicyModel2D(cospomdp.PolicyModel):
             if isinstance(last_action, Done):
                 return {(Done(), 0, 0)}
 
+            preferences = set()
+
             robot_id = self.policy_model.robot_id
             target_id = self.policy_model.observation_model.target_id
             srobot = state.s(robot_id)
             starget = state.s(target_id)
-
-            preferences = set()
+            if self.policy_model.reward_model.success(srobot, starget):
+                preferences.add((Done(), self.num_visits_init, self.val_init))
 
             current_distance = euclidean_dist(srobot.loc, starget.loc)
             desired_yaw = yaw_facing(srobot.loc, starget.loc)

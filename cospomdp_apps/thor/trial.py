@@ -83,6 +83,8 @@ class ThorTrial(Trial):
         controller = components['controller']
         viz = components.get("viz", None)
 
+        _actions = []
+
         max_steps = self.config["max_steps"]
         for i in range(1, max_steps+1):
             action = agent.act()
@@ -93,6 +95,11 @@ class ThorTrial(Trial):
                 sys.stdout.flush()
             if step_act_cb is not None:
                 step_act_cb(task_env, agent, viz=viz, step=i, **step_act_args)
+
+            if cfg.DEBUG_LEVEL > 0:
+                _actions.append(action)
+                if _rotating_too_much(_actions):
+                    import pdb; pdb.set_trace()
 
             observation, reward = task_env.execute(agent, action)
             agent.update(action, observation)
@@ -132,3 +139,18 @@ class ThorTrial(Trial):
 # ------------- Object search trial ------------- #
 class ThorObjectSearchTrial(ThorTrial):
     RESULT_TYPES = [PathResult, HistoryResult]
+
+
+def _rotating_too_much(actions):
+    # count the number of times, from the last one,
+    # that the actions is rotating between
+    # rotations
+    count = 0
+    for a in reversed(actions):
+        if a.name.startswith("Rotate"):
+            count += 1
+            if count >= 8:
+                return True
+        else:
+            break
+    return False

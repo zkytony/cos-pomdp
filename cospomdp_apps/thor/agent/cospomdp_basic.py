@@ -266,7 +266,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         robot_trans_model = RobotTransition2D(self.robot_id, self.reachable_positions)
         movement_params = self.task_config["nav_config"]["movement_params"]
         self.navigation_actions = set(grid_navigation_actions2d(movement_params, grid_map.grid_size))
-        policy_model = PolicyModel2D(robot_trans_model,
+        policy_model = PolicyModel2D(robot_trans_model, reward_model,
                                      movements=self.navigation_actions)
         prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
                  for p in thor_prior}

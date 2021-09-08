@@ -20,7 +20,6 @@ class PolicyModel(RolloutPolicy):
     def robot_id(self):
         return self.robot_trans_model.robot_id
 
-
     @property
     def observation_model(self):
         return self._observation_model

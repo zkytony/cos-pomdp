@@ -8,11 +8,12 @@ from .action import MoveTopo, Stay
 class PolicyModelTopo(cospomdp.PolicyModel):
 
     def __init__(self,
-                 robot_trans_model,
+                 robot_trans_model, reward_model,
                  topo_map, **kwargs):
         super().__init__(robot_trans_model, **kwargs)
         self._legal_moves = {}
         self._topo_map = topo_map
+        self.reward_model = reward_model
 
     def set_observation_model(self, observation_model,
                               use_heuristic=True):
@@ -69,10 +70,14 @@ class PolicyModelTopo(cospomdp.PolicyModel):
             if isinstance(last_action, Done):
                 return {(Done(), 0, 0)}
 
+            preferences = set()
+
             topo_map = self.policy_model.topo_map
             srobot = state.s(self.policy_model.robot_id)
             starget = state.s(self.policy_model.target_id)
-            preferences = set()
+
+            if self.policy_model.reward_model.success(srobot, starget):
+                preferences.add((Done(), self.num_visits_init, self.val_init))
 
             closest_target_nid = topo_map.closest_node(*starget.loc)
             path = topo_map.shortest_path(srobot.nid, closest_target_nid)
