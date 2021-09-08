@@ -5,10 +5,11 @@
 import os
 import sys
 
-import thortils as tt
-
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(ABS_PATH, "../../experiments/thor"))
+
+import thortils as tt
+
 from experiment_thor import (Methods,
                              make_trial,
                              OBJECT_CLASSES,

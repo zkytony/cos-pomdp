@@ -23,6 +23,8 @@ from .common import make_config, TaskArgs
 
 class ThorTrial(Trial):
 
+    # TODO: shared setup between trials
+
     RESULT_TYPES = []
 
     def __init__(self, name, config, verbose=False):

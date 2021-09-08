@@ -180,6 +180,7 @@ class TOS(ThorEnv):
                 xyxy = bboxes[objectId]
                 detections.append((xyxy, conf, cls, loc3d))  # TODO: loc3d is not a good idea. The right thing to do is to transform from pixels to a set of locations.
         else:
+            import pdb; pdb.set_trace()
             detections = vision_detector.detect(img)
             for i in range(len(detections)):
                 xyxy = detections[i][0]

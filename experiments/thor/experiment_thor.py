@@ -10,7 +10,6 @@ from sciex import Experiment
 import thortils as tt
 
 from cospomdp_apps.thor.common import TaskArgs, make_config
-from cospomdp_apps.thor import agent as agentlib
 from cospomdp_apps.thor.trial import ThorObjectSearchTrial
 from cospomdp_apps.thor import constants
 from cospomdp.utils.corr_funcs import ConditionalSpatialCorrelation

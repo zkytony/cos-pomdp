@@ -6,23 +6,7 @@ from cospomdp_apps.thor.detector import Detector
 from dataclasses import dataclass, field
 from typing import List
 from . import constants
-
-MODULE_PATH = os.path.dirname(__file__)
-
-# The path to the directory to models
-YOLOV5_MODEL_DIR = os.path.abspath(os.path.join(MODULE_PATH, "../../models/"))
-
-# The path to the directory of data
-YOLOV5_DATA_DIR = os.path.abspath(os.path.join(MODULE_PATH, "../../data/"))
-
-# The path to the yolov5 repository
-YOLOV5_REPO_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../external/yolov5/"))
-
-# The path to the saved grid maps
-GRID_MAPS_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../data/thor/grid_maps"))
-
-# The path to the saved correlational distribtutions
-CORR_DISTS_PATH = os.path.abspath(os.path.join(MODULE_PATH, "../../data/thor/corr_dists"))
+from . import paths
 
 
 # State, Action, Observation used in object search task
@@ -130,13 +114,15 @@ class ThorAgent:
         self._vision_detector = None
         use_vision_detector = task_config.get('use_vision_detector', False)
         if use_vision_detector:
-            model_path = task_config["yolov5_model_path"]
-            data_config = task_config["yolov5_data_config"]  # the path to the dataset yaml file
-            print("Loading YOLOv5 vision detector...")
-            print(f"    model path: {model_path}")
-            print(f"    data config: {use_vision_detector}")
-            detector = Detector(model_path, data_config)
-            self._vision_detector = detector
+            if "vision_detector" in task_config:
+                # vision detector is already provided
+                self._vision_detector = task_config["vision_detector"]
+            else:
+                # didn't provide; load our own.
+                model_path = task_config["paths"]["yolov5_model_path"]
+                data_config = task_config["paths"]["yolov5_data_config"]  # the path to the dataset yaml file
+                detector = Detector(model_path, data_config)
+                self._vision_detector = detector
 
     def act(self):
         raise NotImplementedError
@@ -164,15 +150,15 @@ class TaskArgs:
     agent_class: str = "ThorObjectSearchOptimalAgent"
     max_steps: int = constants.MAX_STEPS
     # load grid maps
-    grid_maps_path: str = GRID_MAPS_PATH
+    grid_maps_path: str = paths.GRID_MAPS_PATH
     save_grid_map: bool = True
     # use & load corr dists
     save_load_corr: bool = False
-    corr_dists_path: str = CORR_DISTS_PATH
+    corr_dists_path: str = paths.CORR_DISTS_PATH
     # yolo
     use_vision_detector: bool = False
-    yolov5_model_dir: str = YOLOV5_MODEL_DIR,
-    yolov5_data_dir: object = YOLOV5_DATA_DIR,
+    yolov5_model_dir: str = paths.YOLOV5_MODEL_DIR
+    yolov5_data_dir: object = paths.YOLOV5_DATA_DIR
 
 
 # Make configs

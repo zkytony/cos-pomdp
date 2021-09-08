@@ -1,4 +1,8 @@
-# Detector using YOLO model
+# Detector using YOLOv5 model
+# Note: to be able to import YOLO, and not get
+# "ModuleNotFoundError: No module named 'models.yolo'"
+# You may want to check if there is any conflict in you
+# sys.path in which there is a module named 'models'.
 import torch
 import numpy as np
 import cv2
@@ -6,7 +10,7 @@ from PIL import Image
 import yaml
 from thortils.vision.plotting import plot_one_box
 from thortils.vision.general import saveimg
-from .common import YOLOV5_REPO_PATH
+from .paths import YOLOV5_REPO_PATH
 
 class Detector:
 
@@ -27,6 +31,9 @@ class Detector:
         self.classes = self.config["names"]
         self.colors = self.config["colors"]
         self.model_path = model_path
+        print("Loading YOLOv5 vision detector...")
+        print(f"    model path: {model_path}")
+        print(f"    data config: {data_config}")
         self.model = torch.hub.load(YOLOV5_REPO_PATH, 'custom',
                                     path=self.model_path,
                                     source="local")

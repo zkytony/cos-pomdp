@@ -101,7 +101,12 @@ cd scripts
 python val_vision_detector.py ../models/yolov5-kitchen/best.pt ../data/yolov5-kitchen/yolov5-kitchen-dataset.yaml kitchen
 ```
 
-### Replot YOLO results
+## Try out YOLOv5 in action
+```
+cd scripts
+python run_vision_detector_in_action.py ../models/yolov5-kitchen/best.pt ../data/yolov5-kitchen/yolov5-kitchen-dataset.yaml kitchen
+```
+
 
 ## AI2-Thor Setup
 
