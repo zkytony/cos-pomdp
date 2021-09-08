@@ -114,7 +114,14 @@ class ThorAgent:
         self._vision_detector = None
         detector_config = task_config["detector_config"]
         use_vision_detector = detector_config.get('use_vision_detector', False)
-        bbox_margin = detector_config['bbox_margin']
+
+        shared_kwargs = dict(
+            detectables=task_config["detectables"],
+            bbox_margin=detector_config['bbox_margin'],
+            visualize=detector_config["plot_detections"],
+            detection_sep=detector_config["detection_sep"],
+            max_repeated_detections=detector_config["max_repeated_detections"])
+
         if use_vision_detector:
             if "vision_detector" in detector_config:
                 # vision detector is already provided
@@ -128,13 +135,11 @@ class ThorAgent:
                 detector = YOLODetector(model_path, data_config,
                                         conf_thres=conf_thres,
                                         keep_most_confident=keep_most_confident,
-                                        detectables=task_config["detectables"],
-                                        bbox_margin=bbox_margin)
+                                        **shared_kwargs)
                 self._detector = detector
         else:
             # uses groundtruth detector
-            self._detector = GroundtruthDetector(task_config["detectables"],
-                                                 bbox_margin=bbox_margin)
+            self._detector = GroundtruthDetector(**shared_kwargs)
 
     def act(self):
         raise NotImplementedError
@@ -174,6 +179,9 @@ class TaskArgs:
     bbox_margin: float = 0.3 # percentage of the bbox to exclude along each axis
     conf_thres: float = 0.4
     keep_most_confident: bool = True  # if multiple bounding boxes for an object, keep only the most confident one
+    plot_detections: bool = False
+    detection_sep: float = constants.GRID_SIZE
+    max_repeated_detections: int = 5
 
 
 # Make configs
@@ -196,13 +204,16 @@ def make_config(args):
         "reward_config": {
             "hi": constants.TOS_REWARD_HI,
             "lo": constants.TOS_REWARD_LO,
-            "step": constants.TOS_REWARD_STEP,
+            "step": constants.TOS_REWARD_STEP
         },
         "detector_config": {
             "use_vision_detector": args.use_vision_detector,
             "bbox_margin": args.bbox_margin,
             "conf_thres": args.conf_thres,
-            "keep_most_confident": args.keep_most_confident
+            "keep_most_confident": args.keep_most_confident,
+            "plot_detections": args.plot_detections,
+            "detection_sep": args.detection_sep,
+            "max_repeated_detections": args.max_repeated_detections
         },
         "discount_factor": 0.95,
         "paths": {}

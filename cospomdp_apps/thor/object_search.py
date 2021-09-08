@@ -147,7 +147,7 @@ class TOS(ThorEnv):
             path.append(agent_position)
         return path
 
-    def get_observation(self, event, action, detector):
+    def get_observation(self, event, action, detector, record_detections=True):
         """
         vision_detector (cosp.vision.Detector or None): vision detector;
             If None, then groundtruth detection will be used
@@ -156,7 +156,7 @@ class TOS(ThorEnv):
             TOS_Observation:
                 img: RGB image
                 img_depth: Depth image
-                detections: list of (xyxy, conf, cls, pos) tuples. `cls` is
+                detections: list of (xyxy, conf, cls, thor_positions) tuples. `cls` is
                     the detected class, `conf` is confidence, `xyxy` is bounding box,
                     'pos' is the 3D position of the detected object.
         """
@@ -169,9 +169,13 @@ class TOS(ThorEnv):
                 event, self._camera_intrinsic, single_loc=False)
         else:
             camera_pose = tt.thor_camera_pose(event, as_tuple=True)
-            detections = detector.detect(img, event.depth_frame,
-                                         self._camera_intrinsic,
-                                         camera_pose)
+            detections = detector.detect_project(img, event.depth_frame,
+                                                 self._camera_intrinsic,
+                                                 camera_pose)
+        # logging the detections
+        if record_detections:
+            detector.record_detections(detections, exclude={self.target})
+
         return TOS_Observation(img,
                                img_depth,
                                detections,

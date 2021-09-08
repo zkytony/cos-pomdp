@@ -13,12 +13,21 @@ from thortils.vision.plotting import plot_one_box
 from thortils.vision.general import saveimg, shrink_bbox
 from thortils.vision import projection as pj
 from thortils.utils.colors import mean_rgb
+from cospomdp.utils.math import euclidean_dist, roundany
+from .constants import GRID_SIZE
 from .paths import YOLOV5_REPO_PATH
 
 class Detector:
-    def __init__(self, detectables="any", bbox_margin=0.15):
+    def __init__(self,
+                 detectables="any",
+                 bbox_margin=0.15, visualize=False,
+                 detection_sep=GRID_SIZE, max_repeated_detections=5):
         self._bbox_margin = bbox_margin
         self.detectable_classes = detectables
+        self._visualize = visualize
+        self._detection_sep = detection_sep
+        self._max_repeated_detections = max_repeated_detections
+        self._log = {}  # maps from cls -> set(locations it was detected)
 
     def detectable(self, cls):
         if self.detectable_classes == "any":
@@ -74,6 +83,45 @@ class Detector:
         img = self.plot_detections(savepath, frame, detections, **kwargs)
         saveimg(img, savepath)
 
+    def _avg_loc(self, thor_locs):
+        return tuple(np.round(np.mean(thor_locs, axis=0), decimals=3))
+
+    def record_detections(self, detections, exclude=set()):
+        """Given detections, list of (xyxy, conf, cls, thor_locations),
+        record the detections' classes & their locations"""
+        for d in detections:
+            if len(d) == 3:
+                print("WARNING: will not record detection because it doesn't contain locations")
+                continue
+            xyxy, conf, cls, thor_locs = d
+
+            if cls in exclude:
+                # do not record this detection (e.g. for target)
+                continue
+
+            avg_loc = self._avg_loc(thor_locs)
+            if cls not in self._log:
+                self._log[cls] = {avg_loc : 1}
+            else:
+                closest = min(self._log[cls].keys(),
+                              key=lambda loc: euclidean_dist(loc, avg_loc))
+                if euclidean_dist(closest, avg_loc) <= self._detection_sep:
+                    self._log[cls][closest] += 1
+                else:
+                    self._log[cls][avg_loc] = 0
+
+    def is_overly_repeated_detection(self, detection):
+        if len(detection) == 3:
+            print("WARNING: cannot check detection repetition it doesn't contain locations")
+        xyxy, conf, cls, thor_locs = detection
+        avg_loc = self._avg_loc(thor_locs)
+        if cls not in self._log:
+            return False
+        if avg_loc not in self._log[cls]:
+            return False
+        else:
+            return self._log[cls][avg_loc] > self._max_repeated_detections
+
 
 class YOLODetector(Detector):
 
@@ -125,10 +173,13 @@ class YOLODetector(Detector):
         for d in detections:
             conf = d[1]
             cls = d[2]
+            if not self.detectable(cls):
+                continue
             if conf >= self._conf_thres:
                 if cls not in processed1:
                     processed1[cls] = []
                 processed1[cls].append(d)
+
         processed2 = []
         for cls in processed1:
             if len(processed1[cls]) > 1:
@@ -136,6 +187,11 @@ class YOLODetector(Detector):
                 processed2.append(chosen)
             else:
                 processed2.append(processed1[cls][0])
+
+        if self._visualize:
+            img = self.plot_detections(frame, processed2)
+            cv2.imshow("yolov5", img)
+            cv2.waitKey(50)
         return processed2
 
     def detect_project(self, frame, depth_frame, camera_intrinsic, camera_pose):
@@ -148,7 +204,9 @@ class YOLODetector(Detector):
                 xyxy, depth_frame,
                 camera_intrinsic, downsample=0.01,
                 einv=einv)
-            results.append([xyxy, conf, cls, thor_points])
+            d = (xyxy, conf, cls, thor_points)
+            if not self.is_overly_repeated_detection(d):
+                results.append(d)
         return results
 
 class GroundtruthDetector(Detector):
@@ -171,6 +229,11 @@ class GroundtruthDetector(Detector):
                 detections.append((xyxy, conf, objectId))
             else:
                 detections.append((xyxy, conf, cls))
+
+        if self._visualize:
+            img = self.plot_detections(event.frame, detections)
+            cv2.imshow("groundtruth", img)
+            cv2.waitKey(50)
         return detections
 
     def detect_project(self, event, camera_intrinsic=None, single_loc=True):
@@ -196,5 +259,7 @@ class GroundtruthDetector(Detector):
                     camera_intrinsic, downsample=0.01,
                     einv=einv)
                 locs.extend(thor_points)
-            results.append((xyxy, conf, cls, locs))
+            d = (xyxy, conf, cls, locs)
+            if not self.is_overly_repeated_detection(d):
+                results.append(d)
         return results

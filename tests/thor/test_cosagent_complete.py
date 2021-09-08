@@ -31,6 +31,7 @@ def _test_complete_search(target,
                           other_accuracy=0.8,
                           target_false_pos=None,
                           other_false_pos=None,
+                          use_vision_detector=False,
                           max_depth=30,
                           num_sims=500,
                           max_steps=100,
@@ -60,7 +61,9 @@ def _test_complete_search(target,
                     target=target,
                     agent_class="ThorObjectSearchCompleteCosAgent",
                     task_env="ThorObjectSearch",
-                    agent_init_inputs=agent_init_inputs)
+                    agent_init_inputs=agent_init_inputs,
+                    use_vision_detector=use_vision_detector,
+                    plot_detections=True)
     config = make_config(args)
 
     config["agent_config"]["corr_specs"] = {}
@@ -110,12 +113,13 @@ def _test_complete_search(target,
                   logging=True)
 
 if __name__ == "__main__":
-    _test_complete_search("PepperShaker", "StoveBurner",
+    _test_complete_search("SaltShaker", "StoveBurner",
                           scene="FloorPlan1",
                           step_act_cb=step_act_cb,
                           num_sims=100,
                           target_false_pos=0.15,
                           other_false_pos=0.1,
+                          use_vision_detector=True,
                           local_search_params={"num_sims": 200,
                                                "max_depth": 30,
                                                "discount_factor": 0.95,
