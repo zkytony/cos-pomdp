@@ -293,4 +293,4 @@ class DummyGoalHandler(GoalHandler):
 
     @property
     def done(self):
-        return self._goal_done
+        return True
