@@ -19,8 +19,8 @@ from cospomdp.utils.corr_funcs import ConditionalSpatialCorrelation, around, apa
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 REL_OUTPUT_DIR = "../../results"
 
-POUCT_ARGS = dict(max_depth=30,
-                  planning_time=1.5,
+POUCT_ARGS = dict(max_depth=20,
+                  num_sims=150,
                   discount_factor=0.95,
                   exploration_const=100,
                   show_progress=True)
@@ -84,7 +84,12 @@ class Methods:
 
 OBJECT_CLASSES = {
     "kitchen": {"target": ["SaltShaker", "Mug", "DishSponge"],
-                "corr": ["StoveBurner", "Microwave", "GarbageCan", "Fridge", "Sink"]},
+                "corr": ["StoveBurner",
+                         "Microwave",
+                         # "GarbageCan",
+                         "Lettuce",
+                         "Fridge",
+                         "Sink"]},
     "living_room": {"target": ["KeyChain", "CreditCard", "Laptop"],
                     "corr": ["FloorLamp", "HousePlant", "Television", "Painting", "Sofa"]},
     "bedroom": {"target": ["CellPhone", "Book", "CD"],
@@ -203,6 +208,7 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
     Each object is search `num_trials` times
     """
     all_trials = []
+    groups = {}
     for scene_type in ['kitchen', 'living_room', 'bedroom', 'bathroom']:
         for scene in tt.ithor_scene_names(scene_type, levels=range(21,31)):  # use the last 10 for evaluation
 
@@ -213,6 +219,9 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
             detector_models = read_detector_params()
 
             for target in targets:
+
+                group_name = f"{scene_type}-{scene}-{target}"
+                groups[group_name] = []
                 for run_num in range(num_trials):
 
                     shared_args = (run_num, scene_type, scene, target, detector_models)
@@ -224,24 +233,29 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
                     v_greedy_crt = make_trial(Methods.V_GREEDY_NBV_CRT, *shared_args, corr_objects=corr_objects)
                     random_trial = make_trial(Methods.RANDOM, *shared_args)
 
-                    all_trials.extend([v_hier_corr_crt,
-                                       v_hier_corr_lrn,
-                                       v_hier_corr_wrg,
-                                       v_hier_target,
-                                       v_greedy_crt,
-                                       random_trial])
+                    trials = [v_hier_corr_crt,
+                              v_hier_corr_lrn,
+                              v_hier_corr_wrg,
+                              v_hier_target,
+                              v_greedy_crt,
+                              random_trial]
+                    for t in trials:
+                        groups[group_name].append(t.name)
+                        all_trials.append(t)
 
-    random.shuffle(all_trials)
+    # random.shuffle(all_trials)
+
     exp_name = "ExperimentThor-{}".format(current_iter())
     exp = Experiment(exp_name,
                      all_trials,
                      "../../results",
+                     groups=groups,
                      verbose=True,
                      add_timestamp=True)
-    exp.generate_trial_scripts(split=split, use_mp=True)
+    exp.generate_trial_scripts_by_groups(split=split)
     print("Trials generated at %s/%s" % (exp._outdir, exp.name))
     print("Find multiple computers to run these experiments.")
     bump_iter()
 
 if __name__ == "__main__":
-    EXPERIMENT_THOR(split=10, num_trials=3)
+    EXPERIMENT_THOR(split=5, num_trials=3)
