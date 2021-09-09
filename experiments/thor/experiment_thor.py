@@ -85,8 +85,7 @@ OBJECT_CLASSES = {
 
 def make_trial(method, run_num, scene_type, scene, target, detector_models,
                corr_objects=None, max_steps=constants.MAX_STEPS,
-               use_vision_detector=True, rnd=random, visualize=False,
-               viz_res=30):
+               visualize=False, viz_res=30):
     """
     Args:
         scene: scene to search in
@@ -112,7 +111,7 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
     corr_specs = {}
     if method["use_corr"]:
         for other in corr_objects:
-            spcorr = load_correlation(scene, scene_type, target, other, method["corr_type"], rnd=rnd)
+            spcorr = load_correlation(scene, scene_type, target, other, method["corr_type"])
             corr_specs[(target, other)] = (spcorr.func, {}) # corr_func, corr_func_args
             detector_specs[other] = detector_models[other]
 
@@ -124,7 +123,7 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
                     max_steps=max_steps,
                     agent_init_inputs=agent_init_inputs,
                     save_load_corr=method['use_corr'],
-                    use_vision_detector=use_vision_detector,
+                    use_vision_detector=method['use_vision_detector'],
                     plot_detections=visualize,
                     agent_detector_specs=detector_specs,
                     corr_specs=corr_specs)
@@ -161,7 +160,7 @@ def read_detector_params(filepath=os.path.join(ABS_PATH, "detector_params.csv"))
     return detector_models
 
 CORR_DATASET = os.path.join(ABS_PATH, "../../data/thor/corrs")
-def load_correlation(scene, scene_type, target, corr_object, corr_type, rnd=random):
+def load_correlation(scene, scene_type, target, corr_object, corr_type):
     reverse = False
     if corr_type == "correct":
         fname = f"distances_{scene_type}_{target}-{corr_object}_{scene}.json"
@@ -187,12 +186,11 @@ def load_correlation(scene, scene_type, target, corr_object, corr_type, rnd=rand
     return spcorr
 
 
-def EXPERIMENT_THOR(split=10, num_trials=3):
+def EXPERIMENT_THOR(split=10, num_trials=1):
     """
     Each object is search `num_trials` times
     """
     all_trials = []
-    rnd = random.Random(1000) # this is used to generated deterministic trials
     for scene_type in ['kitchen', 'living_room', 'bedroom', 'bathroom']:
         for scene in tt.ithor_scene_names(scene_type, levels=(21,31)):  # use the last 10 for evaluation
 
@@ -202,14 +200,12 @@ def EXPERIMENT_THOR(split=10, num_trials=3):
             # make detector models
             detector_models = read_detector_params()
 
-            for target, true_positive_rate, avg_detection_range in targets:
-
+            for target in targets:
                 for run_num in range(num_trials):
-                    hier_corr_crt = make_trial(Methods.HIERARCHICAL_CORR_CRT,
-                                               run_num, scene_type, scene,
-                                               target, detector_models,
-                                               corr_objects=corr_objects,
-                                               rnd=rnd)
+                    v_hier_corr_crt = make_trial(Methods.V_HIERARCHICAL_CORR_CRT,
+                                                 run_num, scene_type, scene,
+                                                 target, detector_models,
+                                                 corr_objects=corr_objects)
 
                     # hier_corr_lrn = make_trial(run_num, scene_type, scene, target, corr_objects,
                     #                           detector_models, Methods.HIERARCHICAL_CORR_LRN)
