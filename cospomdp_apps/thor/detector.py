@@ -19,14 +19,20 @@ from .paths import YOLOV5_REPO_PATH
 
 class Detector:
     def __init__(self,
-                 detectables="any",
-                 bbox_margin=0.15, visualize=False,
-                 detection_sep=GRID_SIZE, max_repeated_detections=5):
+                 detectables="any", detection_ranges={},
+                 bbox_margin=0.0, visualize=False,
+                 detection_sep=GRID_SIZE,
+                 max_repeated_detections=100):
+        """
+        detection_ranges (dict): maps from cls -> expected distance of detection
+            detections beyond this range will be dropped.
+        """
         self._bbox_margin = bbox_margin
         self.detectable_classes = detectables
         self._visualize = visualize
         self._detection_sep = detection_sep
         self._max_repeated_detections = max_repeated_detections
+        self._detection_ranges = detection_ranges
         self._log = {}  # maps from cls -> set(locations it was detected)
 
     def detectable(self, cls):
@@ -86,7 +92,7 @@ class Detector:
     def _avg_loc(self, thor_locs):
         return tuple(np.round(np.mean(thor_locs, axis=0), decimals=3))
 
-    def record_detections(self, detections, exclude=set()):
+    def record_detections(self, detections, camera_position, exclude=set()):
         """Given detections, list of (xyxy, conf, cls, thor_locations),
         record the detections' classes & their locations"""
         for d in detections:
@@ -117,10 +123,33 @@ class Detector:
         avg_loc = self._avg_loc(thor_locs)
         if cls not in self._log:
             return False
+
+        closest = min(self._log[cls].keys(),
+                      key=lambda loc: euclidean_dist(loc, avg_loc))
+        if euclidean_dist(closest, avg_loc) <= self._detection_sep:
+            avg_loc = closest
+
         if avg_loc not in self._log[cls]:
             return False
         else:
             return self._log[cls][avg_loc] > self._max_repeated_detections
+
+    def within_expected_range(self, detection, camera_position):
+        xyxy, conf, cls, thor_locs = detection
+        avg_loc = self._avg_loc(thor_locs)
+        if cls in self._detection_ranges:
+            return euclidean_dist(camera_position, avg_loc) <= self._detection_ranges[cls]
+        else:
+            print("Expected detection range for {} is unknown. Will include the detection".format(cls))
+            return True
+
+    def _accepts(self, detection, camera_position):
+        if len(detection) == 3:
+            return True
+        else:
+            return self.within_expected_range(detection, camera_position)\
+                and not self.is_overly_repeated_detection(detection)
+
 
 
 class YOLODetector(Detector):
@@ -205,8 +234,10 @@ class YOLODetector(Detector):
                 camera_intrinsic, downsample=0.01,
                 einv=einv)
             d = (xyxy, conf, cls, thor_points)
-            if not self.is_overly_repeated_detection(d):
+            if self._accepts(d, camera_pose[0]):
                 results.append(d)
+            else:
+                print("{} is detected many times at the same location".format(cls))
         return results
 
 class GroundtruthDetector(Detector):
@@ -261,6 +292,8 @@ class GroundtruthDetector(Detector):
                     einv=einv)
                 locs.extend(thor_points)
             d = (xyxy, conf, cls, locs)
-            if not self.is_overly_repeated_detection(d):
+            if self._accepts(d, camera_pose[0]):
                 results.append(d)
+            else:
+                print("{} is detected many times at the same location".format(cls))
         return results

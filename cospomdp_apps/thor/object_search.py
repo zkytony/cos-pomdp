@@ -174,7 +174,8 @@ class TOS(ThorEnv):
                                                  camera_pose)
         # logging the detections
         if record_detections:
-            detector.record_detections(detections, exclude={self.target})
+            camera_position = tt.thor_camera_position(event, as_tuple=True)
+            detector.record_detections(detections, camera_position, exclude={self.target})
 
         return TOS_Observation(img,
                                img_depth,

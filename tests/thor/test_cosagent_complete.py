@@ -56,17 +56,6 @@ def _test_complete_search(target,
     if prior == "informed":
         agent_init_inputs.append('groundtruth_prior')
 
-    args = TaskArgs(detectables=detectables,
-                    scene=scene,
-                    target=target,
-                    agent_class="ThorObjectSearchCompleteCosAgent",
-                    task_env="ThorObjectSearch",
-                    agent_init_inputs=agent_init_inputs,
-                    use_vision_detector=use_vision_detector,
-                    plot_detections=True)
-    config = make_config(args)
-
-    config["agent_config"]["corr_specs"] = {}
 
     if target_false_pos is not None:
         quality = (target_accuracy, target_false_pos, 0.5)
@@ -74,18 +63,31 @@ def _test_complete_search(target,
     else:
         target_detector = ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))
 
-    config["agent_config"]["detector_specs"] = {
+    detector_specs = {
         target: target_detector
     }
+    corr_specs = {}
     if other is not None:
-        config["agent_config"]["corr_specs"][(target, other)] = (around, dict(d=dist))
+        corr_specs[(target, other)] = (around, dict(d=dist))
 
         if other_false_pos is not None:
             quality = (other_accuracy, other_false_pos, 0.5)
             other_detector = ("fan-simplefp", dict(fov=90, min_range=1, max_range=other_range), quality)
         else:
             other_detector = ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
-        config["agent_config"]["detector_specs"][other] = other_detector
+        detector_specs[other] = other_detector
+
+    args = TaskArgs(detectables=detectables,
+                    scene=scene,
+                    target=target,
+                    agent_class="ThorObjectSearchCompleteCosAgent",
+                    task_env="ThorObjectSearch",
+                    agent_init_inputs=agent_init_inputs,
+                    use_vision_detector=use_vision_detector,
+                    plot_detections=True,
+                    agent_detector_specs=detector_specs,
+                    corr_specs=corr_specs)
+    config = make_config(args)
 
     config["agent_config"]["num_place_samples"] = num_place_samples
 

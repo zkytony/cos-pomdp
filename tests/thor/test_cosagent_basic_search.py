@@ -33,23 +33,25 @@ def _test_basic_search(target,
     if prior == "informed":
         agent_init_inputs.append('groundtruth_prior')
 
+    detector_specs = {
+        target: ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))
+    }
+    corr_specs = {}
+    if other is not None:
+        corr_specs[(target, other)] = (around, dict(d=dist))
+        detector_specs[other] =\
+            ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
+
     args = TaskArgs(detectables=detectables,
                     scene='FloorPlan1',
                     target=target,
                     agent_class="ThorObjectSearchBasicCosAgent",
                     task_env="ThorObjectSearch",
                     max_steps=max_steps,
-                    agent_init_inputs=agent_init_inputs)
+                    agent_init_inputs=agent_init_inputs,
+                    agent_detector_specs=detector_specs,
+                    corr_specs=corr_specs)
     config = make_config(args)
-
-    config["agent_config"]["corr_specs"] = {}
-    config["agent_config"]["detector_specs"] = {
-        target: ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))
-    }
-    if other is not None:
-        config["agent_config"]["corr_specs"][(target, other)] = (around, dict(d=dist))
-        config["agent_config"]["detector_specs"][other] =\
-            ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
 
     config["agent_config"]["solver"] = "pomdp_py.POUCT"
     config["agent_config"]["solver_args"] = dict(max_depth=max_depth,

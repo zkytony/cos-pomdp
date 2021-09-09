@@ -4,7 +4,7 @@ import time
 from thortils.scene import ithor_scene_type
 from cospomdp_apps.thor.detector import YOLODetector, GroundtruthDetector
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Dict
 from . import constants
 from . import paths
 
@@ -120,7 +120,8 @@ class ThorAgent:
             bbox_margin=detector_config['bbox_margin'],
             visualize=detector_config["plot_detections"],
             detection_sep=detector_config["detection_sep"],
-            max_repeated_detections=detector_config["max_repeated_detections"])
+            max_repeated_detections=detector_config["max_repeated_detections"],
+            detection_ranges=detector_config["expected_detection_ranges"])
 
         if use_vision_detector:
             if "vision_detector" in detector_config:
@@ -181,12 +182,24 @@ class TaskArgs:
     keep_most_confident: bool = True  # if multiple bounding boxes for an object, keep only the most confident one
     plot_detections: bool = False
     detection_sep: float = constants.GRID_SIZE
-    max_repeated_detections: int = 5
+    max_repeated_detections: int = 1
+    # agent detectors
+    agent_detector_specs: Dict = field(default_factory=lambda: {})
+    # correlations
+    corr_specs: Dict = field(default_factory=lambda: {})
 
 
 # Make configs
 def make_config(args):
     thor_config = {**constants.CONFIG, **{"scene": args.scene}}
+
+    expected_detection_ranges = {}
+    for cls in args.agent_detector_specs:
+        detector_spec = args.agent_detector_specs[cls]
+        if detector_spec[0] in {"fan-simplefp", "fan-nofp"}:
+            expected_detection_ranges[cls] = detector_spec[1]['max_range'] * constants.GRID_SIZE
+        else:
+            print(f"WARNING: doesn't know how to deal with {detector_spec[0]}")
 
     task_config = {
         "robot_id": "robot",
@@ -213,7 +226,8 @@ def make_config(args):
             "keep_most_confident": args.keep_most_confident,
             "plot_detections": args.plot_detections,
             "detection_sep": args.detection_sep,
-            "max_repeated_detections": args.max_repeated_detections
+            "max_repeated_detections": args.max_repeated_detections,
+            "expected_detection_ranges": expected_detection_ranges
         },
         "discount_factor": 0.95,
         "paths": {}
@@ -243,6 +257,12 @@ def make_config(args):
         "agent_config": {},
         "agent_init_inputs": args.agent_init_inputs
     }
+    from . import agent as agentlib
+    agent_class = eval("agentlib." + config["agent_class"])
+    if not isinstance(agent_class, agentlib.ThorObjectSearchOptimalAgent)\
+       and not isinstance(agent_class, agentlib.ThorObjectSearchExternalAgent):
+        config["agent_config"]["detector_specs"] = args.agent_detector_specs
+        config["agent_config"]["corr_specs"] = args.corr_specs
 
     # You are expected to modify config['agent_config']
     # afterwards to tailor to your agent.

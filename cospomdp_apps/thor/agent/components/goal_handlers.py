@@ -233,6 +233,8 @@ class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent)
         if isinstance(action, basic.Move2D):
             params = from_grid_action_to_thor_action_params(
                 action, self._parent.grid_map.grid_size)
+        else:
+            params = {}
         return TOS_Action(action.name, params)
 
     def update(self, tos_action, tos_observation):

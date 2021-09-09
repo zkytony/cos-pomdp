@@ -30,6 +30,16 @@ def _test_greedy_agent(target,
         detectables = [target]
     else:
         detectables = [target, other]
+
+    detector_specs = {
+        target: ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))
+    }
+    corr_specs = {}
+    if other is not None:
+        corr_specs[(target, other)] = (around, dict(d=dist))
+        detector_specs[other] =\
+            ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
+
     args = TaskArgs(detectables=detectables,
                     scene='FloorPlan1',
                     target=target,
@@ -38,17 +48,10 @@ def _test_greedy_agent(target,
                     max_steps=max_steps,
                     agent_init_inputs=agent_init_inputs,
                     use_vision_detector=use_vision_detector,
-                    plot_detections=True)
+                    plot_detections=True,
+                    agent_detector_specs=detector_specs,
+                    corr_specs=corr_specs)
     config = make_config(args)
-
-    config["agent_config"]["corr_specs"] = {}
-    config["agent_config"]["detector_specs"] = {
-        target: ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))
-    }
-    if other is not None:
-        config["agent_config"]["corr_specs"][(target, other)] = (around, dict(d=dist))
-        config["agent_config"]["detector_specs"][other] =\
-            ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
 
     config["agent_config"]["num_particles"] = 200
 
