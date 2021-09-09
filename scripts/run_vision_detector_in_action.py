@@ -15,7 +15,7 @@ from thortils import (launch_controller,
                       ithor_scene_type)
 from thortils.constants import KITCHEN_TRAIN_SCENES, KITCHEN_VAL_SCENES
 from thortils.vision.metrics import simple_box_iou
-from cospomdp_apps.thor.detector import Detector
+from cospomdp_apps.thor.detector import YOLODetector
 from cospomdp.utils.math import euclidean_dist
 from cospomdp.utils.pandas import flatten_index
 
@@ -26,7 +26,7 @@ def run(args):
     # Randomly place the agent in each environment for N times.
     # Then run the detector and record the detections in `results`.
     # Each row is [cls, xyxy, conf, outcome, agent_distance]
-    detector = Detector(args.model_path, args.data_yaml)
+    detector = YOLODetector(args.model_path, args.data_yaml)
     results = []
 
     scenes = ithor_scene_names(args.scene_type, levels=range(21,31))

@@ -2,7 +2,6 @@ import os
 import copy
 import random
 import math
-import numpy as np
 import json
 import pandas as pd
 from datetime import datetime as dt
@@ -101,6 +100,16 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
     if method["agent"] != "ThorObjectSearchRandomAgent":
         agent_init_inputs = ['grid_map', 'agent_pose']
 
+    detector_specs = {
+        target: detector_models[target]
+    }
+    corr_specs = {}
+    if method["use_corr"]:
+        for other in corr_objects:
+            spcorr = load_correlation(scene, scene_type, target, other, method["corr_type"], rnd=rnd)
+            corr_specs[(target, other)] = (spcorr.func, {}) # corr_func, corr_func_args
+            detector_specs[other] = detector_models[other]
+
     args = TaskArgs(detectables=detectables,
                     scene=scene,
                     target=target,
@@ -110,24 +119,10 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
                     agent_init_inputs=agent_init_inputs,
                     save_load_corr=method['use_corr'],
                     use_vision_detector=use_vision_detector,
-                    plot_detections=visualize)
+                    plot_detections=visualize,
+                    agent_detector_specs=detector_specs,
+                    corr_specs=corr_specs)
     config = make_config(args)
-    config["agent_config"]["corr_specs"] = {}
-    config["agent_config"]["detector_specs"] = {
-        target: detector_models[target]
-    }
-
-    if method["use_corr"]:
-        for other in corr_objects:
-            # if other == "Microwave" or other == "GarbageCan":
-            #     config["agent_config"]["corr_specs"][(target, other)] = (apart, dict(d=5)) # corr_func, corr_func_args
-            # else:
-            #     config["agent_config"]["corr_specs"][(target, other)] = (around, dict(d=3)) # corr_func, corr_func_args
-
-            spcorr = load_correlation(scene, scene_type, target, other, method["corr_type"], rnd=rnd)
-            config["agent_config"]["corr_specs"][(target, other)] = (spcorr.func, {}) # corr_func, corr_func_args
-            config["agent_config"]["detector_specs"][other] = detector_models[other]
-
     config["agent_config"]["solver"] = "pomdp_py.POUCT"
     config["agent_config"]["solver_args"] = POUCT_ARGS
 
