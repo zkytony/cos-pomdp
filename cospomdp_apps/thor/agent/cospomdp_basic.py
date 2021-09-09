@@ -28,6 +28,7 @@ from .components.action import (grid_navigation_actions2d,
 
 from ..common import TOS_Action, ThorAgent
 from .. import constants
+from ..replay import ReplaySolver
 
 
 class GridMapSearchRegion(cospomdp.SearchRegion2D):
@@ -221,6 +222,8 @@ class ThorObjectSearchCosAgent(ThorAgent):
         action = self.interpret_action(tos_action)
         self._update_belief(action, observation)
 
+    def new_history(self, tos_action, tos_observation):
+        return super().new_history(tos_action, tos_observation)
 
 
 class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):

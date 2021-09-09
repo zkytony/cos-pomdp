@@ -34,11 +34,15 @@ class TOS_Observation:
     def __str__(self):
         return ",".join(list(sorted([d[2] for d in self.detections])))
 
+    def detections_without_locations(self):
+        return [d[:3] for d in self.detections]
+
 # Generic classes for task and agent in Thor environments.
 class ThorEnv:
     def __init__(self, controller):
         self.controller = controller
-        self._history = []  # stores the (s', a, o, r) tuples so far
+        self._env_history = []  # stores the (s', r) tuples so far
+        self._agent_history = []  # stores the (a, o) experienced by the agent; This is in control by the agent
         self._init_state = self.get_state(self.controller)
         self.update_history(self._init_state, None, None, 0)
 
@@ -61,7 +65,8 @@ class ThorEnv:
         next_state = self.get_state(event)
         observation = self.get_observation(event, action, detector=agent.detector)
         reward = self.get_reward(state, action, next_state)
-        self.update_history(next_state, action, observation, reward)
+        action_to_store, observation_to_store = agent.new_history(action, observation)
+        self.update_history(next_state, action_to_store, observation_to_store, reward)
         return (observation, reward)
 
     def update_history(self, next_state, action, observation, reward):
@@ -111,6 +116,7 @@ class ThorAgent:
         will be loaded with the model_path and data_config provided
         in the task_config.
         """
+        self._history = []  # stores the (a, o) experienced by the agent
         self._vision_detector = None
         detector_config = task_config["detector_config"]
         use_vision_detector = detector_config.get('use_vision_detector', False)
@@ -146,7 +152,22 @@ class ThorAgent:
         raise NotImplementedError
 
     def update(self, tos_action, tos_observation):
+        """Update belief and history"""
         raise NotImplementedError
+
+    def new_history(self, tos_action, tos_observation):
+        """Given low-level tos_action, tos_obseravtion,
+        returns a tuple (action_to_store, obseravtion_to_store)
+        that will be stored in the history of the environment;
+        This makes it flexible if the agent doesn't only just
+        plan the low-level action or directly process
+        the low-level observation.
+        By default, nothing is done, except that the images
+        in the obseravtion will not be stored (save space)."""
+        return tos_action, dict(detections=tos_observation.detections_without_locations,
+                                robot_pose=tos_observation.robot_pose,
+                                horizon=tos_observation.horizon)
+
 
     def movement_params(self, move_name):
         """Returns the parameter dict used for ai2thor Controller.step

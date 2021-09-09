@@ -3,6 +3,7 @@ import os
 import pickle
 import yaml
 import argparse
+from .common import TOS_Action
 
 class ReplaySolver(pomdp_py.Planner):
     def __init__(self, history):
@@ -11,7 +12,10 @@ class ReplaySolver(pomdp_py.Planner):
 
     def plan(self, agent):
         info = self.history[self.index]
-        return info['action']
+        if type(info["action"]) == TOS_Action:
+            return info["action"]
+        else:
+            return info["action"]["goal"], info["action"]["base"]
 
     def update(self, agent, action, observation):
         self.index += 1
@@ -27,10 +31,12 @@ def main():
     with open(os.path.join(args.trial_path, "history.yaml"), "rb") as f:
         history = yaml.load(f, Loader=yaml.Loader)
 
+    # this works assuming other components are deterministic - this should be the case.
     trial.config['agent_config']['solver'] = "ReplaySolver"
     trial.config['agent_config']['solver_args'] = {"history": history['history']}
     trial.config['visualize'] = True
     trial.config['viz_config'] = {"res": 30}
+    trial.config['task_config']['detector_config']['plot_detections'] = True
     trial.run()
 
 

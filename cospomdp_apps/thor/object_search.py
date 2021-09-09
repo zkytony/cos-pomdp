@@ -285,9 +285,8 @@ class TOS(ThorEnv):
         # through the actions the agent has taken. But we do want to store
         # detections in the observation.
         info = dict(state=next_state,    # the state where observation is generated
-                    action=action,  # the action that lead to the state
-                    detections=observation.detections if observation is not None else None,
-                    observed_robot_pose=observation.robot_pose if observation is not None else None,
+                    obseravtion=observation,  # detections=observation.detections_without_locations if observation is not None else None,
+                    action=action,
                     reward=reward)
         self._history.append(info)
 

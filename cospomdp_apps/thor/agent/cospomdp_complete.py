@@ -11,6 +11,7 @@ import cospomdp
 
 from ..constants import GOAL_DISTANCE
 from ..common import TOS_Action
+from ..replay import ReplaySolver
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
 from .components.action import Move, MoveTopo, Stay
 from .components.state import RobotStateTopo
@@ -277,11 +278,16 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         else:
             self.solver = eval(solver)(**solver_args)
 
-        # This is used to output low-level actions that achieve
-        # goals
+        # This is used to output low-level actions
+        # that achieve goals
         self._goal_handler = None
 
     def act(self):
+        if isinstance(self.solver, ReplaySolver):
+            goal, action = self.solver.plan(self.cos_agent)
+            self._goal_handler = self.handle(goal)
+            return action
+
         goal = self.solver.plan(self.cos_agent)
         print("Goal: {}".format(goal), "Num Sims:", self.solver.last_num_sims)
         if self._goal_handler is None or goal != self._goal_handler.goal:
@@ -407,3 +413,13 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                 status=srobot_old.status)
         self.belief.set_b(self.robot_id,
                           pomdp_py.Histogram({srobot: 1.0}))
+
+    def new_history(self, tos_action, tos_observation):
+        tos_action, obzdict = super().new_history(tos_action, tos_observation)
+        if self._goal_handler is None:
+            goal = None
+        else:
+            goal = self._goal_handler.goal
+        action = dict(base=tos_action,
+                      goal=goal)
+        return action, obzdict
