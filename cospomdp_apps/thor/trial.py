@@ -4,6 +4,7 @@ from sciex import Trial, Event
 from ai2thor.controller import Controller
 import thortils
 import time
+from pprint import pprint
 
 from cospomdp.utils.misc import _debug
 from cospomdp.utils import cfg
@@ -36,6 +37,12 @@ class ThorTrial(Trial):
     def _start_controller(self):
         controller = thortils.launch_controller(self.config["thor"])
         return controller
+
+    def print_config(self):
+        print("--- Task config ({})---".format(self.config["task_env"]))
+        pprint(self.config["task_config"], width=75)
+        print("--- Agent Config ({}) ---".format(self.config["agent_class"]))
+        pprint(self.config["agent_config"], width=75)
 
     def setup(self):
         controller = self._start_controller()
@@ -77,6 +84,7 @@ class ThorTrial(Trial):
             step_update_cb: Called after the agent has executed the action and updated
                 given environment observation.
         """
+        self.print_config()
         components = self.setup()
         agent = components['agent']
         task_env = components['task_env']
