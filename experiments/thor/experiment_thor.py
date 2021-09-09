@@ -80,7 +80,7 @@ OBJECT_CLASSES = {
 def make_trial(method, run_num, scene_type, scene, target, detector_models,
                corr_objects=None, max_steps=constants.MAX_STEPS,
                use_vision_detector=True, rnd=random, visualize=False,
-               viz_res=20):
+               viz_res=30):
     """
     Args:
         scene: scene to search in
@@ -108,7 +108,8 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
                     max_steps=max_steps,
                     agent_init_inputs=agent_init_inputs,
                     save_load_corr=method['use_corr'],
-                    use_vision_detector=use_vision_detector)
+                    use_vision_detector=use_vision_detector,
+                    plot_detections=visualize)
     config = make_config(args)
     config["agent_config"]["corr_specs"] = {}
     config["agent_config"]["detector_specs"] = {
@@ -143,7 +144,7 @@ def read_detector_params(filepath=os.path.join(ABS_PATH, "detector_params.csv"))
     for scene_type in OBJECT_CLASSES:
         for cls in (OBJECT_CLASSES[scene_type]['target'] + OBJECT_CLASSES[scene_type]['corr']):
             row = df.loc[(df['scene_type'] == scene_type) & (df['class'] == cls)].iloc[0]
-            quality_params = (row["TP_rate"], row["FP_rate"], 0.1)
+            quality_params = (row["TP_rate"], row["FP_rate"], 0.5)
             max_range = row["dist"] / constants.GRID_SIZE
             detector_models[cls] = ("fan-simplefp",
                                     dict(fov=constants.FOV,

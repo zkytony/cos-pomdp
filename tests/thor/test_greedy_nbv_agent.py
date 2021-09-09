@@ -22,6 +22,7 @@ def _test_greedy_agent(target,
                        target_accuracy=0.7,
                        other_accuracy=0.8,
                        target_quality=(0.7, 0.05),
+                       use_vision_detector=False,
                        max_steps=100):
     print("Test cospomdp_random agent")
     agent_init_inputs = ["grid_map", "agent_pose"]
@@ -35,7 +36,9 @@ def _test_greedy_agent(target,
                     agent_class="ThorObjectSearchGreedyNbvAgent",
                     task_env="ThorObjectSearch",
                     max_steps=max_steps,
-                    agent_init_inputs=agent_init_inputs)
+                    agent_init_inputs=agent_init_inputs,
+                    use_vision_detector=use_vision_detector,
+                    plot_detections=True)
     config = make_config(args)
 
     config["agent_config"]["corr_specs"] = {}
@@ -58,4 +61,5 @@ def _test_greedy_agent(target,
     trial.run(step_act_cb=step_act_cb)
 
 if __name__ == "__main__":
-    _test_greedy_agent('PepperShaker', 'StoveBurner')
+    _test_greedy_agent('PepperShaker', 'StoveBurner',
+                       use_vision_detector=True)
