@@ -33,6 +33,7 @@ def _test_method(method, scene_type, target_class, scene="FloorPlan21"):
 
     trial = make_trial(method, 0, scene_type, scene, target_class,
                        detector_models, corr_objects=corr_objects,
+                       use_vision_detector=False,
                        visualize=True)
     trial.run()
 
