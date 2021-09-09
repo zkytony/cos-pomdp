@@ -84,8 +84,8 @@ class ThorTrial(Trial):
             step_update_cb: Called after the agent has executed the action and updated
                 given environment observation.
         """
-        self.config["visualize"] = True
-        self.config["task_config"]["detector_config"]["plot_detections"] = True
+        # self.config["visualize"] = True
+        # self.config["task_config"]["detector_config"]["plot_detections"] = True
 
         self.print_config()
         components = self.setup()
