@@ -41,8 +41,7 @@ class TOS_Observation:
 class ThorEnv:
     def __init__(self, controller):
         self.controller = controller
-        self._env_history = []  # stores the (s', r) tuples so far
-        self._agent_history = []  # stores the (a, o) experienced by the agent; This is in control by the agent
+        self._history = []  # stores the history so far
         self._init_state = self.get_state(self.controller)
         self.update_history(self._init_state, None, None, 0)
 

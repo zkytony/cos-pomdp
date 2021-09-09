@@ -17,8 +17,7 @@ from cospomdp.utils.corr_funcs import ConditionalSpatialCorrelation, around, apa
 
 # Configurations
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_DIR = os.path.join(ABS_PATH, "../../", "results")
-
+REL_OUTPUT_DIR = "../../results"
 
 POUCT_ARGS = dict(max_depth=30,
                   planning_time=1.5,
@@ -38,7 +37,7 @@ def bump_iter():
 
 def current_iter():
     with open(os.path.join(ABS_PATH, "iter.txt")) as f:
-        current = f.readline()
+        current = f.readline().strip()
     return f"{current:0>3}"
 
 class Methods:
@@ -223,19 +222,20 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
                     v_hier_corr_wrg = make_trial(Methods.V_HIERARCHICAL_CORR_WRG, *shared_args, corr_objects=corr_objects)
                     v_hier_target = make_trial(Methods.V_HIERARCHICAL_TARGET, *shared_args)
                     v_greedy_crt = make_trial(Methods.V_GREEDY_NBV_CRT, *shared_args, corr_objects=corr_objects)
-                    random = make_trial(Methods.RANDOM, *shared_args)
+                    random_trial = make_trial(Methods.RANDOM, *shared_args)
 
                     all_trials.extend([v_hier_corr_crt,
                                        v_hier_corr_lrn,
                                        v_hier_corr_wrg,
                                        v_hier_target,
                                        v_greedy_crt,
-                                       random])
+                                       random_trial])
 
+    random.shuffle(all_trials)
     exp_name = "ExperimentThor-{}".format(current_iter())
     exp = Experiment(exp_name,
                      all_trials,
-                     OUTPUT_DIR,
+                     "../../results",
                      verbose=True,
                      add_timestamp=True)
     exp.generate_trial_scripts(split=split, use_mp=True)
