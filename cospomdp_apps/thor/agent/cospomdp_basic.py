@@ -168,11 +168,10 @@ class ThorObjectSearchCosAgent(ThorAgent):
                     corr_func, corr_func_args = corr_specs[key]
                     if type(corr_func) == str:
                         corr_func = eval(corr_func)
-                    corr_dists[other] = cospomdp.CorrelationDist(corr_object,
-                                                                 target,
-                                                                 search_region,
-                                                                 corr_func,
-                                                                 corr_func_args=corr_func_args)
+                    corr_dists[other] = cospomdp.CorrelationDist(
+                        corr_object, target, search_region, corr_func,
+                        corr_func_args=corr_func_args)
+
                     if corr_dists_path is not None:
                         # save
                         print(f"Saving corr dist Pr({corr_object[1]} | {target[1]}) to {cdist_path}")
@@ -292,6 +291,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         Output a TOS_Action
         """
         action = self.solver.plan(self.cos_agent)
+        print("     Num Sims:", self.solver.last_num_sims)
 
         # Need to return TOS_Action
         if not isinstance(action, TOS_Action):

@@ -4,7 +4,7 @@ import pickle
 
 class CorrelationDist(JointDist):
     def __init__(self, corr_object, target, search_region,
-                 corr_func_or_dict, corr_func_args={}):
+                 corr_func_or_dict, corr_func_args={}, dists=None):
         """
         Models Pr(Si | Starget) = Pr(corr_object_id | target_id)
         Args:
@@ -24,35 +24,58 @@ class CorrelationDist(JointDist):
         super().__init__([self.corr_object_id, self.target_id])
 
         # calculate weights
-        self.dists = {}  # maps from target state to conditional distributions
-        for target_loc in tqdm(search_region, total=len(search_region.locations),
-                               desc="Creating Pr({} | {})".format(corr_object[1], target[1])):
-            target_state = search_region.object_state(
-                self.target_id, self.target_class, target_loc)
-            weights = {}
-            for object_loc in search_region:
-                object_state = search_region.object_state(
-                    self.corr_object_id, self.corr_object_class, object_loc)
-                if type(corr_func_or_dict) == dict:
-                    prob = corr_func_or_dict.get((target_loc, object_loc), 1e-12)
-                else:
-                    # it's a function
-                    prob = corr_func_or_dict(target_loc, object_loc,
-                                             self.target_id, self.corr_object_id,
-                                             **corr_func_args)
-                weights[Event({self.corr_object_id: object_state})] = prob
-            self.dists[target_state] =\
-                TabularDistribution([self.corr_object_id], weights, normalize=True)
+        if dists is not None:
+            self.dists = dists
+        else:
+            self.dists = {}  # maps from target state to conditional distributions
+            for target_loc in tqdm(search_region, total=len(search_region.locations),
+                                   desc="Creating Pr({} | {})".format(corr_object[1], target[1])):
+                target_state = search_region.object_state(
+                    self.target_id, self.target_class, target_loc)
+                weights = {}
+                for object_loc in search_region:
+                    object_state = search_region.object_state(
+                        self.corr_object_id, self.corr_object_class, object_loc)
+                    if type(corr_func_or_dict) == dict:
+                        prob = corr_func_or_dict.get((target_loc, object_loc), 1e-12)
+                    else:
+                        # it's a function
+                        prob = corr_func_or_dict(target_loc, object_loc,
+                                                 self.target_id, self.corr_object_id,
+                                                 **corr_func_args)
+                    weights[Event({self.corr_object_id: object_state})] = prob
+                self.dists[target_state] =\
+                    TabularDistribution([self.corr_object_id], weights, normalize=True)
 
     def save(self, savepath):
         with open(savepath, "wb") as f:
-            pickle.dump(self, f)
+            dists = {}
+            for starget in self.dists:
+                dists[starget] = []
+                _dist = self.dists[starget]
+                for event in _dist.events:
+                    dists[starget].append((event.values, _dist.prob(event)))
+
+            pickle.dump({
+                "corr_object": (self.corr_object_id, self.corr_object_class),
+                "target_object": (self.target_id, self.target_class),
+                'search_region': self.search_region,
+                "dists": dists
+            }, f)
 
     @staticmethod
     def load(loadpath):
         with open(loadpath, "rb") as f:
-            corrdist = pickle.load(f)
-        return corrdist
+            data = pickle.load(f)
+        dists = {}
+        for starget in data['dists']:
+            weights = data['dists'][starget]
+            dist = TabularDistribution([data['corr_object'][0]],
+                                        weights, normalize=True)
+            dists[starget] = dist
+        return CorrelationDist(data['corr_object'],
+                               data['target_object'],
+                               data['search_region'], None, None, dists=dists)
 
     def marginal(self, variables, evidence):
         """Performs marignal inference,

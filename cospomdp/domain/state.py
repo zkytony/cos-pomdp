@@ -19,6 +19,12 @@ class ObjectState(pomdp_py.ObjectState):
     def id(self):
         return self['id']
 
+    def __lt__(self, other):
+        if not isinstance(other, ObjectState):
+            raise ValueError("Cannot compare ObjectState with {}".format(other.__class__.__name__))
+        return self.id < other.id\
+            and self.loc < other.loc
+
 @dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
 class RobotStatus:
     # One feature of dataclass frozen is the fields cannot be reassigned

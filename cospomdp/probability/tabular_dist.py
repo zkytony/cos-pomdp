@@ -10,6 +10,7 @@ import pandas as pd
 import random
 from prettytable import PrettyTable
 from .dist import JointDist
+import hashlib
 
 class Event:
     """An event is not mutable."""
@@ -19,7 +20,7 @@ class Event:
             values (dict): A dictionary mapping from variable name to value
         """
         self._values = values
-        self._hashcode = hash(frozenset(self._values.items()))
+        self._hashcache = None
 
     def __repr__(self):
         return self.__str__()
@@ -28,7 +29,10 @@ class Event:
         return "Event({})".format(self._values)
 
     def __hash__(self):
-        return self._hashcode
+        """This is used to check containment"""
+        if not self._hashcache:
+            self._hashcache = hash(frozenset(self.values.items()))
+        return self._hashcache
 
     def __eq__(self, other):
         return self.values == other.values
@@ -190,6 +194,7 @@ class TabularDistribution(Histogram, JointDist):
         if event in self.probs:
             return self.probs[event]
         else:
+            import pdb; pdb.set_trace()
             return 0.0
 
     def prob(self, values):
