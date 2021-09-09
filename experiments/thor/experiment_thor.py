@@ -33,14 +33,19 @@ TOPO_PLACE_SAMPLES = 20  # specific to hierarchical methods
 class Methods:
     # correct: the distance used to form spatial correlation comes from the actual distance between instances
     # in the validation scene directly, instead of learned from training as _LRN does.
-    HIERARCHICAL_CORR_CRT = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, corr_type="correct")
-    HIERARCHICAL_CORR_LRN = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, corr_type="learned")
-    HIERARCHICAL_CORR_WRG = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, corr_type="wrong")
-    HIERARCHICAL_TARGET = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=False)
-    FLAT_POUCT_CORR_CRT = dict(agent="ThorObjectSearchBasicCosAgent", use_corr=True, corr_type="correct")
-    FLAT_POUCT_TARGET_CRT = dict(agent="ThorObjectSearchBasicCosAgent", use_corr=False, corr_type="correct")
-    GREEDY_NBV = dict(agent="ThorObjectSearchGreedyNbvAgent", use_corr=True, corr_type="correct")
-    RANDOM = dict(agent="ThorObjectSearchRandomAgent", use_corr=False)
+    V_HIERARCHICAL_CORR_CRT = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, use_vision_detector=True, corr_type="correct")
+    V_HIERARCHICAL_CORR_LRN = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, use_vision_detector=True, corr_type="learned")
+    V_HIERARCHICAL_CORR_WRG = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, use_vision_detector=True, corr_type="wrong")
+    V_HIERARCHICAL_TARGET = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=False, use_vision_detector=True)
+    V_GREEDY_NBV = dict(agent="ThorObjectSearchGreedyNbvAgent", use_corr=True, corr_type="correct", use_vision_detector=True)
+
+    GT_HIERARCHICAL_CORR_CRT = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, use_vision_detector=False, corr_type="correct")
+    GT_HIERARCHICAL_CORR_LRN = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, use_vision_detector=False, corr_type="learned")
+    GT_HIERARCHICAL_CORR_WRG = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, use_vision_detector=False, corr_type="wrong")
+    GT_HIERARCHICAL_TARGET = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=False, use_vision_detector=False)
+    GT_GREEDY_NBV = dict(agent="ThorObjectSearchGreedyNbvAgent", use_corr=True, corr_type="correct", use_vision_detector=False)
+
+    RANDOM = dict(agent="ThorObjectSearchRandomAgent", use_corr=False, use_vision_detector=False) # doesn't matter
 
     @staticmethod
     def get_name(method):
