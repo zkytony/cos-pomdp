@@ -15,7 +15,9 @@ class ReplaySolver(pomdp_py.Planner):
         if type(info["action"]) == TOS_Action:
             return info["action"]
         else:
-            return info["action"]["goal"], info["action"]["base"]
+            return (info["action"]["goal"],
+                    info["action"]["goal_done"],
+                    info["action"]["base"])
 
     def update(self, agent, action, observation):
         self.index += 1

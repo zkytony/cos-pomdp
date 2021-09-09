@@ -274,3 +274,23 @@ class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent)
     @property
     def done(self):
         return self._done
+
+
+class DummyGoalHandler(GoalHandler):
+    """A skeleton. Used for replay"""
+    def __init__(self, goal, goal_done, agent):
+        """
+        agent: ThorObjectSearchCompleteCosAgent
+        """
+        self.goal = goal
+        self._goal_done = goal_done
+
+    def step(self):
+        pass
+
+    def update(self, tos_action, tos_observation):
+        pass
+
+    @property
+    def done(self):
+        return self._goal_done

@@ -20,7 +20,8 @@ from .components.transition_model import RobotTransitionTopo
 from .components.policy_model import PolicyModelTopo
 from .components.goal_handlers import (MoveTopoHandler,
                                        DoneHandler,
-                                       LocalSearchHandler)
+                                       LocalSearchHandler,
+                                       DummyGoalHandler)
 
 
 def _shortest_path(reachable_positions, gloc1, gloc2):
@@ -284,8 +285,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
     def act(self):
         if isinstance(self.solver, ReplaySolver):
-            goal, action = self.solver.plan(self.cos_agent)
-            self._goal_handler = self.handle(goal)
+            goal, goal_done, action = self.solver.plan(self.cos_agent)
+            self._goal_handler = DummyGoalHandler(goal, goal_done, self)
             return action
 
         goal = self.solver.plan(self.cos_agent)
@@ -330,7 +331,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         # this shouldn't hurt, theoretically; It is necessary in order
         # to prevent replanning goals from the same, out-dated tree while
         # a goal is in execution.
-        del self.cos_agent.tree # remove the search tree after planning
+        if hasattr(self.cos_agent, "tree"):
+            del self.cos_agent.tree # remove the search tree after planning
 
         # Update the topo map (resample it, because belief has changed),
         # if the belief update makes the current one undesirable
@@ -421,5 +423,6 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         else:
             goal = self._goal_handler.goal
         action = dict(base=tos_action,
-                      goal=goal)
+                      goal=goal,
+                      goal_done=self._goal_handler.done)
         return action, obzdict
