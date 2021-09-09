@@ -96,7 +96,6 @@ class ThorTrial(Trial):
         max_steps = self.config["max_steps"]
         for i in range(1, max_steps+1):
             action = agent.act()
-            action = TOS_Action("RotateRight", {"degrees": 45})
             if not logging:
                 a_str = action.name if not action.name.startswith("Open")\
                     else "{}({})".format(action.name, action.params)
