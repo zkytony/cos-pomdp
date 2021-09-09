@@ -36,7 +36,6 @@ class ConditionalSpatialCorrelation:
         self.other = other
         self._distances = distances
 
-        print(nearby_thres)
         self._nearby_thres = nearby_thres
         self._mean_dist = np.mean(distances)
         self._reverse = reverse

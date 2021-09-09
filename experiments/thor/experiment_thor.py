@@ -140,7 +140,7 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
     config["viz_config"] = {
         'res': viz_res
     }
-    trial_name = f"{scene_type}-{scene}-{target}_{run_num:0>3}_{Methods.get_name(method)}"
+    trial_name = f"{scene_type.replace('_', '+')}-{scene}-{target}_{run_num:0>3}_{Methods.get_name(method)}"
     trial = ThorObjectSearchTrial(trial_name, config, verbose=True)
     return trial
 
@@ -178,11 +178,13 @@ def load_correlation(scene, scene_type, target, corr_object, corr_type):
 
     with open(os.path.join(CORR_DATASET, fname)) as f:
         dd = json.load(f)
+        if corr_type == "learned":
+            dd = dd[0]  # :(
     distances = np.asarray(dd["distances"]) / constants.GRID_SIZE
     nearby_thres = constants.NEARBY_THRES / constants.GRID_SIZE
     spcorr = ConditionalSpatialCorrelation(target, corr_object, distances,
                                            nearby_thres, reverse=reverse)
-    print("Average distance between {} and {} is {:.3f}".format(target, corr_object, spcorr._mean_dist))
+    print("{}: Average distance between {} and {} is {:.3f}".format(scene_type, target, corr_object, spcorr._mean_dist))
     return spcorr
 
 
@@ -192,10 +194,10 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
     """
     all_trials = []
     for scene_type in ['kitchen', 'living_room', 'bedroom', 'bathroom']:
-        for scene in tt.ithor_scene_names(scene_type, levels=(21,31)):  # use the last 10 for evaluation
+        for scene in tt.ithor_scene_names(scene_type, levels=range(21,31)):  # use the last 10 for evaluation
 
-            targets = OBJECT_CLASSES[scene]["target"]
-            corr_objects = OBJECT_CLASSES[scene]["corr"]
+            targets = OBJECT_CLASSES[scene_type]["target"]
+            corr_objects = OBJECT_CLASSES[scene_type]["corr"]
 
             # make detector models
             detector_models = read_detector_params()
