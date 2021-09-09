@@ -262,7 +262,12 @@ class GroundtruthDetector(Detector):
                 detections.append((xyxy, conf, cls))
 
         if self._visualize:
-            img = self.plot_detections(event.frame, detections)
+            if get_object_ids:
+                _viz_detections = [(d[0], d[1], tt.thor_object_type(d[2]))
+                                   for d in detections]
+            else:
+                _viz_detections = detections
+            img = self.plot_detections(event.frame, _viz_detections)
             img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             cv2.imshow("groundtruth", img_bgr)
             cv2.waitKey(50)
