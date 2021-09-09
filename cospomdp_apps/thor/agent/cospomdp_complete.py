@@ -310,7 +310,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                              self._local_search_params)
 
         elif isinstance(goal, MoveTopo):
-            handler = MoveTopoHandler(goal, self)
+            return MoveTopoHandler(goal, self)
 
         elif isinstance(goal, cospomdp.Done):
             return DoneHandler(goal, self)
