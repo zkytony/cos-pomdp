@@ -260,7 +260,8 @@ def make_config(args):
     from . import agent as agentlib
     agent_class = eval("agentlib." + config["agent_class"])
     if not isinstance(agent_class, agentlib.ThorObjectSearchOptimalAgent)\
-       and not isinstance(agent_class, agentlib.ThorObjectSearchExternalAgent):
+       and not isinstance(agent_class, agentlib.ThorObjectSearchExternalAgent)\
+       and not isinstance(agent_class, agentlib.ThorObjectSearchRandomAgent):
         config["agent_config"]["detector_specs"] = args.agent_detector_specs
         config["agent_config"]["corr_specs"] = args.corr_specs
 
