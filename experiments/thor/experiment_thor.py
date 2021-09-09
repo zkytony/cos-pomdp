@@ -208,9 +208,9 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
                     v_hier_corr_crt = make_trial(Methods.V_HIERARCHICAL_CORR_CRT, *shared_args, corr_objects=corr_objects)
                     v_hier_corr_lrn = make_trial(Methods.V_HIERARCHICAL_CORR_LRN, *shared_args, corr_objects=corr_objects)
                     v_hier_corr_wrg = make_trial(Methods.V_HIERARCHICAL_CORR_WRG, *shared_args, corr_objects=corr_objects)
-                    v_hier_target = make_trial(Methods.V_HIERARCHICAL_TARGET, *shared_args, corr_objects=corr_objects)
+                    v_hier_target = make_trial(Methods.V_HIERARCHICAL_TARGET, *shared_args)
                     v_greedy_crt = make_trial(Methods.V_GREEDY_NBV_CRT, *shared_args, corr_objects=corr_objects)
-                    random = make_trial(Methods.RANDOM, *shared_args, corr_objects=corr_objects)
+                    random = make_trial(Methods.RANDOM, *shared_args)
 
                     all_trials.extend([v_hier_corr_crt,
                                        v_hier_corr_lrn,
