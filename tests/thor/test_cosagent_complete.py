@@ -1,4 +1,4 @@
-from cospomdp.utils.corr_funcs import around
+from cospomdp.utils.corr_funcs import around, apart
 from cospomdp_apps.thor.agent.cospomdp_complete\
     import ThorObjectSearchCompleteCosAgent
 from cospomdp_apps.thor.common import TaskArgs, make_config

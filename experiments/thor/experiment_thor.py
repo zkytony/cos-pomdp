@@ -2,6 +2,7 @@ import os
 import copy
 import random
 import math
+import numpy as np
 import json
 import pandas as pd
 from datetime import datetime as dt
@@ -12,7 +13,7 @@ import thortils as tt
 from cospomdp_apps.thor.common import TaskArgs, make_config
 from cospomdp_apps.thor.trial import ThorObjectSearchTrial
 from cospomdp_apps.thor import constants
-from cospomdp.utils.corr_funcs import ConditionalSpatialCorrelation
+from cospomdp.utils.corr_funcs import ConditionalSpatialCorrelation, around, apart
 
 # Configurations
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -118,6 +119,11 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
 
     if method["use_corr"]:
         for other in corr_objects:
+            # if other == "Microwave" or other == "GarbageCan":
+            #     config["agent_config"]["corr_specs"][(target, other)] = (apart, dict(d=5)) # corr_func, corr_func_args
+            # else:
+            #     config["agent_config"]["corr_specs"][(target, other)] = (around, dict(d=3)) # corr_func, corr_func_args
+
             spcorr = load_correlation(scene, scene_type, target, other, method["corr_type"], rnd=rnd)
             config["agent_config"]["corr_specs"][(target, other)] = (spcorr.func, {}) # corr_func, corr_func_args
             config["agent_config"]["detector_specs"][other] = detector_models[other]
@@ -172,8 +178,9 @@ def load_correlation(scene, scene_type, target, corr_object, corr_type, rnd=rand
 
     with open(os.path.join(CORR_DATASET, fname)) as f:
         dd = json.load(f)
+    distances = np.asarray(dd["distances"]) / constants.GRID_SIZE
     nearby_thres = constants.NEARBY_THRES / constants.GRID_SIZE
-    spcorr = ConditionalSpatialCorrelation(target, corr_object, dd["distances"],
+    spcorr = ConditionalSpatialCorrelation(target, corr_object, distances,
                                            nearby_thres, reverse=reverse)
     print("Average distance between {} and {} is {:.3f}".format(target, corr_object, spcorr._mean_dist))
     return spcorr
