@@ -284,19 +284,15 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
     def act(self):
         goal = self.solver.plan(self.cos_agent)
         print("Goal: {}".format(goal), "Num Sims:", self.solver.last_num_sims)
-        # if goal.name == "done":
-        #     from pomdp_py import TreeDebugger
-        #     dd = TreeDebugger(self.cos_agent.tree)
-        #     import pdb; pdb.set_trace()
-
         if self._goal_handler is None or goal != self._goal_handler.goal:
             # Goal is different now. We try to handle this goal
             self._goal_handler = self.handle(goal)
-            # goal handler is immediately done - plan again.
-            if self._goal_handler.done:
-                return self.act()
 
         action = self._goal_handler.step()
+        if action == None:
+            # replan
+            return self.act()
+
         assert isinstance(action, TOS_Action)
         return action
 
@@ -308,7 +304,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                              self._local_search_params)
 
         elif isinstance(goal, MoveTopo):
-            return MoveTopoHandler(goal, self)
+            handler = MoveTopoHandler(goal, self)
 
         elif isinstance(goal, cospomdp.Done):
             return DoneHandler(goal, self)

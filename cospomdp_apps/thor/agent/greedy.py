@@ -401,12 +401,11 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                                                   angle_tolerance=5,
                                                   goal=goal)
 
-            if self._goal_handler.done:
-                # goal handler is done (immediately when it is created)
-                self._goal_handler = DoneHandler(goal, self)
-                return self._goal_handler.step()
-
-        return self._goal_handler.step()
+        action = self._goal_handler.step()
+        if action is None:
+            # replan
+            return self.act()
+        return action
 
     def update(self, tos_action, tos_observation):
         if self._goal_handler.updates_first:

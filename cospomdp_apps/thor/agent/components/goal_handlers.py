@@ -88,9 +88,12 @@ class MacroMoveHandler(GoalHandler):
         self._index = 0
 
     def step(self):
-        action_name, action_delta = self._plan[self._index]["action"]
-        params = from_thor_delta_to_thor_action_params(action_name, action_delta)
-        return TOS_Action(action_name, params)
+        try:
+            action_name, action_delta = self._plan[self._index]["action"]
+            params = from_thor_delta_to_thor_action_params(action_name, action_delta)
+            return TOS_Action(action_name, params)
+        except:
+            return None
 
     def update(self, tos_action, tos_observation):
         # Check if the robot pose is expected
