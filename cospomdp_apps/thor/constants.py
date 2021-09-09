@@ -344,3 +344,5 @@ def _load_config():
         config[k] = v
     return config
 CONFIG = _load_config()
+
+NEARBY_THRES = 1.5

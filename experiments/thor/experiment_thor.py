@@ -68,7 +68,7 @@ class Methods:
 
 OBJECT_CLASSES = {
     "kitchen": {"target": ["SaltShaker", "Mug", "DishSponge"],
-                "corr": ["StoveBurner", "Microwave", "CoffeeMachine", "Fridge", "SoapBottle"]},
+                "corr": ["StoveBurner", "Microwave", "GarbageCan", "Fridge", "Sink"]},
     "living_room": {"target": ["KeyChain", "CreditCard", "Laptop"],
                     "corr": ["FloorLamp", "HousePlant", "Television", "Painting", "Sofa"]},
     "bedroom": {"target": ["CellPhone", "Book", "CD"],
@@ -155,6 +155,7 @@ def read_detector_params(filepath=os.path.join(ABS_PATH, "detector_params.csv"))
 
 CORR_DATASET = os.path.join(ABS_PATH, "../../data/thor/corrs")
 def load_correlation(scene, scene_type, target, corr_object, corr_type, rnd=random):
+    reverse = False
     if corr_type == "correct":
         fname = f"distances_{scene_type}_{target}-{corr_object}_{scene}.json"
     elif corr_type == "learned":
@@ -164,14 +165,17 @@ def load_correlation(scene, scene_type, target, corr_object, corr_type, rnd=rand
         # we randomly choose another corr_object instead, as the correlation
         # for the given `target`, `corr_object`. This will be a wrong correlation,
         # but not the worst.
-        another_corr_object = rnd.sample(OBJECT_CLASSES[scene]['corr'], 1)[0]
-        fname = f"distances_{scene_type}_{target}-{another_corr_object}_{scene}.json"
+        fname = f"distances_{scene_type}_{target}-{corr_object}_{scene}.json"
+        reverse = True
     else:
         raise ValueError("Unknown corr type {}".format(corr_type))
 
     with open(os.path.join(CORR_DATASET, fname)) as f:
         dd = json.load(f)
-    spcorr = ConditionalSpatialCorrelation(target, corr_object, dd["distances"])
+    nearby_thres = constants.NEARBY_THRES / constants.GRID_SIZE
+    spcorr = ConditionalSpatialCorrelation(target, corr_object, dd["distances"],
+                                           nearby_thres, reverse=reverse)
+    print("Average distance between {} and {} is {:.3f}".format(target, corr_object, spcorr._mean_dist))
     return spcorr
 
 

@@ -38,4 +38,4 @@ def _test_method(method, scene_type, target_class, scene="FloorPlan21"):
 
 
 if __name__ == "__main__":
-    _test_method(Methods.HIERARCHICAL_CORR_CRT, "kitchen", "SaltShaker")
+    _test_method(Methods.HIERARCHICAL_CORR_CRT, "kitchen", "DishSponge")

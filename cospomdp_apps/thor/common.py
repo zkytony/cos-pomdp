@@ -177,7 +177,7 @@ class TaskArgs:
     yolov5_model_dir: str = paths.YOLOV5_MODEL_DIR
     yolov5_data_dir: object = paths.YOLOV5_DATA_DIR
     bbox_margin: float = 0.3 # percentage of the bbox to exclude along each axis
-    conf_thres: float = 0.4
+    conf_thres: float = 0.25
     keep_most_confident: bool = True  # if multiple bounding boxes for an object, keep only the most confident one
     plot_detections: bool = False
     detection_sep: float = constants.GRID_SIZE
