@@ -37,13 +37,13 @@ class Methods:
     V_HIERARCHICAL_CORR_LRN = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, use_vision_detector=True, corr_type="learned")
     V_HIERARCHICAL_CORR_WRG = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, use_vision_detector=True, corr_type="wrong")
     V_HIERARCHICAL_TARGET = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=False, use_vision_detector=True)
-    V_GREEDY_NBV = dict(agent="ThorObjectSearchGreedyNbvAgent", use_corr=True, corr_type="correct", use_vision_detector=True)
+    V_GREEDY_NBV_CRT = dict(agent="ThorObjectSearchGreedyNbvAgent", use_corr=True, corr_type="correct", use_vision_detector=True)
 
     GT_HIERARCHICAL_CORR_CRT = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, use_vision_detector=False, corr_type="correct")
     GT_HIERARCHICAL_CORR_LRN = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, use_vision_detector=False, corr_type="learned")
     GT_HIERARCHICAL_CORR_WRG = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=True, use_vision_detector=False, corr_type="wrong")
     GT_HIERARCHICAL_TARGET = dict(agent="ThorObjectSearchCompleteCosAgent", use_corr=False, use_vision_detector=False)
-    GT_GREEDY_NBV = dict(agent="ThorObjectSearchGreedyNbvAgent", use_corr=True, corr_type="correct", use_vision_detector=False)
+    GT_GREEDY_NBV_CRT = dict(agent="ThorObjectSearchGreedyNbvAgent", use_corr=True, corr_type="correct", use_vision_detector=False)
 
     RANDOM = dict(agent="ThorObjectSearchRandomAgent", use_corr=False, use_vision_detector=False) # doesn't matter
 
@@ -202,34 +202,23 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
 
             for target in targets:
                 for run_num in range(num_trials):
-                    v_hier_corr_crt = make_trial(Methods.V_HIERARCHICAL_CORR_CRT,
-                                                 run_num, scene_type, scene,
-                                                 target, detector_models,
-                                                 corr_objects=corr_objects)
 
-                    # hier_corr_lrn = make_trial(run_num, scene_type, scene, target, corr_objects,
-                    #                           detector_models, Methods.HIERARCHICAL_CORR_LRN)
-                    # hier_corr_wrg = make_trial(run_num, scene_type, scene, target, corr_objects,
-                    #                           detector_models, Methods.HIERARCHICAL_CORR_WRG)
-                    hier_target = make_trial(Methods.HIERARCHICAL_TARGET,
-                                             run_num, scene_type, scene, target,
-                                             corr_objects, detector_models)
+                    shared_args = (run_num, scene_type, scene, target, detector_models)
 
-                    # flat_corr_crt = make_trial(run_num, scene_type, scene, target, corr_objects,
-                    #                           detector_models, Methods.FLAT_POUCT_CORR_CRT)
-                    # flat_target_crt = make_trial(run_num, scene_type, scene, target, corr_objects,
-                    #                             detector_models, Methods.FLAT_POUCT_TARGET_CRT)
+                    v_hier_corr_crt = make_trial(Methods.V_HIERARCHICAL_CORR_CRT, *shared_args, corr_objects=corr_objects)
+                    v_hier_corr_lrn = make_trial(Methods.V_HIERARCHICAL_CORR_LRN, *shared_args, corr_objects=corr_objects)
+                    v_hier_corr_wrg = make_trial(Methods.V_HIERARCHICAL_CORR_WRG, *shared_args, corr_objects=corr_objects)
+                    v_hier_target = make_trial(Methods.V_HIERARCHICAL_TARGET, *shared_args, corr_objects=corr_objects)
+                    v_greedy_crt = make_trial(Methods.V_GREEDY_NBV_CRT, *shared_args, corr_objects=corr_objects)
+                    random = make_trial(Methods.RANDOM, *shared_args, corr_objects=corr_objects)
 
-                    greedynbv = make_trial(Methods.GREEDY_NBV, run_num, scene_type, scene, target, corr_objects,
-                                           detector_models)
-                    # random = make_trial(run_num, scene_type, scene, target, corr_objects,
-                    #                     detector_models, Methods.RANDOM)
-                    all_trials.extend([hier_corr_crt,
-                                       hier_target,
-                                       # flat_corr_crt,
-                                       # flat_target_crt,
-                                       greedynbv])
-                                       # random])
+                    all_trials.extend([v_hier_corr_crt,
+                                       v_hier_corr_lrn,
+                                       v_hier_corr_wrg,
+                                       v_hier_target,
+                                       v_greedy_crt,
+                                       random])
+
     exp_name = "ExperimentThor-AA"
     exp = Experiment(exp_name,
                      all_trials,
