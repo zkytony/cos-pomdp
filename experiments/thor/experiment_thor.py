@@ -4,6 +4,7 @@ import random
 import math
 import json
 import pandas as pd
+import numpy as np
 from datetime import datetime as dt
 
 from sciex import Experiment

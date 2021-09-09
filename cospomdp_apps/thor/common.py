@@ -182,7 +182,7 @@ class TaskArgs:
     keep_most_confident: bool = True  # if multiple bounding boxes for an object, keep only the most confident one
     plot_detections: bool = False
     detection_sep: float = constants.GRID_SIZE
-    max_repeated_detections: int = 1
+    max_repeated_detections: int = 3
     # agent detectors
     agent_detector_specs: Dict = field(default_factory=lambda: {})
     # correlations

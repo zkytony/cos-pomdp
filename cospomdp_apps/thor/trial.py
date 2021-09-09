@@ -20,7 +20,7 @@ from .agent import (ThorObjectSearchOptimalAgent,
                     ThorObjectSearchGreedyNbvAgent)
 from .replay import ReplaySolver
 from .result_types import PathResult, HistoryResult
-from .common import make_config, TaskArgs
+from .common import make_config, TaskArgs, TOS_Action
 
 class ThorTrial(Trial):
 
@@ -96,6 +96,7 @@ class ThorTrial(Trial):
         max_steps = self.config["max_steps"]
         for i in range(1, max_steps+1):
             action = agent.act()
+            action = TOS_Action("RotateRight", {"degrees": 45})
             if not logging:
                 a_str = action.name if not action.name.startswith("Open")\
                     else "{}({})".format(action.name, action.params)

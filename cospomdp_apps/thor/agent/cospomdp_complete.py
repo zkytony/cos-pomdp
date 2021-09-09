@@ -283,7 +283,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
     def act(self):
         goal = self.solver.plan(self.cos_agent)
-        print("Goal: {}".format(goal))
+        print("Goal: {}".format(goal), "Num Sims:", self.solver.last_num_sims)
         # if goal.name == "done":
         #     from pomdp_py import TreeDebugger
         #     dd = TreeDebugger(self.cos_agent.tree)

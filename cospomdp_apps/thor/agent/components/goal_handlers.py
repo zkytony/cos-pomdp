@@ -230,6 +230,7 @@ class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent)
         print(dd)
         dd.mbp
         #########################
+        print("     Num Sims:", self.solver.last_num_sims)
         if isinstance(action, basic.Move2D):
             params = from_grid_action_to_thor_action_params(
                 action, self._parent.grid_map.grid_size)
