@@ -224,7 +224,7 @@ def EXPERIMENT_THOR(split=10, num_trials=3):
                                        hier_target,
                                        # flat_corr_crt,
                                        # flat_target_crt,
-                                       greedynbv]
+                                       greedynbv])
                                        # random])
     exp_name = "ExperimentThor-AA"
     exp = Experiment(exp_name,

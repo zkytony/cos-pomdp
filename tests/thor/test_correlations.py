@@ -16,15 +16,16 @@ def plot_correlation_heatmap(spcorr, target, other, grid_map, controller):
                             target[0], other[0])
         heatmap[z_t, x_t] = score
     plt.imshow(heatmap, cmap="hot")
+    plt.colorbar()
     plt.scatter(x_o, z_o, marker="o", c="cyan")
     plt.gca().invert_yaxis()
     plt.show()
 
 
-def _test_simple_correlation_single(scene="FloorPlan1"):
+def _test_simple_correlation_single(scene="FloorPlan21"):
     controller = tt.launch_controller({"scene": scene})
-    target = (0, "Bread")
-    other = (1, "Bowl")
+    target = (0, "DishSponge")
+    other = (1, "StoveBurner")
 
     distances = tt.thor_distances_in_scene(controller, target[1], other[1])
     print(distances)
@@ -78,5 +79,5 @@ def _test_simple_correlation(scene_type="kitchen"):
     plot_correlation_heatmap(spcorr, target, other, grid_map, controller)
 
 if __name__ == "__main__":
-    # _test_simple_correlation_single()
-    _test_simple_correlation()
+    _test_simple_correlation_single()
+    # _test_simple_correlation()

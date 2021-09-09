@@ -13,7 +13,7 @@ class ConditionalSpatialCorrelation:
     distances of instances of si and starget.
     """
 
-    def __init__(self, target, other, distances, nearby_thres, dist_scaling=0.8, reverse=False):
+    def __init__(self, target, other, distances, nearby_thres, dist_scaling=0.6, reverse=False):
         """
         target (ID, class): the target object
         other (ID, class): the other object
@@ -52,6 +52,12 @@ class ConditionalSpatialCorrelation:
             close = self._mean_dist > self._nearby_thres
 
         if close:
-            return gaussian[target_loc]
+            if dist < self._mean_dist:
+                return gaussian[other_loc]
+            else:
+                return gaussian[target_loc]
         else:
-            return gaussian[other_loc] - gaussian[target_loc]
+            if dist < self._mean_dist:
+                return 1e-5
+            else:
+                return gaussian[other_loc] - gaussian[target_loc]
