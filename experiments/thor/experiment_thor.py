@@ -19,6 +19,7 @@ from cospomdp.utils.corr_funcs import ConditionalSpatialCorrelation, around, apa
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(ABS_PATH, "../../", "results")
 
+
 POUCT_ARGS = dict(max_depth=30,
                   planning_time=1.5,
                   discount_factor=0.95,
@@ -29,6 +30,16 @@ LOCAL_POUCT_ARGS = POUCT_ARGS
 MAX_STEPS = 100
 
 TOPO_PLACE_SAMPLES = 20  # specific to hierarchical methods
+
+def bump_iter():
+    current = int(current_iter())
+    with open(os.path.join(ABS_PATH, "iter.txt"), "w") as f:
+        f.write(f"{current+1:0>3}")
+
+def current_iter():
+    with open(os.path.join(ABS_PATH, "iter.txt")) as f:
+        current = f.readline()
+    return f"{current:0>3}"
 
 class Methods:
     # correct: the distance used to form spatial correlation comes from the actual distance between instances
@@ -221,7 +232,7 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
                                        v_greedy_crt,
                                        random])
 
-    exp_name = "ExperimentThor-AA"
+    exp_name = "ExperimentThor-{}".format(current_iter())
     exp = Experiment(exp_name,
                      all_trials,
                      OUTPUT_DIR,
@@ -230,6 +241,7 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
     exp.generate_trial_scripts(split=split, use_mp=True)
     print("Trials generated at %s/%s" % (exp._outdir, exp.name))
     print("Find multiple computers to run these experiments.")
+    bump_iter()
 
 if __name__ == "__main__":
     EXPERIMENT_THOR(split=10, num_trials=3)
