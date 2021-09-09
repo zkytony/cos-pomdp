@@ -163,7 +163,7 @@ class ThorAgent:
         the low-level observation.
         By default, nothing is done, except that the images
         in the obseravtion will not be stored (save space)."""
-        return tos_action, dict(detections=tos_observation.detections_without_locations,
+        return tos_action, dict(detections=tos_observation.detections_without_locations(),
                                 robot_pose=tos_observation.robot_pose,
                                 horizon=tos_observation.horizon)
 

@@ -285,7 +285,7 @@ class TOS(ThorEnv):
         # through the actions the agent has taken. But we do want to store
         # detections in the observation.
         info = dict(state=next_state,    # the state where observation is generated
-                    obseravtion=observation,  # detections=observation.detections_without_locations if observation is not None else None,
+                    observation=observation,  # detections=observation.detections_without_locations if observation is not None else None,
                     action=action,
                     reward=reward)
         self._history.append(info)
@@ -295,7 +295,7 @@ class TOS(ThorEnv):
         s = info['state']
         a = info['action']
         o = set()
-        for detection in info['detections']:
+        for detection in info['observation']['detections']:
             cls = detection[2]
             o.add(cls)
         clses = list(sorted(o))
@@ -304,6 +304,9 @@ class TOS(ThorEnv):
 
         pose_str = "(x={:.3f}, z={:.3f}, pitch={:.3f}, yaw={:.3f}"\
             .format(s.agent_pose[0][0], s.agent_pose[0][2], s.agent_pose[1][0], s.agent_pose[1][1])
+
+        if type(a) == dict:
+            a = a["base"]
 
         action = a.name if not a.name.startswith("Open")\
             else "{}({})".format(a.name, a.params)
