@@ -114,7 +114,7 @@ class Detector:
                 if euclidean_dist(closest, avg_loc) <= self._detection_sep:
                     self._log[cls][closest] += 1
                 else:
-                    self._log[cls][avg_loc] = 0
+                    self._log[cls][avg_loc] = 1
 
     def is_overly_repeated_detection(self, detection):
         if len(detection) == 3:
