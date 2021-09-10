@@ -19,6 +19,7 @@ from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation, ThorAgent
 from .agent import ThorObjectSearchOptimalAgent
 from .visual import ThorObjectSearchViz2D
 from .detector import YOLODetector, GroundtruthDetector
+from . import paths
 from . import constants
 
 
@@ -69,7 +70,7 @@ class TOS(ThorEnv):
                 output["grid_size"] = grid_size
 
             elif item.lower() == "grid_map":
-                grid_maps_path = self.task_config["paths"]["grid_maps_path"]
+                grid_maps_path = paths.GRID_MAPS_PATH
                 gmap_path = os.path.join(grid_maps_path, "{}-{}.json".format(scene, grid_size))
                 if os.path.exists(gmap_path):
                     print("Loading GridMap from {}".format(gmap_path))

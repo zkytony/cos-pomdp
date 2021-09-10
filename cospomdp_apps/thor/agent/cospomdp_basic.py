@@ -27,8 +27,9 @@ from .components.action import (grid_navigation_actions2d,
                                 from_grid_action_to_thor_action_params)
 
 from ..common import TOS_Action, ThorAgent
-from .. import constants
 from ..replay import ReplaySolver
+from .. import constants
+from .. import paths
 
 
 class GridMapSearchRegion(cospomdp.SearchRegion2D):
@@ -82,7 +83,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
         # load correlation distributions
         corr_dists_path = None
         if task_config.get("save_load_corr", False):
-            corr_dists_path = task_config["paths"]["corr_dists_path"]
+            corr_dists_path = paths.CORR_DISTS_PATH
         corr_dists = self._build_corr_dists(corr_specs, detectable_objects,
                                             corr_dists_path=corr_dists_path)
         self.corr_dists = corr_dists

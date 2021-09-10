@@ -1,5 +1,7 @@
 import os
 
+# These paths will be relative to the local computer
+
 MODULE_PATH = os.path.dirname(__file__)
 
 # The path to the directory to models

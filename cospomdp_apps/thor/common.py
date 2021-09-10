@@ -165,8 +165,8 @@ class ThorAgent:
             detection_ranges=detector_config["expected_detection_ranges"])
 
         if use_vision_detector:
-            model_path = task_config["paths"]["yolov5_model_path"]
-            data_config = task_config["paths"]["yolov5_data_config"]  # the path to the dataset yaml file
+            model_path = os.path.join(paths.YOLOV5_MODEL_DIR, detector_config["yolov5_model"])
+            data_config = os.path.join(paths.YOLOV5_DATA_DIR, detector_config["yolov5_data_config"])
             keep_most_confident = detector_config["keep_most_confident"]
             conf_thres = detector_config["conf_thres"]
             detector = YOLODetector(model_path, data_config,
@@ -190,15 +190,11 @@ class TaskArgs:
     agent_class: str = "ThorObjectSearchOptimalAgent"
     max_steps: int = constants.MAX_STEPS
     # load grid maps
-    grid_maps_path: str = paths.GRID_MAPS_PATH
     save_grid_map: bool = True
     # use & load corr dists
     save_load_corr: bool = False
-    corr_dists_path: str = paths.CORR_DISTS_PATH
     # detectors
     use_vision_detector: bool = False
-    yolov5_model_dir: str = paths.YOLOV5_MODEL_DIR
-    yolov5_data_dir: object = paths.YOLOV5_DATA_DIR
     bbox_margin: float = 0.3 # percentage of the bbox to exclude along each axis
     conf_thres: float = 0.25
     keep_most_confident: bool = True  # if multiple bounding boxes for an object, keep only the most confident one
@@ -253,23 +249,19 @@ def make_config(args):
             "expected_detection_ranges": expected_detection_ranges
         },
         "discount_factor": 0.95,
-        "paths": {}
     }
     if task_config["detector_config"]["use_vision_detector"]:
         # yolov5 model path is the path to models/directory
         scene_type = ithor_scene_type(args.scene)
-        model_path = os.path.join(args.yolov5_model_dir, f"yolov5-{scene_type}", "best.pt")
-        data_config = os.path.join(args.yolov5_data_dir, f"yolov5-{scene_type}", f"yolov5-{scene_type}-dataset.yaml")
-        task_config["paths"]["yolov5_model_path"] = model_path
-        task_config["paths"]["yolov5_data_config"] = data_config
+        model_to_use = os.path.join(f"yolov5-{scene_type}", "best.pt")
+        data_config = os.path.join(f"yolov5-{scene_type}", f"yolov5-{scene_type}-dataset.yaml")
+        task_config["detector_config"]["yolov5_model"] = model_to_use
+        task_config["detector_config"]["yolov5_data_config"] = data_config
 
     if "grid_map" in args.agent_init_inputs:
-        task_config["paths"]["grid_maps_path"] = args.grid_maps_path
         task_config["save_grid_map"] = args.save_grid_map
 
     task_config["save_load_corr"] = args.save_load_corr
-    if args.save_load_corr:
-        task_config["paths"]["corr_dists_path"] = args.corr_dists_path
 
     config = {
         "thor": thor_config,
