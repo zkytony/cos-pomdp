@@ -3,7 +3,7 @@
 cd $HOME/repo/cos-pomdp/
 
 if [ ! -d "venv/cosp" ]; then
-    virtualenv -p $(which python3) venv/cosp
+    virtualenv -p $(which python3.8) venv/cosp
     pip install -e .  # install the cos-pomdp package
 fi
 
