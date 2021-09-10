@@ -36,7 +36,7 @@ import pandas as pd
 from tqdm import tqdm
 from thortils.vision.metrics import simple_box_iou
 from thortils.vision.general import normalized_xywh_to_xyxy, xyxy_to_normalized_xywh
-from cospomdp_apps.thor.detector import Detector
+from cospomdp_apps.thor.detector import YOLODetector
 from cospomdp_apps.thor.data.browse import yolo_load_info, yolo_load_one, yolo_plot_one
 
 
@@ -47,7 +47,8 @@ def run(args):
     # Randomly place the agent in each environment for N times.
     # Then run the detector and record the detections in `results`.
     # Each row is [cls, xyxy, conf, outcome, agent_distance]
-    detector = Detector(args.model_path, args.data_yaml)
+    detector = YOLODetector(args.model_path, args.data_yaml,
+                            conf_thres=0.0, keep_most_confident=False)
     results = []
 
     datadir, fnames, classes, colors = yolo_load_info(args.data_yaml, for_train=False)
@@ -89,6 +90,7 @@ def run(args):
                     for xyxy, conf, objtype in detections:
                         if objtype == cls:
                             results.append([cls, "FP", 1])
+                            results.append([cls, "FP_off", 1])
 
             else:
                 if not detpresent:
@@ -102,8 +104,10 @@ def run(args):
                             # annotated bounding box for this class, then it is a
                             # true positive.
                             is_tp = False
+                            _max_iou = float('-inf')
                             for bbox2D in gtbboxes[cls]:
                                 iou = simple_box_iou(bbox2D, xyxy)
+                                _max_iou = max(_max_iou, iou)
                                 if iou >= args.iou_thres:
                                     results.append([cls, "TP", 1])
                                     is_tp = True
@@ -132,6 +136,8 @@ def run(args):
                                     cv2.waitKey(0)
 
                                 results.append([cls, "FP", 1])
+                                if _max_iou <= 0.05:
+                                    results.append([cls, "FP_off", 1])
 
     # Saves results as DataFrame. Use
     df = pd.DataFrame(results,
@@ -153,12 +159,13 @@ def process(args, detectable_classes):
             fn = scounts.loc[(cls, "FN")]['count']
             fp = scounts.loc[(cls, "FP")]['count']
             tn = scounts.loc[(cls, "TN")]['count']
+            fp_off = scounts.loc[(cls, "FP_off")]['count']
             true_pos_rate = tp / (tp + fn)
             false_pos_rate = fp / (fp + tn)
-            rates.append([cls, tp, fn, true_pos_rate, fp, tn, false_pos_rate])
+            rates.append([cls, tp, fn, true_pos_rate, fp, fp_off, tn, false_pos_rate])
         except:
             print(f"Cannot get statistic for {cls}")
-    dfrates = pd.DataFrame(rates, columns=["class", "TP", "FN", "TP_rate", "FP", "TN", "FP_rate"])
+    dfrates = pd.DataFrame(rates, columns=["class", "TP", "FN", "TP_rate", "FP", "FP_off", "TN", "FP_rate"])
 
     print("##### True Positive and False Positive Counts and Rates ({}) #####".format(args.scene_type))
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
