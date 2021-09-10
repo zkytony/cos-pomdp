@@ -65,7 +65,7 @@ outfname = "corrs.zip"
 output = f"data/thor/{outfname}"
 if not os.path.exists(output):
     print("Downloading corr distances")
-    corr_distances_url = "https://drive.google.com/uc?id=1m9E9fxc2HuX8uP4KyT3WePYi4FWFBPH3"
+    corr_distances_url = "https://drive.google.com/uc?id=1uKekHoUcIOKPuVfD02YzYTk908SeGKbm"
     gdown.download(corr_distances_url, output, quiet=False)
     cmd=f'''
 cd data/thor
