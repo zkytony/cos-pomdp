@@ -96,11 +96,11 @@ class PathResult(PklResult):
         # Gathered results maps from global name to what is returned by gather()
         all_rows = []
         for global_name in gathered_results:
-            scene, target, other = global_name.split("-")
+            scene_type, scene, target = global_name.split("-")
             for row in gathered_results[global_name]:
                 success_rate = row[2] / max(1, row[3])
                 all_rows.append([scene, target, other] + row + [success_rate])
-        columns = ["scene", "target_class", "other_class"] + cls.sharedheader + ["success_rate"]
+        columns = ["scene_type", "scene", "target"] + cls.sharedheader + ["success_rate"]
         df = pd.DataFrame(all_rows, columns=columns)
 
         ci_func = lambda x: ci_normal(x, confidence_interval=0.95)
