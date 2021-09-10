@@ -17,6 +17,9 @@ from cospomdp.utils.math import euclidean_dist, roundany
 from .constants import GRID_SIZE
 from .paths import YOLOV5_REPO_PATH
 
+def _2d(position):
+    return position[0], position[2]
+
 class Detector:
     def __init__(self,
                  detectables="any", detection_ranges={},
@@ -126,7 +129,7 @@ class Detector:
 
         closest = min(self._log[cls].keys(),
                       key=lambda loc: euclidean_dist(loc, avg_loc))
-        if euclidean_dist(closest, avg_loc) <= self._detection_sep:
+        if euclidean_dist(_2d(closest), _2d(avg_loc)) <= self._detection_sep:
             avg_loc = closest
 
         if avg_loc not in self._log[cls]:
@@ -147,9 +150,11 @@ class Detector:
         if len(detection) == 3:
             return True
         else:
-            return self.within_expected_range(detection, camera_position)\
-                and not self.is_overly_repeated_detection(detection)
-
+            if self.is_overly_repeated_detection(detection):
+                cls = detection[2]
+                print("{} is detected many times at the same location".format(cls))
+                return False
+            return self.within_expected_range(detection, camera_position)
 
 
 class YOLODetector(Detector):
@@ -187,7 +192,7 @@ class YOLODetector(Detector):
                                     path=self.model_path,
                                     source="local")
 
-    def detect(self, frame):
+    def detect(self, frame, visualize=None):
         """
         Args:
             frame: RGB image array
@@ -217,14 +222,15 @@ class YOLODetector(Detector):
             else:
                 processed2.append(processed1[cls][0])
 
-        if self._visualize:
-            img = self.plot_detections(frame, processed2)
-            cv2.imshow("yolov5", img)
-            cv2.waitKey(50)
+        if visualize is None:
+            visualize = self._visualize
+
+        if visualize:
+            self._visualize_detections(frame, processed2)
         return processed2
 
     def detect_project(self, frame, depth_frame, camera_intrinsic, camera_pose):
-        bbox_detections = self.detect(frame)
+        bbox_detections = self.detect(frame, visualize=False)
         einv = pj.extrinsic_inv(camera_pose)
         results = []
         for xyxy, conf, cls in bbox_detections:
@@ -236,12 +242,19 @@ class YOLODetector(Detector):
             d = (xyxy, conf, cls, thor_points)
             if self._accepts(d, camera_pose[0]):
                 results.append(d)
-            else:
-                print("{} is detected many times at the same location".format(cls))
+
+        if self._visualize:
+            self._visualize_detections(frame, results)
         return results
 
+
+    def _visualize_detections(self, frame, detections):
+        img = self.plot_detections(frame, detections)
+        cv2.imshow("yolov5", img)
+        cv2.waitKey(50)
+
 class GroundtruthDetector(Detector):
-    def detect(self, event, get_object_ids=False):
+    def detect(self, event, get_object_ids=False, visualize=None):
         """
         Args:
             event: ai2thor's Event object.
@@ -261,20 +274,15 @@ class GroundtruthDetector(Detector):
             else:
                 detections.append((xyxy, conf, cls))
 
-        if self._visualize:
-            if get_object_ids:
-                _viz_detections = [(d[0], d[1], tt.thor_object_type(d[2]))
-                                   for d in detections]
-            else:
-                _viz_detections = detections
-            img = self.plot_detections(event.frame, _viz_detections)
-            img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            cv2.imshow("groundtruth", img_bgr)
-            cv2.waitKey(50)
+        if visualize is None:
+            visualize = self._visualize
+
+        if visualize:
+            self._visualize_detections(event.cv2img, detections, get_object_ids)
         return detections
 
     def detect_project(self, event, camera_intrinsic=None, single_loc=True):
-        bbox_detections = self.detect(event, get_object_ids=True)
+        bbox_detections = self.detect(event, get_object_ids=True, visualize=False)
 
         if not single_loc:
             camera_pose = tt.thor_camera_pose(event, as_tuple=True)
@@ -301,4 +309,17 @@ class GroundtruthDetector(Detector):
                 results.append(d)
             else:
                 print("{} is detected many times at the same location".format(cls))
+
+        if self._visualize:
+            self._visualize_detections(event.cv2img, results, True)
         return results
+
+    def _visualize_detections(self, frame, detections, with_object_ids):
+        if with_object_ids:
+            _viz_detections = [(d[0], d[1], tt.thor_object_type(d[2]))
+                               for d in detections]
+        else:
+            _viz_detections = detections
+        img = self.plot_detections(frame, _viz_detections)
+        cv2.imshow("groundtruth", img)
+        cv2.waitKey(50)

@@ -22,10 +22,10 @@ def plot_correlation_heatmap(spcorr, target, other, grid_map, controller):
     plt.show()
 
 
-def _test_simple_correlation_single(scene="FloorPlan21"):
+def _test_simple_correlation_single(scene="FloorPlan21", target="DishSponge", other="Sink"):
     controller = tt.launch_controller({"scene": scene})
-    target = (0, "DishSponge")
-    other = (1, "Sink")
+    target = (0, target)
+    other = (1, other)
 
     distances = tt.thor_distances_in_scene(controller, target[1], other[1])
     print(distances)
@@ -79,5 +79,6 @@ def _test_simple_correlation(scene_type="kitchen"):
     plot_correlation_heatmap(spcorr, target, other, grid_map, controller)
 
 if __name__ == "__main__":
-    _test_simple_correlation_single()
+    _test_simple_correlation_single(target="DishSponge", other="Sink")
+    _test_simple_correlation_single(target="DishSponge", other="StoveBurner")
     # _test_simple_correlation()

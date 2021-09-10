@@ -114,11 +114,10 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
     """
     if corr_objects is None:
         corr_objects = set()
-    detectables = set({target}) | set(corr_objects)
 
-    agent_init_inputs = []
+    agent_init_inputs = ['grid_map']
     if method["agent"] != "ThorObjectSearchRandomAgent":
-        agent_init_inputs = ['grid_map', 'agent_pose']
+        agent_init_inputs.append('agent_pose')
 
     detector_specs = {
         target: detector_models[target]
@@ -130,7 +129,7 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
             corr_specs[(target, other)] = (spcorr.func, {}) # corr_func, corr_func_args
             detector_specs[other] = detector_models[other]
 
-    args = TaskArgs(detectables=detectables,
+    args = TaskArgs(detectables=set(detector_specs.keys()),
                     scene=scene,
                     target=target,
                     agent_class=method["agent"],
@@ -143,8 +142,11 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
                     agent_detector_specs=detector_specs,
                     corr_specs=corr_specs)
     config = make_config(args)
-    config["agent_config"]["solver"] = "pomdp_py.POUCT"
-    config["agent_config"]["solver_args"] = POUCT_ARGS
+
+    if method["agent"] not in {"ThorObjectSearchRandomAgent",
+                               "ThorObjectSearchGreedyNbvAgent"}:
+        config["agent_config"]["solver"] = "pomdp_py.POUCT"
+        config["agent_config"]["solver_args"] = POUCT_ARGS
 
     if "CompleteCosAgent" in method['agent']:
         config["agent_config"]["num_place_samples"] = TOPO_PLACE_SAMPLES

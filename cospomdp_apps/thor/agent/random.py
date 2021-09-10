@@ -19,6 +19,7 @@ class ThorObjectSearchRandomAgent(ThorAgent):
         return [self.task_config["target"]]
 
     def __init__(self, task_config, grid_map, seed=1000):
+        super().__init__(task_config)
         self.task_config = task_config
         self.rnd = random.Random(seed)
         self.grid_map = grid_map
