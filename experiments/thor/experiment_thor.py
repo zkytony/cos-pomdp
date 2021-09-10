@@ -85,7 +85,7 @@ class Methods:
 OBJECT_CLASSES = {
     "kitchen": {"target": ["Knife",
                            "Mug",
-                           "PepperShaker"],
+                           "SaltShaker"],
                 "corr": ["Lettuce",
                          "Sink",
                          "Microwave",
