@@ -52,7 +52,7 @@ def test_policy_model_object_search(robot_id,
                                     init_srobot,
                                     robot_trans_model,
                                     objsearch_reward_model):
-    policy_model = PolicyModel2D(robot_trans_model, movements=ALL_MOVES_2D)
+    policy_model = PolicyModel2D(robot_trans_model, objsearch_reward_model, movements=ALL_MOVES_2D)
 
     starget = ObjectState(target_id, "target", (4, 5))
     state = CosState({robot_id: init_srobot,
