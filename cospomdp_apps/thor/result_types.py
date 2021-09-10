@@ -99,7 +99,7 @@ class PathResult(PklResult):
             scene_type, scene, target = global_name.split("-")
             for row in gathered_results[global_name]:
                 success_rate = row[2] / max(1, row[3])
-                all_rows.append([scene, target, other] + row + [success_rate])
+                all_rows.append([scene_type, scene, target] + row + [success_rate])
         columns = ["scene_type", "scene", "target"] + cls.sharedheader + ["success_rate"]
         df = pd.DataFrame(all_rows, columns=columns)
 
