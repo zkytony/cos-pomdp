@@ -161,21 +161,25 @@ class TOS(ThorEnv):
                     'pos' is the 3D position of the detected object.
         """
         print("Getting observation")
+
         img = tt.vision.thor_img(event)
         img_depth = tt.vision.thor_img_depth(event)
 
-        if isinstance(detector, GroundtruthDetector):
-            detections = detector.detect_project(
-                event, self._camera_intrinsic, single_loc=False)
+        if detector is None:
+            detections = []
         else:
-            camera_pose = tt.thor_camera_pose(event, as_tuple=True)
-            detections = detector.detect_project(img, event.depth_frame,
-                                                 self._camera_intrinsic,
-                                                 camera_pose)
-        # logging the detections
-        if record_detections:
-            camera_position = tt.thor_camera_position(event, as_tuple=True)
-            detector.record_detections(detections, camera_position, exclude={self.target})
+            if isinstance(detector, GroundtruthDetector):
+                detections = detector.detect_project(
+                    event, self._camera_intrinsic, single_loc=False)
+            else:
+                camera_pose = tt.thor_camera_pose(event, as_tuple=True)
+                detections = detector.detect_project(img, event.depth_frame,
+                                                     self._camera_intrinsic,
+                                                     camera_pose)
+            # logging the detections
+            if record_detections:
+                camera_position = tt.thor_camera_position(event, as_tuple=True)
+                detector.record_detections(detections, camera_position, exclude={self.target})
 
         return TOS_Observation(img,
                                img_depth,
@@ -187,8 +191,8 @@ class TOS(ThorEnv):
     def get_object_loc(self, object_class):
         """Returns object location (note: in thor coordinates) for given
         object class, for the closest instance to the robot."""
-        return tt.thor_closest_object_of_type_position(self.controller.last_event, object_class,
-                                                       as_tuple=True)
+        return tt.thor_closest_object_of_type_position(
+            self.controller.last_event, object_class, as_tuple=True)
 
     def get_state(self, event=None):
         # stores agent pose as tuple, for convenience.
@@ -197,8 +201,9 @@ class TOS(ThorEnv):
         agent_pose = tt.thor_agent_pose(event, as_tuple=True)
         horizon = tt.thor_camera_horizon(event)
         objlocs = {}
-        for cls in self._detectables:
-            objlocs[cls] = self.get_object_loc(cls)
+        if self._detectables != "any":
+            for cls in self._detectables:
+                objlocs[cls] = self.get_object_loc(cls)
         return TOS_State(agent_pose, horizon, objlocs)
 
     def get_reward(self, state, action, next_state):

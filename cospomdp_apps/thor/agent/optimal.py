@@ -29,7 +29,6 @@ class ThorObjectSearchOptimalAgent(ThorAgent):
                  controller,
                  task_config):
         """Builds the agent and computes a plan"""
-        super().__init__({})
         self.controller = controller
         self.target = task_config["target"]
         self.task_type = task_config["task_type"]
@@ -43,6 +42,10 @@ class ThorObjectSearchOptimalAgent(ThorAgent):
         self.plan = overall_plan
         self._poses = overall_poses
         self._index = 0
+
+    @property
+    def detector(self):
+        return None
 
     def act(self):
         """Returns action in plan"""

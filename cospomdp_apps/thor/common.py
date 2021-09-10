@@ -115,7 +115,6 @@ class ThorAgent:
         will be loaded with the model_path and data_config provided
         in the task_config.
         """
-        self._history = []  # stores the (a, o) experienced by the agent
         self._vision_detector = None
         detector_config = task_config["detector_config"]
         use_vision_detector = detector_config.get('use_vision_detector', False)

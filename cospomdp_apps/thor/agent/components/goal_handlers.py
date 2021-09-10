@@ -231,7 +231,6 @@ class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent)
         #### DEBUGGING TREE #####
         dd = pomdp_py.TreeDebugger(self._local_cos_agent.tree)
         print(dd)
-        dd.mbp
         #########################
         print("     Num Sims:", self.solver.last_num_sims)
         if isinstance(action, basic.Move2D):

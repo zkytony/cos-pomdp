@@ -149,9 +149,9 @@ class ThorObjectSearchExternalAgent(ThorAgent):
                 xyxy = detection[0]
                 cls = detection[2]
                 if cls in state_info.objbb:
-                    state_info.objbb[cls].extend(xyxy.tolist())
+                    state_info.objbb[cls].extend(list(xyxy))
                 else:
-                    state_info.objbb[cls] = xyxy.tolist()
+                    state_info.objbb[cls] = list(xyxy)
 
             # The setting of im_size=224 comes from this issue:
             # https://github.com/allenai/savn/issues/3
