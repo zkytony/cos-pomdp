@@ -84,19 +84,41 @@ class Methods:
 
 OBJECT_CLASSES = {
     "kitchen": {"target": ["Knife",
-                           "Pot",
+                           "Mug",
                            "PepperShaker"],
                 "corr": ["Lettuce",
+                         "Sink",
                          "Microwave",
                          "StoveBurner",
                          "Fridge",
-                         "Bread"]},
-    "living_room": {"target": ["KeyChain", "CreditCard", "Laptop"],
-                    "corr": ["FloorLamp", "HousePlant", "Television", "Painting", "Sofa"]},
-    "bedroom": {"target": ["CellPhone", "Book", "CD"],
-                "corr": ["DeskLamp", "Laptop", "Mirror", "Pillow", "GarbageCan"]},
-    "bathroom": {"target": ["Candle", "ScrubBrush", "Plunger"],
-                 "corr": ["Toilet", "Towel", "Mirror", "HandTowel", "SprayBottle"]}
+                         "Faucet"]},
+
+    "living_room": {"target": ["KeyChain",
+                               "CreditCard",
+                               "RemoteControl"],
+                    "corr": ["FloorLamp",
+                             "Laptop",
+                             "Television",
+                             "Painting",
+                             "HousePlant"]},
+
+    "bedroom": {"target": ["CellPhone",
+                           "Pen",
+                           "CD"],
+                "corr": ["DeskLamp",
+                         "Laptop",
+                         "Mirror",
+                         "Bed",
+                         "Window"]},
+
+    "bathroom": {"target": ["Candle",
+                            "SoapBottle",
+                            "Cloth"],
+                 "corr": ["ToiletPaperHanger",
+                          "Towel",
+                          "Mirror",
+                          "LightSwitch",
+                          "HandTowel"]}
 }
 
 def make_trial(method, run_num, scene_type, scene, target, detector_models,
