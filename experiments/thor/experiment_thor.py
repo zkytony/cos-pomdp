@@ -284,4 +284,4 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
     bump_iter()
 
 if __name__ == "__main__":
-    EXPERIMENT_THOR(split=2, num_trials=3)
+    EXPERIMENT_THOR(split=4, num_trials=1)
