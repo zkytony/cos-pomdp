@@ -285,7 +285,6 @@ class GreedyNbvAgent:
         srobot = self.brobot.mpe()
         btarget = self.particle_beliefs[self.target_id]
         starget_mpe = btarget.mpe()
-        print("MPE belief:", btarget[starget_mpe])
         if btarget[starget_mpe] > self._done_check_thres:
             if euclidean_dist(starget_mpe.loc, srobot.loc) <= self._goal_distance\
                and self.sensor(self.target_id).in_range_facing(
@@ -378,6 +377,7 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                                            goal_distance=goal_distance,
                                            **greedy_params)
         self._goal_handler = None
+        self._loop_counter = 0
 
     @property
     def cos_agent(self):
@@ -403,8 +403,15 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
 
         action = self._goal_handler.step()
         if action is None:
-            # replan
+            # The goal handler is done already; plan size is zero. Replan,
+            # but will make sure to not get into infinite loop.
+            if self._loop_counter >= 5:
+                self._goal_handler = DoneHandler(goal, self)
+                return self._goal_handler.step()
+
+            self._loop_counter += 1
             return self.act()
+        self._loop_count = 0
         return action
 
     def update(self, tos_action, tos_observation):
