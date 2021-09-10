@@ -20,7 +20,7 @@ from .agent import (ThorObjectSearchOptimalAgent,
                     ThorObjectSearchGreedyNbvAgent)
 from .replay import ReplaySolver
 from .result_types import PathResult, HistoryResult
-from .common import make_config, TaskArgs, TOS_Action
+from .common import make_config, TaskArgs, TOS_Action, ThorAgent
 
 class ThorTrial(Trial):
 
@@ -44,7 +44,22 @@ class ThorTrial(Trial):
         print("--- Agent Config ({}) ---".format(self.config["agent_class"]))
         pprint(self.config["agent_config"], width=75)
 
+    def could_provide_resource(self):
+        """If using vision detector"""
+        return self.config["task_config"]["detector_config"]["use_vision_detector"]
+
+    def provide_shared_resource(self):
+        """Load vision detector"""
+        # Assuming it could provide resource
+        assert self.could_provide_resource(), f"This trial {self.name} cannot provide shared resource."
+        return ThorAgent.load_detector(self.config["task_config"])
+
     def setup(self):
+        # If shared resource (i.e. detector is provided, use it)
+        if self.shared_resource is not None:
+            vision_detector = self.shared_resource
+            self.config["task_config"]["detector_config"]["vision_detector"] = vision_detector
+
         controller = self._start_controller()
         task_env = eval(self.config["task_env"])(controller, self.config["task_config"])
         agent_class = eval(self.config["agent_class"])
@@ -70,7 +85,6 @@ class ThorTrial(Trial):
             result['viz'] = viz
 
         return result
-
 
     def run(self,
             logging=False,

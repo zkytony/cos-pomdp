@@ -10,10 +10,6 @@ from cospomdp_apps.thor import constants
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(ABS_PATH, "../../", "data")
 
-
-
-
-
 def collect_for(scene_type, for_train=True):
     # For each scene in training scenes,
     #   launch a controller.
@@ -66,9 +62,9 @@ def collect_for(scene_type, for_train=True):
 if __name__ == "__main__":
     collect_for("kitchen", for_train=True)
     collect_for("kitchen", for_train=False)
-    # collect_for("living_room", for_train=True)
-    # collect_for("living_room", for_train=False)
-    # collect_for("bedroom", for_train=True)
-    # collect_for("bedroom", for_train=False)
-    # collect_for("bathroom", for_train=True)
-    # collect_for("bathroom", for_train=False)
+    collect_for("living_room", for_train=True)
+    collect_for("living_room", for_train=False)
+    collect_for("bedroom", for_train=True)
+    collect_for("bedroom", for_train=False)
+    collect_for("bathroom", for_train=True)
+    collect_for("bathroom", for_train=False)

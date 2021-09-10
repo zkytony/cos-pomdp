@@ -115,36 +115,11 @@ class ThorAgent:
         will be loaded with the model_path and data_config provided
         in the task_config.
         """
-        self._vision_detector = None
-        detector_config = task_config["detector_config"]
-        use_vision_detector = detector_config.get('use_vision_detector', False)
-
-        shared_kwargs = dict(
-            detectables=task_config["detectables"],
-            bbox_margin=detector_config['bbox_margin'],
-            visualize=detector_config["plot_detections"],
-            detection_sep=detector_config["detection_sep"],
-            max_repeated_detections=detector_config["max_repeated_detections"],
-            detection_ranges=detector_config["expected_detection_ranges"])
-
-        if use_vision_detector:
-            if "vision_detector" in detector_config:
-                # vision detector is already provided
-                self._detector = detector_config["vision_detector"]
-            else:
-                # didn't provide; load our own.
-                model_path = task_config["paths"]["yolov5_model_path"]
-                data_config = task_config["paths"]["yolov5_data_config"]  # the path to the dataset yaml file
-                keep_most_confident = detector_config["keep_most_confident"]
-                conf_thres = detector_config["conf_thres"]
-                detector = YOLODetector(model_path, data_config,
-                                        conf_thres=conf_thres,
-                                        keep_most_confident=keep_most_confident,
-                                        **shared_kwargs)
-                self._detector = detector
+        if "vision_detector" in task_config["detector_config"]:
+            # detector already provided. No need to load.
+            self._detector = task_config["detector_config"]["vision_detector"]
         else:
-            # uses groundtruth detector
-            self._detector = GroundtruthDetector(**shared_kwargs)
+            self._detector = ThorAgent.load_detector(task_config)
 
     def act(self):
         raise NotImplementedError
@@ -175,6 +150,34 @@ class ThorAgent:
     @property
     def detector(self):
         return self._detector
+
+    @staticmethod
+    def load_detector(task_config):
+        detector_config = task_config["detector_config"]
+        use_vision_detector = detector_config.get('use_vision_detector', False)
+
+        shared_kwargs = dict(
+            detectables=task_config["detectables"],
+            bbox_margin=detector_config['bbox_margin'],
+            visualize=detector_config["plot_detections"],
+            detection_sep=detector_config["detection_sep"],
+            max_repeated_detections=detector_config["max_repeated_detections"],
+            detection_ranges=detector_config["expected_detection_ranges"])
+
+        if use_vision_detector:
+            model_path = task_config["paths"]["yolov5_model_path"]
+            data_config = task_config["paths"]["yolov5_data_config"]  # the path to the dataset yaml file
+            keep_most_confident = detector_config["keep_most_confident"]
+            conf_thres = detector_config["conf_thres"]
+            detector = YOLODetector(model_path, data_config,
+                                    conf_thres=conf_thres,
+                                    keep_most_confident=keep_most_confident,
+                                    **shared_kwargs)
+        else:
+            # uses groundtruth detector
+            detector = GroundtruthDetector(**shared_kwargs)
+
+        return detector
 
 
 @dataclass(init=True)
@@ -210,6 +213,7 @@ class TaskArgs:
 
 # Make configs
 def make_config(args):
+    """Make config based on TaskArgs"""
     thor_config = {**constants.CONFIG, **{"scene": args.scene}}
 
     expected_detection_ranges = {}

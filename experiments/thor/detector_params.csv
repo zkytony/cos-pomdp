@@ -1,4 +1,4 @@
-scene,class,TP,FN,TP_rate,FP,FP_off,TN,FP_rate,dist
+scene_type,class,TP,FN,TP_rate,FP,FP_off,TN,FP_rate,dist
 kitchen,Apple,29,20,0.592,40,40,326,0.109,1.783
 kitchen,Bowl,40,26,0.606,40,40,309,0.115,1.750
 kitchen,Bread,72,28,0.720,18,17,297,0.057,1.989
