@@ -220,10 +220,11 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
             # make detector models
             detector_models = read_detector_params()
 
+            group_name = f"{scene_type}-{scene}"
+            groups[group_name] = []
+
             for target in targets:
 
-                group_name = f"{scene_type}-{scene}-{target}"
-                groups[group_name] = []
                 for run_num in range(num_trials):
 
                     shared_args = (run_num, scene_type, scene, target, detector_models)

@@ -141,6 +141,7 @@ class Detector:
         xyxy, conf, cls, thor_locs = detection
         avg_loc = self._avg_loc(thor_locs)
         if cls in self._detection_ranges:
+            print(cls, self._detection_ranges[cls])
             return euclidean_dist(camera_position, avg_loc) <= self._detection_ranges[cls]
         else:
             print("Expected detection range for {} is unknown. Will include the detection".format(cls))

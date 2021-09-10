@@ -49,6 +49,17 @@ cd ..
 else:
     print(f"{output} already exists")
 
+# Create symbolic link to the best model
+for name in os.listdir("models"):
+    if os.path.isdir(f"models/{name}"):
+        exp_name = os.listdir(f"models/{name}")[0]
+
+        src = os.path.abspath(f"models/{name}/{exp_name}/weights/best.pt")
+        dst = os.path.abspath(f"models/{name}/best.pt")
+        if not os.path.exists(dst):
+            os.symlink(src, dst)
+        print(f"Linked models for {name}")
+
 os.makedirs("data/thor", exist_ok=True)
 outfname = "corrs.zip"
 output = f"data/thor/{outfname}"

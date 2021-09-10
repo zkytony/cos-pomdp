@@ -1,3 +1,12 @@
+### model runs but test fails due to
+###
+###     thor_points = pj.thor_project_bbox(
+###   File "/media/kz-wd-ssd/repo/thortils/thortils/vision/projection.py", line 301, in thor_project_bbox
+###     sampled_positions = positions[np.random.choice(len(positions), num_points)]
+###   File "mtrand.pyx", line 909, in numpy.random.mtrand.RandomState.choice
+### ValueError: a must be greater than 0 unless no samples are taken
+
+
 import os
 
 from cospomdp_apps.thor.common import TaskArgs, make_config

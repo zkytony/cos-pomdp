@@ -2,7 +2,6 @@
 # to verify that all code still runs.
 from test_cosagent_basic_search import _test_basic_search
 from test_cosagent_basic_informed_search import _test_basic_informed_search
-from test_cosagent_basic_creation import _test_cosagent_basic_creation
 from test_analyze_search_tree import _test_analyze_cosagent_basic_search_tree
 from test_mjolnir_agent import _test_mjolnir_agent
 from test_optimal_object_search_agent import _test_optimal_search_agent
@@ -13,7 +12,6 @@ def main():
     _test_visualizer(sleep=2)
     _test_optimal_search_agent({"FloorPlan1": ["Vase", "Book"]})
     _test_mjolnir_agent(max_steps=10)
-    _test_cosagent_basic_creation()
     _test_basic_search('Bowl', 'Book',
                        num_sims=50,
                        max_depth=15,
