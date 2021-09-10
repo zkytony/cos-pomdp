@@ -112,7 +112,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
         detectable_objects = {}  # objects we care about are detectable objects
         detectors = {}
         for obj in detectables:
-            if len(obj) == 2:
+            if type(obj) == tuple and len(obj) == 2:
                 object_id, object_class = obj
             else:
                 object_id = object_class = obj
