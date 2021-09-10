@@ -77,3 +77,11 @@ fi
 if [ ! -e "cospomdp_apps/thor/mjolnir" ]; then
     ln -sf $(readlink -f external/mjolnir) cospomdp_apps/thor/mjolnir
 fi
+
+# ask if want to create alias command
+read -p "Create alias `cosp` for starting cos-pomdp venv? " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    echo -e "alias cosp='source $HOME/repo/cos-pomdp/setup.bash'" >> ~/.bashrc
+fi
