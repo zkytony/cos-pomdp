@@ -116,7 +116,7 @@ class PathResult(PklResult):
                              .agg([("avg", "mean"),
                                    "std",
                                    ("ci95", ci_func)])
-        summary_by_target = df.groupby(['target_class', 'baseline'])\
+        summary_by_target = df.groupby(['target', 'baseline'])\
                               .agg([("avg", "mean"),
                                     "std",
                                     ("ci95", ci_func)])
