@@ -79,7 +79,7 @@ if [ ! -e "cospomdp_apps/thor/mjolnir" ]; then
 fi
 
 # ask if want to create alias command
-read -p "Create alias `cosp` for starting cos-pomdp venv? " -n 1 -r
+read -p "Create alias cosp for starting cos-pomdp venv? " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
