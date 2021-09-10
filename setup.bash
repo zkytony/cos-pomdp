@@ -72,3 +72,8 @@ cd $HOME/repo/cos-pomdp/
 if [ $update_submodules = true ]; then
     git submodule update --force --recursive --init --remote
 fi
+
+# create symbolic link to mjolnir directory
+if [ ! -e "cospomdp_apps/thor/mjolnir" ]; then
+    ln -sf $(readlink -f external/mjolnir) cospomdp_apps/thor/mjolnir
+fi
