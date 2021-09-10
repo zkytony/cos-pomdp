@@ -9,6 +9,7 @@ from .agent import (ThorObjectSearchCosAgent,
                     ThorObjectSearchRandomAgent,
                     ThorObjectSearchGreedyNbvAgent)
 from . import constants
+from .replay import ReplaySolver
 
 
 class ThorObjectSearchViz2D(GridMapVisualizer):
@@ -23,6 +24,11 @@ class ThorObjectSearchViz2D(GridMapVisualizer):
             self._grid_map = agent.grid_map
             self._region = self._grid_map
 
+        _draw_topo = hasattr(agent, "topo_map") and self._draw_topo
+
+        if hasattr(agent, "solver") and isinstance(agent.solver, ReplaySolver):
+            _draw_topo = False
+
         objlocs = {}
         for objid in agent.detectable_objects:
             thor_x, _, thor_z = task_env.get_object_loc(objid)
@@ -30,13 +36,14 @@ class ThorObjectSearchViz2D(GridMapVisualizer):
             objlocs[objid] = loc
 
         img = self._make_gridworld_image(self._res)
-        if hasattr(agent, "topo_map") and self._draw_topo:
+        if _draw_topo:
             # Draw topo map
             img = draw_topo(img, agent.topo_map, self._res,
                             draw_grid_path=self._draw_topo_grid_path)
 
         if isinstance(agent, ThorObjectSearchCosAgent):
             return BasicViz2D.render(self, agent, objlocs, draw_fov=step > 0, img=img)
+
         elif isinstance(agent, ThorObjectSearchRandomAgent):
             thor_robot_pos, thor_robot_rot = task_env.get_state().agent_pose
             thor_robot_pose2d = (thor_robot_pos[0], thor_robot_pos[2], thor_robot_rot[1])

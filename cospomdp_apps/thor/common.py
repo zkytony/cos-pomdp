@@ -202,7 +202,7 @@ class TaskArgs:
     keep_most_confident: bool = True  # if multiple bounding boxes for an object, keep only the most confident one
     plot_detections: bool = False
     detection_sep: float = constants.GRID_SIZE
-    max_repeated_detections: int = 3
+    max_repeated_detections: int = 1
     # agent detectors
     agent_detector_specs: Dict = field(default_factory=lambda: {})
     # correlations
@@ -279,9 +279,9 @@ def make_config(args):
     }
     from . import agent as agentlib
     agent_class = eval("agentlib." + config["agent_class"])
-    if not isinstance(agent_class, agentlib.ThorObjectSearchOptimalAgent)\
-       and not isinstance(agent_class, agentlib.ThorObjectSearchExternalAgent)\
-       and not isinstance(agent_class, agentlib.ThorObjectSearchRandomAgent):
+    if not (agent_class == agentlib.ThorObjectSearchOptimalAgent)\
+       and not (agent_class == agentlib.ThorObjectSearchExternalAgent)\
+       and not (agent_class == agentlib.ThorObjectSearchRandomAgent):
         config["agent_config"]["detector_specs"] = args.agent_detector_specs
         config["agent_config"]["corr_specs"] = args.corr_specs
 

@@ -63,15 +63,12 @@ class ConditionalSpatialCorrelation:
             close = self._mean_dist > self._nearby_thres
 
         if close:
-            if dist < 0.5*self._mean_dist:
+            if dist < self._mean_dist:
                 return gaussian[other_loc]
             else:
                 return gaussian[target_loc]
         else:
-            if dist < 0.5*self._mean_dist:
-                return 1e-5
-            else:
-                return gaussian[other_loc] - gaussian[target_loc]
+            return gaussian[other_loc] - gaussian[target_loc]
 
     def __str__(self):
         return "SpCorr({}, {})[min_dist:{:.3f}]".format(self.target[1], self.other[1], self._mean_dist)
