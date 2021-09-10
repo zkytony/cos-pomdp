@@ -282,6 +282,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         # This is used to output low-level actions
         # that achieve goals
         self._goal_handler = None
+        self._loop_counter = 0
 
     def act(self):
         if isinstance(self.solver, ReplaySolver):
@@ -297,9 +298,14 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
         action = self._goal_handler.step()
         if action == None:
+            if self._loop_counter >= 5:
+                self._goal_handler = DoneHandler(goal, self)
+                return self._goal_handler.step()
             # replan
+            self._loop_count += 1
             return self.act()
 
+        self._loop_count = 0
         assert isinstance(action, TOS_Action)
         return action
 
