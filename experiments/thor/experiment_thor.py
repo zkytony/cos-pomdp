@@ -83,13 +83,14 @@ class Methods:
                     raise ValueError("Does not understand correlation type: {}".format(method["corr_type"]))
 
 OBJECT_CLASSES = {
-    "kitchen": {"target": ["SaltShaker", "Mug", "DishSponge"],
-                "corr": ["StoveBurner",
+    "kitchen": {"target": ["Knife",
+                           "Pot",
+                           "PepperShaker"],
+                "corr": ["Lettuce",
                          "Microwave",
-                         # "GarbageCan",
-                         "Lettuce",
+                         "StoveBurner",
                          "Fridge",
-                         "Sink"]},
+                         "Bread"]},
     "living_room": {"target": ["KeyChain", "CreditCard", "Laptop"],
                     "corr": ["FloorLamp", "HousePlant", "Television", "Painting", "Sofa"]},
     "bedroom": {"target": ["CellPhone", "Book", "CD"],

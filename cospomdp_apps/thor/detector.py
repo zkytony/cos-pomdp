@@ -177,11 +177,16 @@ class YOLODetector(Detector):
                 self.config = yaml.load(f, Loader=yaml.Loader)
         else:
             self.config = data_config
-        # check the detectable classes are in config
-        if not all(c in self.config["names"] for c in self.detectable_classes):
-            raise ValueError("Not all detectable objects are handled by the YOLO detector")
 
         self.classes = self.config["names"]
+
+        # check the detectable classes are in config
+        if self.detectable_classes != 'any':
+            if not all(c in self.config["names"] for c in self.detectable_classes):
+                raise ValueError("Not all detectable objects are handled by the YOLO detector")
+        else:
+            self.detectable_classes = self.classes
+
         self.colors = self.config["colors"]
         self.model_path = model_path
         self._conf_thres = conf_thres
