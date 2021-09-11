@@ -303,7 +303,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                 return self._goal_handler.step()
             # replan
             self._loop_count += 1
-            print(self._loop_count)
+            print("Loop", self._loop_count)
             return self.act()
 
         self._loop_count = 0
