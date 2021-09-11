@@ -300,6 +300,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         if action is None:
             if self._loop_counter >= 5:
                 self._goal_handler = DoneHandler(goal, self)
+                self._loop_count = 0
                 return self._goal_handler.step()
             # replan
             self._loop_count += 1
