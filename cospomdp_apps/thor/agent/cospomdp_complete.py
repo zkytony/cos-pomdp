@@ -299,10 +299,11 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         action = self._goal_handler.step()
         if action is None:
             if self._loop_counter >= 5:
-                import pdb; pdb.set_trace()
-                self._goal_handler = DoneHandler(goal, self)
-                self._loop_counter = 0
-                return self._goal_handler.step()
+                # too much replanning - take a random action
+                action_name = random.sample(self.thor_movement_params.keys(), 1)[0]
+                action_params = self.thor_movement_params[action_name]
+                return TOS_Action(action_name, action_params)
+                
             # replan
             self._loop_counter += 1
             print("Loop", self._loop_count)
