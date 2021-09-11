@@ -297,7 +297,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             self._goal_handler = self.handle(goal)
 
         action = self._goal_handler.step()
-        if action == None:
+        if action is None:
             if self._loop_counter >= 5:
                 self._goal_handler = DoneHandler(goal, self)
                 return self._goal_handler.step()
