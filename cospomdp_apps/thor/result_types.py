@@ -139,6 +139,11 @@ class HistoryResult(YamlResult):
     def FILENAME(cls):
         return "history.yaml"
 
+    @classmethod
+    def collect(cls, path):
+        # For efficiency
+        pass
+
     def discounted_return(self):
         discount = 1.0
         ret = 0.0
