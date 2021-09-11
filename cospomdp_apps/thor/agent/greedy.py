@@ -26,12 +26,13 @@ from cospomdp.utils.math import euclidean_dist
 import cospomdp
 
 from ..common import TOS_Action
+from ..replay import ReplaySolver
 from .cospomdp_basic import (ThorObjectSearchCosAgent,
                              GridMapSearchRegion,
                              ThorObjectSearchBasicCosAgent)
 from .cospomdp_complete import _shortest_path
 from .components.action import MoveViewpoint
-from .components.goal_handlers import MacroMoveHandler, DoneHandler
+from .components.goal_handlers import MacroMoveHandler, DoneHandler, DummyGoalHandler
 
 def weighted_particles(particles):
     return pomdp_py.WeightedParticles(
@@ -359,6 +360,8 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                  detector_specs,
                  grid_map,
                  thor_agent_pose,
+                 solver=None,
+                 solver_args=None,
                  **greedy_params):
         """
         thor_prior: dict mapping from thor location to probability; If empty, then the prior will be uniform.
@@ -378,6 +381,7 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                                            **greedy_params)
         self._goal_handler = None
         self._loop_counter = 0
+        self._solver = solver
 
     @property
     def cos_agent(self):
@@ -386,6 +390,15 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
         return self.greedy_agent
 
     def act(self):
+        if isinstance(self._solver, ReplaySolver):
+            a = self._solver.plan(self.cos_agent)
+            if type(a) == tuple:
+                goal, goal_done, action = a
+                self._goal_handler = DummyGoalHandler(goal, goal_done, self)
+            else:
+                action = a
+            return action
+
         goal = self.greedy_agent.act()
         print("Goal: {}".format(goal))
         if isinstance(goal, cospomdp.Done):
@@ -441,3 +454,14 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
         # It actually doesn't matter to the greedy what low-level
         # action is taken by the goal handler.
         return None
+
+    def new_history(self, tos_action, tos_observation):
+        tos_action, obzdict = super().new_history(tos_action, tos_observation)
+        if self._goal_handler is None:
+            goal = None
+        else:
+            goal = self._goal_handler.goal
+        action = dict(base=tos_action,
+                      goal=goal,
+                      goal_done=self._goal_handler.done)
+        return action, obzdict
