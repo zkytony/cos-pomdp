@@ -154,20 +154,22 @@ class ThorObjectSearchCosAgent(ThorAgent):
 
             if other not in corr_dists:
                 corr_object = objects[other]
+                corr_func, corr_func_args = corr_specs[key]
+                corr_type = corr_func_args.get("type", None)
 
                 loaded = False
                 if corr_dists_path is not None:
                     scene = search_region.scene
                     scene_type = tt.ithor_scene_type(scene)
+
                     cdist_path = os.path.join(
-                        corr_dists_path, f"corr-dist_{scene_type}_{target[1]}-{corr_object[1]}_{scene}.pkl")
+                        corr_dists_path, f"corr-dist_{scene_type}_{target[1]}-{corr_object[1]}_{scene}_{corr_type}.pkl")
                     if os.path.exists(cdist_path):
                         print(f"Loading corr dist Pr({corr_object[1]} | {target[1]})")
                         corr_dists[other] = cospomdp.CorrelationDist.load(cdist_path)
                         loaded = True
 
                 if not loaded:
-                    corr_func, corr_func_args = corr_specs[key]
                     if type(corr_func) == str:
                         corr_func = eval(corr_func)
                     corr_dists[other] = cospomdp.CorrelationDist(

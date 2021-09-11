@@ -26,12 +26,12 @@ def build_object_search_trial(scene, target, task_type,
 # # Notes:
 # # Fork in FloorPlan2 doesn't work because it'll be blocked by wall
 TARGETS_EXPOSED = {
-    "FloorPlan1": ["Bowl", "Vase", "Book", "Lettuce"],  # Book pitch wrong (due to height)
-    "FloorPlan2": ["Bowl", "Pan", "Ladle"],      # Ladle pitch wrong (due to height)
-    "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
-    "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
-    "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
-}
+    "FloorPlan22": ["Knife"]}#Bowl", "Vase", "Book", "Lettuce"],  # Book pitch wrong (due to height)
+    # "FloorPlan2": ["Bowl", "Pan", "Ladle"],      # Ladle pitch wrong (due to height)
+    # "FloorPlan3": ["Bread", "SoapBottle", "Spatula"],
+    # "FloorPlan4": ["SaltShaker", "SinkBasin", "Pan"],
+    # "FloorPlan5": ["Knife", "CoffeeMachine", "Faucet"],
+# }
 
 # TARGETS_CONTAINED = {
 #     "FloorPlan1": ["Knife", "Egg", "WineBottle"],  # All works

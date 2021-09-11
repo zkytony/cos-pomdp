@@ -149,7 +149,7 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
     if method["use_corr"]:
         for other in corr_objects:
             spcorr = load_correlation(scene, scene_type, target, other, method["corr_type"])
-            corr_specs[(target, other)] = (spcorr.func, {}) # corr_func, corr_func_args
+            corr_specs[(target, other)] = (spcorr.func, {'type': spcorr.corr_type}) # corr_func, corr_func_args
             detector_specs[other] = detector_models[other]
 
     args = TaskArgs(detectables=set(detector_specs.keys()),
@@ -223,7 +223,8 @@ def load_correlation(scene, scene_type, target, corr_object, corr_type):
     distances = np.asarray(dd["distances"]) / constants.GRID_SIZE
     nearby_thres = constants.NEARBY_THRES / constants.GRID_SIZE
     spcorr = ConditionalSpatialCorrelation(target, corr_object, distances,
-                                           nearby_thres, reverse=reverse)
+                                           nearby_thres, reverse=reverse,
+                                           learned=corr_type=="learned")
     print("{}: Average distance between {} and {} is {:.3f}".format(scene_type, target, corr_object, spcorr._mean_dist))
     return spcorr
 

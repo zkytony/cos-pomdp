@@ -18,7 +18,7 @@ class ConditionalSpatialCorrelation:
     """
 
     def __init__(self, target, other, distances,
-                 nearby_thres, reverse=False):
+                 nearby_thres, reverse=False, learned=False):
         """
         target (ID, class): the target object
         other (ID, class): the other object
@@ -39,6 +39,18 @@ class ConditionalSpatialCorrelation:
         self._nearby_thres = nearby_thres
         self._mean_dist = np.mean(distances)
         self._reverse = reverse
+        self._learned = learned
+
+    @property
+    def corr_type(self):
+        if self._learned:
+            assert self._reverse is False
+            return "learned"
+        else:
+            if self._reverse:
+                return "wrong"
+            else:
+                return "correct"
 
     def should_be_close(self):
         if not self._reverse:
@@ -46,7 +58,7 @@ class ConditionalSpatialCorrelation:
         else:
             return self._mean_dist >= self._nearby_thres
 
-    def func(self, target_loc, other_loc, target_id, other_id):
+    def func(self, target_loc, other_loc, target_id, other_id, **kwargs):
         if target_id != self.target[0]:
             raise ValueError(f"unexpected target id {target_id}")
         if other_id != self.other[0]:
