@@ -40,6 +40,7 @@ def update_target_belief_2d(current_btarget,
         all_target_states = set(current_btarget.get_histogram().keys())
         if belief_type.endswith("approx"):
             bu_samples = min(len(all_target_states), 150)
+
             target_states_subset = set(random.sample(all_target_states,
                                                      bu_args.get("belief_samples", bu_samples)))
             # Include target states at locations in the observation

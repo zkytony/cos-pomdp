@@ -5,6 +5,8 @@ import cospomdp
 from cospomdp_apps import basic
 from cospomdp_apps.thor.common import TOS_Action
 from cospomdp.utils.math import approx_equal
+from cospomdp_apps.basic.belief import initialize_target_[
+belief_2d, update_target_belief_2d
 from .action import (MoveTopo, Stay,
                      from_grid_action_to_thor_action_params,
                      from_thor_delta_to_thor_action_params,
@@ -219,6 +221,8 @@ class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent)
                                                   agent.corr_dists,
                                                   agent.detectors,
                                                   reward_model,
+                                                  initialize_target_belief_2d,
+                                                  update_target_belief_2d,
                                                   prior=prior)
         self.solver = pomdp_py.POUCT(**params,
                                      rollout_policy=self._local_cos_agent.policy_model)

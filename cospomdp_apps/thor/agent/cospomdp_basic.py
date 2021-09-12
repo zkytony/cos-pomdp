@@ -22,6 +22,7 @@ import cospomdp
 from cospomdp.utils.math import indicator, normalize, euclidean_dist
 from cospomdp_apps.basic import PolicyModel2D, RobotTransition2D
 from cospomdp_apps.basic.action import Move2D, ALL_MOVES_2D, Done
+from cospomdp_apps.basic.belief import initialize_target_belief_2d, update_target_belief_2d
 
 from .components.action import (grid_navigation_actions2d,
                                 from_grid_action_to_thor_action_params)
@@ -35,6 +36,15 @@ from .. import paths
 class GridMapSearchRegion(cospomdp.SearchRegion2D):
     def __init__(self, grid_map, scene=None):
         super().__init__(grid_map.obstacles)
+        self.scene = scene
+
+class GridMapSearchRegion3D(cospomdp.SearchRegion3D):
+    def __init__(self, grid_map, height_range, scene=None):
+        """
+        Height range: The range of height the objects could be
+            within the grid map's notion of z coordinates.
+        """
+        super().__init__(grid_map.obstacles, height_range)
         self.scene = scene
 
 
@@ -252,6 +262,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
                  grid_map,
                  thor_agent_pose,
                  thor_prior={},
+                 is3d=True,
                  approx_belief=False):
         """
         controller (ai2thor Controller)
@@ -288,7 +299,8 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         self.cos_agent = cospomdp.CosAgent(self.target, init_robot_state,
                                            self.search_region, robot_trans_model, policy_model,
                                            self.corr_dists, self.detectors, reward_model,
-                                           prior=prior, belief_type=belief_type)
+                                           initialize_target_belief_2d, update_target_belief_2d,
+                                           prior=prior, belief_type=belief_type, is3d=is3d)
         # construct solver
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,

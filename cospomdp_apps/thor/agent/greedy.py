@@ -77,6 +77,7 @@ class GreedyNbvAgent:
                  goal_distance, num_particles=100, prior={},
                  done_check_thres=0.2,
                  num_viewpoint_samples=10,
+                 is3d=False,
                  decision_params={}):
         """
         prior: Maps from object_id to a map from search region location to a float.
@@ -362,6 +363,7 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                  thor_agent_pose,
                  solver=None,
                  solver_args=None,
+                 is3d=True,
                  **greedy_params):
         """
         thor_prior: dict mapping from thor location to probability; If empty, then the prior will be uniform.
@@ -377,7 +379,7 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
         self.greedy_agent = GreedyNbvAgent(self.target, init_robot_state,
                                            self.search_region, self.reachable_positions,
                                            self.corr_dists, self.detectors, self.detectable_objects, h_angles,
-                                           goal_distance=goal_distance,
+                                           goal_distance=goal_distance, is3d=is3d,
                                            **greedy_params)
         self._goal_handler = None
         self._loop_counter = 0

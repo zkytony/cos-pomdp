@@ -8,6 +8,7 @@ from thortils.navigation import find_navigation_plan, get_navigation_actions
 
 from cospomdp.utils.math import euclidean_dist, normalize
 import cospomdp
+from cospomdp_apps.basic.belief import initialize_target_belief_2d, update_target_belief_2d
 
 from ..constants import GOAL_DISTANCE
 from ..common import TOS_Action
@@ -218,6 +219,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                  local_search_type="basic",
                  local_search_params={},
                  approx_belief=False,
+                 is3d=True,
                  seed=1000):
         """
         If the probability
@@ -272,8 +274,11 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                            self.corr_dists,
                                            self.detectors,
                                            reward_model,
+                                           initialize_target_belief_2d,
+                                           update_target_belief_2d,
                                            belief_type=belief_type,
-                                           prior=prior)
+                                           prior=prior,
+                                           is3d=is3d)
         self._local_search_type = local_search_type
         self._local_search_params = local_search_params
         if solver == "pomdp_py.POUCT":
