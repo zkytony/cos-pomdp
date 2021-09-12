@@ -67,8 +67,6 @@ class CosAgent(pomdp_py.Agent):
         super().__init__(init_belief, policy_model,
                          transition_model, observation_model, reward_model)
 
-        self._closest_starget_cache = {}
-
     def sensor(self, objid):
         return self.observation_model.zi_models[objid].detection_model.sensor
 
@@ -130,7 +128,7 @@ class CosAgent(pomdp_py.Agent):
 
             all_target_states = set(current_btarget.get_histogram().keys())
             if self._belief_type.endswith("approx"):
-                bu_samples = min(len(all_target_states), 250)
+                bu_samples = min(len(all_target_states), 150)
                 target_states_subset = set(random.sample(all_target_states,
                                                          self._bu_args.get("belief_samples", bu_samples)))
                 # Include target states at locations in the observation
@@ -151,20 +149,11 @@ class CosAgent(pomdp_py.Agent):
 
             for starget in all_target_states:
                 if starget not in new_btarget_hist:
-                    # We approximate the belief at this location by the nearest neighbor
-                    if starget in self._closest_starget_cache:
-                        nearest_neighbor = self._closest_starget_cache[starget]
-                    else:
-                        nearest_neighbor = min(all_target_states,
-                                               key=lambda s: euclidean_dist(s.loc, starget.loc))
-                        self._closest_starget_cache[starget] = nearest_neighbor
-
-                    if nearest_neighbor in new_btarget_hist:
-                        new_btarget_hist[starget] = new_btarget_hist[nearest_neighbor]
-                    else:
-                        new_btarget_hist[starget] = current_btarget[nearest_neighbor]
-
-            new_btarget = pomdp_py.Histogram(normalize(new_btarget_hist))
+                    nnstarget = min(target_states_subset,
+                                  key=lambda s: euclidean_dist(s.loc, starget.loc))
+                    new_btarget_hist[starget] = new_btarget_hist[nnstarget]
+            new_btarget_hist = normalize(new_btarget_hist)
+            new_btarget = pomdp_py.Histogram(new_btarget_hist)
         return new_btarget
 
 
