@@ -21,6 +21,7 @@ class CosAgent(pomdp_py.Agent):
                  detectors,
                  reward_model,
                  target_belief_initializer,
+                 target_belief_updater,
                  belief_type="histogram",
                  is3d=False,
                  use_heuristic=True,
@@ -60,6 +61,7 @@ class CosAgent(pomdp_py.Agent):
         init_belief = CosJointBelief({robot_id: init_brobot,
                                       target_id: init_btarget})
         self.init_robot_state = init_robot_state
+        self._target_belief_updater = target_belief_updater
 
         transition_model = CosTransitionModel(target_id, robot_trans_model)
         observation_model = build_cos_observation_model(corr_dists, detectors,
@@ -95,7 +97,9 @@ class CosAgent(pomdp_py.Agent):
         rstate_class = self.init_robot_state.__class__
         next_srobot = rstate_class.from_obz(robotobz)
         new_brobot = pomdp_py.Histogram({next_srobot: 1.0})
-        new_btarget = self._update_target_belief(next_srobot, observation)
+        new_btarget = self._target_belief_updater(
+            self.belief.b(self.target_id), next_srobot,
+            observation, self.observation_model, self._belief_type, self._bu_args)
         new_belief = CosJointBelief({self.robot_id: new_brobot,
                                      self.target_id: new_btarget})
         self.set_belief(new_belief)
@@ -103,47 +107,6 @@ class CosAgent(pomdp_py.Agent):
     def _initialize_robot_belief(self, init_robot_state):
         """The robot state is known"""
         return pomdp_py.Histogram({init_robot_state: 1.0})
-
-    def _update_target_belief(self, next_srobot, observation):
-        """
-        current_btarget: current target belief
-        srobot: robot state corresponding to the observation.
-        """
-        current_btarget = self.belief.b(self.target_id)
-        Starget_class = current_btarget.random().__class__
-
-        if self._belief_type.startswith("histogram"):
-            assert isinstance(current_btarget, pomdp_py.Histogram)
-
-            all_target_states = set(current_btarget.get_histogram().keys())
-            if self._belief_type.endswith("approx"):
-                bu_samples = min(len(all_target_states), 150)
-                target_states_subset = set(random.sample(all_target_states,
-                                                         self._bu_args.get("belief_samples", bu_samples)))
-                # Include target states at locations in the observation
-                for zi in observation:
-                    if zi.loc is not None:
-                        target_states_subset.add(Starget_class(
-                            self.target_id, self.target_class, zi.loc))
-            else:
-                target_states_subset = all_target_states
-
-            new_btarget_hist = {}
-            for starget in tqdm(all_target_states, desc=f"Belief Update ({self._belief_type})"):
-                if starget in target_states_subset:
-                    state = CosState({self.target_id: starget,
-                                      next_srobot.id: next_srobot})
-                    pr_z = self.observation_model.probability(observation, state)
-                    new_btarget_hist[starget] = pr_z * current_btarget[starget]
-
-            for starget in all_target_states:
-                if starget not in new_btarget_hist:
-                    nnstarget = min(target_states_subset,
-                                  key=lambda s: euclidean_dist(s.loc, starget.loc))
-                    new_btarget_hist[starget] = new_btarget_hist[nnstarget]
-            new_btarget_hist = normalize(new_btarget_hist)
-            new_btarget = pomdp_py.Histogram(new_btarget_hist)
-        return new_btarget
 
 
 def build_cos_observation_model(corr_dists, detectors, robot_id, target_id):
