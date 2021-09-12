@@ -251,7 +251,8 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
                  solver_args,
                  grid_map,
                  thor_agent_pose,
-                 thor_prior={}):
+                 thor_prior={},
+                 approx_belief=False):
         """
         controller (ai2thor Controller)
         task_config (dict) configuration; see make_config
@@ -283,10 +284,11 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
                                      movements=self.navigation_actions)
         prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
                  for p in thor_prior}
+        belief_type = "histogram" if not approx_belief else "histogram-approx"
         self.cos_agent = cospomdp.CosAgent(self.target, init_robot_state,
                                            self.search_region, robot_trans_model, policy_model,
                                            self.corr_dists, self.detectors, reward_model,
-                                           prior=prior)
+                                           prior=prior, belief_type=belief_type)
         # construct solver
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,

@@ -13,6 +13,9 @@ class BasicViz2D(Visualizer2D):
         shift = int(round(self._res / 2))
         for x in range(self._region.width):
             for y in range(self._region.length):
+                if hasattr(self._region, "unknown") and (x, y) in self._region.unknown:
+                    continue  # occluded (don't draw; the model doesn't care about this though but it is ok for now)
+
                 if sensor.in_range((x,y), robot_pose, use_mean=False):
                     img = cv2shape(img, cv2.circle,
                                    (y*self._res+shift, x*self._res+shift),

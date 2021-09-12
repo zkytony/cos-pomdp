@@ -205,7 +205,8 @@ class TaskArgs:
     agent_detector_specs: Dict = field(default_factory=lambda: {})
     # correlations
     corr_specs: Dict = field(default_factory=lambda: {})
-
+    # Belief update
+    approx_belief: bool = True
 
 # Make configs
 def make_config(args):
@@ -282,6 +283,8 @@ def make_config(args):
        and not (agent_class == agentlib.ThorObjectSearchRandomAgent):
         config["agent_config"]["detector_specs"] = args.agent_detector_specs
         config["agent_config"]["corr_specs"] = args.corr_specs
+    if not (agent_class == agentlib.ThorObjectSearchGreedyNbvAgent):
+        config["agent_config"]["approx_belief"] = args.approx_belief
 
     # You are expected to modify config['agent_config']
     # afterwards to tailor to your agent.

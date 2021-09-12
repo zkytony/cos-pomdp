@@ -217,6 +217,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                  topo_cover_thresh=0.5,
                  local_search_type="basic",
                  local_search_params={},
+                 approx_belief=False,
                  seed=1000):
         """
         If the probability
@@ -262,6 +263,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
         prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
                  for p in thor_prior}
+        belief_type = "histogram" if not approx_belief else "histogram-approx"
         self.cos_agent = cospomdp.CosAgent(self.target,
                                            init_robot_state,
                                            self.search_region,
@@ -270,6 +272,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                            self.corr_dists,
                                            self.detectors,
                                            reward_model,
+                                           belief_type=belief_type,
                                            prior=prior)
         self._local_search_type = local_search_type
         self._local_search_params = local_search_params
@@ -303,7 +306,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                 action_name = random.sample(self.thor_movement_params.keys(), 1)[0]
                 action_params = self.thor_movement_params[action_name]
                 return TOS_Action(action_name, action_params)
-                
+
             # replan
             self._loop_counter += 1
             print("Loop", self._loop_count)
