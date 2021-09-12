@@ -132,9 +132,11 @@ class TOS(ThorEnv):
                         + [p[0] for p in poses]
 
         actual_path = self.get_current_path()
+        rewards = self.get_reward_sequence()
         last_reward = self._history[-1]['reward']
         success = last_reward == constants.TOS_REWARD_HI
-        return [PathResult(self.scene, self.target, shortest_path, actual_path, success),
+        return [PathResult(self.scene, self.target, shortest_path, actual_path, success,
+                           rewards, self.task_config["discount_factor"]),
                 HistoryResult(self._history, self.task_config["discount_factor"])]
 
     def get_current_path(self):
@@ -147,6 +149,12 @@ class TOS(ThorEnv):
             agent_position = dict(x=x, y=y, z=z)
             path.append(agent_position)
         return path
+
+    def get_reward_sequence(self):
+        rewards = []
+        for tup in self._history:
+            rewards.append(tup['reward'])
+        return rewards
 
     def get_observation(self, event, action, detector, record_detections=True):
         """

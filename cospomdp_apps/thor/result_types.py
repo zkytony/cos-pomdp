@@ -5,6 +5,7 @@ import ai2thor.util.metrics as metrics
 import pandas as pd
 import seaborn as sns
 import pickle
+import numpy as np
 import os
 
 # Note: For PklResult, it is not recommended to save the object directly
@@ -17,7 +18,8 @@ class PathResult(PklResult):
     where each is a sequence robot poses tuples.
     Includes success.
     """
-    def __init__(self, scene, target, shortest_path, actual_path, success):
+    def __init__(self, scene, target, shortest_path, actual_path, success,
+                 rewards=[], discount_factor=None):
         """
         Args:
             scene (str): Scene of the seach trial (floor plan)
@@ -33,6 +35,8 @@ class PathResult(PklResult):
         self.actual_path_distance = metrics.path_distance(actual_path)
         self.scene = scene
         self.target = target
+        self.rewards = rewards
+        self.discount_factor = discount_factor
         super().__init__({
             "scene": self.scene,
             "target": self.target,
@@ -40,7 +44,9 @@ class PathResult(PklResult):
             "shortest_path_distance": self.shortest_path_distance,
             "actual_path": self.actual_path,
             "actual_path_distance": self.actual_path_distance,
-            "success": self.success
+            "success": self.success,
+            "rewards": self.rewards,
+            "discount_factor": self.discount_factor
         })
 
     @classmethod
@@ -50,7 +56,20 @@ class PathResult(PklResult):
                           dd['target'],
                           dd['shortest_path'],
                           dd['actual_path'],
-                          dd['success'])
+                          dd['success'],
+                          rewards=dd.get('rewards', []),
+                          discount_factor=dd.get('discount_factor', None))
+
+    def discounted_return(self):
+        if self.discount_factor is None:
+            return None
+
+        discount = 1.0
+        ret = 0.0
+        for r in self.rewards:
+            ret += r*discount
+            discount *= self.discount_factor
+        return ret
 
     @classmethod
     def FILENAME(cls):
@@ -76,19 +95,23 @@ class PathResult(PklResult):
         Returns a more understandable interpretation of these results"""
         rows = []
         for baseline in results:
-            episode_results = []
+            episode_results = []  # results for 'episodes' (i.e. individual search trials)
+            disc_returns = []   # discounted returns per trial (because each seed is a search trial for the same object)
             success_count = 0
             for seed in results[baseline]:
                 path_result = results[baseline][seed]
                 if type(path_result) == dict:
                     path_result = PathResult.from_dict(path_result)
                 episode_results.append(path_result.to_tuple())
+                disc_return = path_result.discounted_return()
+                disc_returns.append(disc_return)
                 if path_result.success:
                     success_count += 1
+
             if len(episode_results) != 0:
                 spl = compute_spl(episode_results)
-                rows.append([baseline, spl, success_count, len(results[baseline])])
-        cls.sharedheader = ["baseline", "spl", "success", "total"]
+                rows.append([baseline, spl, success_count, len(results[baseline]), np.mean(disc_returns)])
+        cls.sharedheader = ["baseline", "spl", "success", "total", "disc_return"]
         return rows
 
     @classmethod
