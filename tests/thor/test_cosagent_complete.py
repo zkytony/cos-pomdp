@@ -59,7 +59,7 @@ def _test_complete_search(target,
 
     if target_false_pos is not None:
         quality = (target_accuracy, target_false_pos, 0.5)
-        target_detector = ("fan-simplefp", dict(fov=90, min_range=1, max_range=target_range), quality)
+        target_detector = ("fan-far", dict(fov=90, min_range=1, mean_range=target_range), quality)
     else:
         target_detector = ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))
 

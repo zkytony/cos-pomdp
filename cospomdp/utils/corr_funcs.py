@@ -23,10 +23,7 @@ class ConditionalSpatialCorrelation:
         target (ID, class): the target object
         other (ID, class): the other object
         nearby_thres (float): If target and other have
-            an average distance less than this threshold,
-            then the correlation distance will be a half
-            gaussian, highest at target_loc; Otherwise,
-            it will be the complement of that gaussian.
+            an average distance less than this threshold.
         """
         if type(target) == str:
             target = (target, target)  # just to be consistent with other code
@@ -64,10 +61,6 @@ class ConditionalSpatialCorrelation:
         if other_id != self.other[0]:
             raise ValueError(f"unexpected other id {other_id}")
 
-        gaussian = pomdp_py.Gaussian([*other_loc],
-                                     [[self._mean_dist**2, 0],
-                                      [0, self._mean_dist**2]])
-
         dist = euclidean_dist(target_loc, other_loc)
         if not self._reverse:
             close = self._mean_dist < self._nearby_thres
@@ -76,11 +69,14 @@ class ConditionalSpatialCorrelation:
 
         if close:
             if dist < self._mean_dist:
-                return gaussian[other_loc]
+                return True
             else:
-                return gaussian[target_loc]
+                return False
         else:
-            return gaussian[other_loc] - gaussian[target_loc]
+            if dist < self._mean_dist:
+                return False
+            else:
+                return True
 
     def __str__(self):
         return "SpCorr({}, {})[min_dist:{:.3f}]".format(self.target[1], self.other[1], self._mean_dist)
