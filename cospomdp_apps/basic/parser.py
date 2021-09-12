@@ -12,6 +12,7 @@ from cospomdp.models.reward_model import ObjectSearchRewardModel, NavRewardModel
 from cospomdp.utils.math import euclidean_dist
 from .transition_model import RobotTransition2D
 from .policy_model import PolicyModel2D
+from .belief import initialize_target_belief_2d
 
 from cospomdp.utils.corr_funcs import *
 
@@ -132,7 +133,8 @@ def create_instance(worldstr):
                      policy_model,
                      corr_dists,
                      detectors,
-                     reward_model)
+                     reward_model,
+                     initialize_target_belief_2d)
     if "colors" in spec:
         return agent, spec['objectlocs'], spec["colors"]
     else:

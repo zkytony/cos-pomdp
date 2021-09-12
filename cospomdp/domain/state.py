@@ -25,6 +25,14 @@ class ObjectState(pomdp_py.ObjectState):
         return self.id < other.id\
             and self.loc < other.loc
 
+class ObjectState3D(pomdp_py.ObjectState):
+    def __init__(self, objid, objclass, loc, height):
+        super().__init__(objclass, {"loc": loc, "height": height})
+
+    @property
+    def height(self):
+        return self['height']
+
 @dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
 class RobotStatus:
     # One feature of dataclass frozen is the fields cannot be reassigned

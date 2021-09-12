@@ -1,6 +1,6 @@
 import pomdp_py
 import random
-from ..domain.state import ObjectState, RobotState, CosState
+from ..domain.state import ObjectState, ObjectState3D, RobotState, CosState
 from ..utils.math import normalize, euclidean_dist
 from .belief import CosJointBelief
 from .transition_model import CosTransitionModel
@@ -20,7 +20,9 @@ class CosAgent(pomdp_py.Agent):
                  corr_dists,
                  detectors,
                  reward_model,
+                 target_belief_initializer,
                  belief_type="histogram",
+                 is3d=False,
                  use_heuristic=True,
                  bu_args={},
                  prior={}):
@@ -43,6 +45,8 @@ class CosAgent(pomdp_py.Agent):
             bu_args (dict): Arguments for belief update; useful for approximate update.
             prior: Maps from search region location to a float.
             rollout_policy_model (RolloutPolicy)
+            is3d (bool): True if the robot should maintain belief about object's height
+                If True, expect search_region to contain information regarding the height range.
         """
         self.search_region = search_region
         robot_id = init_robot_state.id
@@ -50,8 +54,8 @@ class CosAgent(pomdp_py.Agent):
         self._target = target
         self._belief_type = belief_type
         self._bu_args = bu_args
-        init_btarget = self._initialize_target_belief(target, search_region,
-                                                      belief_type, prior)
+        init_btarget = target_belief_initializer(target, search_region,
+                                                 belief_type, prior)
         init_brobot = self._initialize_robot_belief(init_robot_state)
         init_belief = CosJointBelief({robot_id: init_brobot,
                                       target_id: init_btarget})
@@ -99,21 +103,6 @@ class CosAgent(pomdp_py.Agent):
     def _initialize_robot_belief(self, init_robot_state):
         """The robot state is known"""
         return pomdp_py.Histogram({init_robot_state: 1.0})
-
-    def _initialize_target_belief(self, target, search_region, belief_type, prior):
-        def _prob(prior, loc):
-            return prior.get(loc, 1.0)
-
-        target_id, target_class = target
-        if belief_type.startswith("histogram"):
-            hist = normalize({
-                ObjectState(target_id, target_class, loc): _prob(prior, loc)
-                for loc in search_region.locations
-            })
-            return pomdp_py.Histogram(hist)
-
-        else:
-            raise NotImplementedError("belief_type {} is not yet implemented".format(belief_type))
 
     def _update_target_belief(self, next_srobot, observation):
         """
