@@ -5,13 +5,18 @@ import cospomdp
 from cospomdp_apps import basic
 from cospomdp_apps.thor.common import TOS_Action
 from cospomdp.utils.math import approx_equal
-from cospomdp_apps.basic.belief import initialize_target_[
-belief_2d, update_target_belief_2d
+from cospomdp_apps.basic.belief import initialize_target_belief_2d, update_target_belief_2d
 from .action import (MoveTopo, Stay,
                      from_grid_action_to_thor_action_params,
                      from_thor_delta_to_thor_action_params,
-                     grid_navigation_actions2d)
-from ..cospomdp_basic import ThorObjectSearchBasicCosAgent
+                     grid_navigation_actions2d,
+                     grid_camera_look_actions,
+                     grid_height_range)
+from .transition_model import RobotTransition3D
+from .policy_model import PolicyModel3D
+from ..cospomdp_basic import (ThorObjectSearchBasicCosAgent,
+                              GridMapSearchRegion3D)
+
 
 
 # -------- Goal Handlers -------- #
@@ -176,6 +181,8 @@ class LocalSearchHandler(GoalHandler):
         assert isinstance(goal, Stay)
         if search_type == "basic":
             return LocalSearchBasicHandler(goal, agent, params)
+        elif search_type == "3d":
+            return LocalSearch3DHandler(goal, agent, params)
         else:
             raise NotImplemented("Search type {} is not yet implemented".format(search_type))
 
@@ -224,7 +231,8 @@ class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent)
                                                   initialize_target_belief_2d,
                                                   update_target_belief_2d,
                                                   prior=prior)
-        self.solver = pomdp_py.POUCT(**params,
+        pouct_params = params.get("pouct", params)  # backwards compatibility
+        self.solver = pomdp_py.POUCT(**pouct_params,
                                      rollout_policy=self._local_cos_agent.policy_model)
         self._done = False
 
@@ -277,6 +285,62 @@ class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent)
     @property
     def done(self):
         return self._done
+
+
+class LocalSearch3DHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent):
+    """
+    Every time the local searcher is created, it inherits the
+    belief from the COS-POMDP about the object's 2D location. Then, it initializes
+    its own belief about the target's height. This belief is only useful locally.
+    """
+    def __init__(self, goal, agent, params):
+        """
+        Args:
+            agent (ThorObjectSearchCompleteCosAgent)
+        """
+        LocalSearchHandler.__init__(self, goal, agent)
+        self._parent = agent
+        local_robot_state = agent.robot_state()
+
+        self.robot_id = agent.robot_id
+        self.target_id = agent.robot_id
+
+        height_range = grid_height_range(agent.height_range, agent.grid_map.grid_size)
+        self.search_region = GridMapSearchRegion3D(agent.grid_map,
+                                                   height_range,
+                                                   scene=agent.search_region.scene)
+        reachable_positions = agent.reachable_positions
+
+        movement_params = agent.task_config["nav_config"]["movement_params"]
+        self.navigation_actions = grid_navigation_actions2d(movement_params,
+                                                            agent.grid_map.grid_size)
+        self.camera_look_actions = grid_camera_look_actions(movement_params)
+        v_angles = self.task_config['nav_config']['v_angles']
+        robot_trans_model = RobotTransition3D(self.robot_id, reachable_positions, v_angles)
+        reward_model = agent.cos_agent.reward_model
+        policy_mdoel = PolicyModel3D(robot_trans_model, reward_model,
+                                     movements=self.navigation_actions,
+                                     camera_looks=self.camera_look_actions)
+        detectors = convert_to_3d_detectors(agent.detectors)
+
+        # Need to do this in 3d
+        _btarget = agent.belief.b(self.target_id)
+        prior = {s.loc : _btarget[s] for s in _btarget} # TODO FIX
+        self._local_cos_agent = cospomdp.CosAgent(agent.target,
+                                                  local_robot_state,
+                                                  self.search_region,
+                                                  robot_trans_model,
+                                                  policy_model,
+                                                  agent.corr_dists,
+                                                  agent.detectors,
+                                                  reward_model,
+                                                  initialize_target_belief_3d,
+                                                  update_target_belief_3d,
+                                                  prior=prior)
+        pouct_params = params.get("pouct", params)  # backwards compatibility
+        self.solver = pomdp_py.POUCT(**pouct_params,
+                                     rollout_policy=self._local_cos_agent.policy_model)
+        self._done = False
 
 
 class DummyGoalHandler(GoalHandler):

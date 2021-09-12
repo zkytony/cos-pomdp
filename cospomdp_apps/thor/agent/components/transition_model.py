@@ -1,10 +1,11 @@
 import math
-from cospomdp.utils.math import to_deg, closest
+from cospomdp.utils.math import to_deg, closest, to_rad, fround
 from cospomdp.models.transition_model import RobotTransition
 from cospomdp.models.sensors import yaw_facing
 from cospomdp.domain.action import Done
 from cospomdp.domain.state import RobotStatus
-from .action import MoveTopo
+from .state import RobotState3D
+from .action import MoveTopo, Move
 from .state import RobotStateTopo
 
 class RobotTransitionTopo(RobotTransition):
@@ -47,3 +48,62 @@ class RobotTransitionTopo(RobotTransition):
 
     def update(self, topo_map):
         self._topo_map = topo_map
+
+
+def robot_pose_transition3d(robot_pose, action):
+    """
+    Uses the transform_pose function to compute the next pose,
+    given a robot pose and an action.
+
+    Note: robot_pose is a 2D POMDP (gridmap) pose.
+
+    Args:
+        robot_pose (x, y, th)
+        action (Move2D)
+    """
+    rx, ry, pitch, yaw = robot_pose
+    forward, h_angle, v_angle = action.delta
+    new_yaw = (yaw + h_angle) % 360
+    nx = rx + forward*math.cos(to_rad(new_yaw))
+    ny = ry + forward*math.sin(to_rad(new_yaw))
+    new_pitch = (pitch + v_angle) % 360
+    return (nx, ny, new_pitch, new_yaw)
+
+def _to_full_pose(srobot):
+    x, y, yaw = srobot["pose"]
+    pitch = srobot["horizon"]
+    return (x, y, pitch, yaw)
+
+def _to_state_pose(full_pose):
+    x, y, pitch, yaw = full_pose
+    return (x, y, yaw), pitch
+
+
+class RobotTransition3D(RobotTransition):
+    def __init__(self, robot_id, reachable_positions, v_angles, round_to="int"):
+        super().__init__(robot_id)
+        self.reachable_positions = reachable_positions
+        self._round_to = round_to
+        self._v_angles = v_angles
+
+    def sample(self, state, action):
+        """Returns next_robot_state"""
+        return self.argmax(state, action)
+
+    def argmax(self, state, action):
+        srobot = state.s(self.robot_id)
+        current_robot_pose = _to_full_pose(srobot["pose"])
+        next_robot_pose = current_robot_pose
+        next_robot_status = srobot.status.copy()
+        if isinstance(action, Move):
+            np = robot_pose_transition3d(current_robot_pose, action)
+            next_robot_pose = fround(self._round_to, np)
+        elif isinstance(action, Done):
+            next_robot_status = RobotStatus(done=True)
+
+        next_pose2d, pitch = _to_state_pose(current_robot_pose)
+        if pitch not in self._v_angles\
+           or next_pose2d[:2] not in self.reachable_positions:
+            return RobotState3D(self.robot_id, srobot["pose"], srobot["horizon"], next_robot_status)
+        else:
+            return RobotState3D(self.robot_id, next_pose2d, pitch, next_robot_status)

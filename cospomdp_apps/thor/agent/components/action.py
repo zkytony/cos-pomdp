@@ -24,6 +24,15 @@ class Move(Motion):
     def __repr__(self):
         return str(self)
 
+    @property
+    def dyaw(self):
+        return self.delta[1]
+
+    @property
+    def dpitch(self):
+        return self.delta[2]
+
+
 class Goal:
     def do(self):
         pass
@@ -66,6 +75,34 @@ def grid_navigation_actions2d(movement_params, grid_size):
             actions2d.append(Move2D(a.name, a.delta[:2]))
     return actions2d
 
+def grid_camera_look_actions(movement_params):
+    """In ai2thor, "Since the agent looks up and down in 30 degree
+    increments, it most common for the horizon to be in { -30, 0, 30,
+    60 }.
+
+    Negative camera horizon values correspond to agent looking up, whereas
+    positive horizon values correspond to the agent looking down.
+    """
+    actions = []
+    for action_name in movement_params:
+        if action_name in {"LookUp", "LookDown"}:
+            degrees = movement_params[action_name]["degrees"]
+            delta = (0, 0, (-degrees % 360))
+            actions.append(Move(action_name, delta))
+    return actions
+
+def grid_h_angles(thor_h_angles):
+    """accepted h angles; should be identical with thor, in fact.
+    See thortils.GridMap fro details."""
+    return [(90 - thor_yaw) % 360
+            for thor_yaw in thor_h_angles]
+
+def grid_height_range(thor_height_range, grid_size):
+    """thor_height_range (min_height, max_height);
+    Returns this range in grid coordinates; Note that
+    height range is continuous."""
+    return (thor_height_range[0] / grid_size,
+            thor_height_range[1] / grid_size)
 
 def grid_navigation_actions(movement_params, grid_size):
     """

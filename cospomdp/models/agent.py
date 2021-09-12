@@ -23,7 +23,6 @@ class CosAgent(pomdp_py.Agent):
                  target_belief_initializer,
                  target_belief_updater,
                  belief_type="histogram",
-                 is3d=False,
                  use_heuristic=True,
                  bu_args={},
                  prior={}):
@@ -46,8 +45,6 @@ class CosAgent(pomdp_py.Agent):
             bu_args (dict): Arguments for belief update; useful for approximate update.
             prior: Maps from search region location to a float.
             rollout_policy_model (RolloutPolicy)
-            is3d (bool): True if the robot should maintain belief about object's height
-                If True, expect search_region to contain information regarding the height range.
         """
         self.search_region = search_region
         robot_id = init_robot_state.id

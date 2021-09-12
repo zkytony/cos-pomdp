@@ -43,6 +43,20 @@ class GridMapSearchRegion3D(cospomdp.SearchRegion3D):
         """
         Height range: The range of height the objects could be
             within the grid map's notion of z coordinates.
+
+        Precisely, here is the difference:
+
+            In GridMap, +x is right, +y is up. angle on the xy-plane rotates from +x to +y
+                +z is, by right and rule, therefore up.
+                angles on the yz-plane rotates from +y to +z
+                angles on the xz-plane rotates from +x to +z
+
+            In ai2thor, +x is right, +z is up. angle on the xz-plane rotates from +z to +x
+                +y is, by left hand rule, up.  (Unity uses left-hand rule);
+                angles on the zy-plane rotates from +y to +z,
+                angles on the zx-plane rotates from +y to +x (left-hand-rule)
+
+
         """
         super().__init__(grid_map.obstacles, height_range)
         self.scene = scene
@@ -262,7 +276,6 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
                  grid_map,
                  thor_agent_pose,
                  thor_prior={},
-                 is3d=True,
                  approx_belief=False):
         """
         controller (ai2thor Controller)
@@ -300,7 +313,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
                                            self.search_region, robot_trans_model, policy_model,
                                            self.corr_dists, self.detectors, reward_model,
                                            initialize_target_belief_2d, update_target_belief_2d,
-                                           prior=prior, belief_type=belief_type, is3d=is3d)
+                                           prior=prior, belief_type=belief_type)
         # construct solver
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,

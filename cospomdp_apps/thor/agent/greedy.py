@@ -31,7 +31,7 @@ from .cospomdp_basic import (ThorObjectSearchCosAgent,
                              GridMapSearchRegion,
                              ThorObjectSearchBasicCosAgent)
 from .cospomdp_complete import _shortest_path
-from .components.action import MoveViewpoint
+from .components.action import MoveViewpoint, grid_h_angles
 from .components.goal_handlers import MacroMoveHandler, DoneHandler, DummyGoalHandler
 
 def weighted_particles(particles):
@@ -374,7 +374,7 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                          grid_map,
                          thor_agent_pose)
         init_robot_state = cospomdp.RobotState2D(self.robot_id, self._init_robot_pose)
-        h_angles = self.task_config['nav_config']['h_angles']
+        h_angles = grid_h_angles(self.task_config['nav_config']['h_angles'])
         goal_distance = (task_config["nav_config"]["goal_distance"] / grid_map.grid_size) * 0.8
         self.greedy_agent = GreedyNbvAgent(self.target, init_robot_state,
                                            self.search_region, self.reachable_positions,

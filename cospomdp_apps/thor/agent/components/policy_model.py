@@ -1,7 +1,9 @@
 import random
 from pomdp_py import RolloutPolicy, ActionPrior
 from cospomdp.domain.action import Done
+from cospomdp.models.sensors import pitch_facing
 from cospomdp.utils.math import euclidean_dist
+from cospomdp_apps.basic.policy_model import PolicyModel2D
 import cospomdp
 from .action import MoveTopo, Stay
 
@@ -102,4 +104,74 @@ class PolicyModelTopo(cospomdp.PolicyModel):
                         if zi.loc is not None:
                             preferences.add((move, self.num_visits_init, self.val_init))
                             break
+            return preferences
+
+class PolicyModel3D(cospomdp.PolicyModel):
+    def __init__(self, robot_trans_model, reward_model, movements, camera_looks, **kwargs):
+        super().__init__(robot_trans_model, **kwargs)
+        self._legal_moves = {}
+        self.movements = movements
+        self.camera_looks = camera_looks
+        self.reward_model = reward_model
+
+    def set_observation_model(self, observation_model,
+                              use_heuristic=True):
+        super().set_observation_model(observation_model)
+        if use_heuristic:
+            self.action_prior = PolicyModel3D.ActionPrior(self.num_visits_init,
+                                                          self.val_init, self)
+
+    @property
+    def primitive_actions(self):
+        return self.movements | self.camera_looks
+
+    def get_all_actions(self, state, history=None):
+        return self.valid_moves(state) | {Done()}# + [Search(), Done()]
+
+    def valid_moves(self, state):
+        srobot = state.s(self.robot_id)
+        if srobot in self._legal_moves:
+            return self._legal_moves[srobot]
+        else:
+            robot_pose = srobot.pose3d
+            valid_moves = set(a for a in self.primitive_actions
+                if self.robot_trans_model.sample(state, a).pose3d != robot_pose)
+            self._legal_moves[srobot] = valid_moves
+            return valid_moves
+
+    class ActionPrior(ActionPrior):
+        """Reuse some of the ActionPrior in 2D"""
+        def __init__(self, num_visits_init, val_init, policy_model):
+            self.num_visits_init = num_visits_init
+            self.val_init = val_init
+            self.policy_model = policy_model
+            self._action_prior2d = PolicyModel2D.ActionPrior(num_visits_init, val_init, policy_model)
+
+        def get_preferred_actions(self, state, history):
+            last_action = history[-1][0] if len(history) > 0 else None
+            if isinstance(last_action, Done):
+                return {(Done(), 0, 0)}
+
+            robot_id = self.policy_model.robot_id
+            target_id = self.policy_model.observation_model.target_id
+            srobot = state.s(robot_id)
+            starget = state.s(target_id)
+
+            state2d = cospomdp.CosState({robot_id: srobot.to_2d(),
+                                         target_id: starget.to_2d()})
+            preferences = self._action_prior2d.get_preferred_actions(state2d, history)
+
+            # Figure out if we would like to prefer lookup/down
+            desired_pitch = pitch_facing(srobot.loc3d, starget.loc3d)
+            current_pitch_diff = abs(desired_pitch - srobot.pitch) % 360
+
+            for look in self.camera_looks:
+                # We prefer look if:
+                # it brings the robot to be facing the target in terms of pitch rotation.
+                next_srobot = self.policy_model.robot_trans_model.sample(state, look)
+                next_pitch = next_srobot.pitch
+                next_pitch_diff = abs(desired_pitch - next_pitch) % 360
+                if next_pitch_diff < current_pitch_diff:
+                    preferences.add((look, self.num_visits_init, self.val_init))
+                    break
             return preferences

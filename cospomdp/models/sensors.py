@@ -18,6 +18,30 @@ def yaw_facing(robot_pos, target_pos, angles=None):
     else:
         return yaw
 
+def pitch_facing(robot_pos3d, target_pos3d, angles=None):
+    """
+    Returns a pitch angle rotation such that
+    if the robot is at `robot_position` and target is at
+    `target_position`, the robot is facing the target.
+
+    Args:
+       robot_pos3d (tuple): x, y, z position
+       target_pos3d (tuple): x, y, z position
+       angles (list): Valid pitch angles (possible values for pitch
+           in ai2thor agent rotation). Note that negative
+           negative is up, positive is down
+    Returns:
+        .pitch angle between 0 - 360 degrees
+    """
+    _, ry, rz = robot_pos3d
+    _, ty, tz = target_pos3d
+    pitch = to_deg(math.atan2(tz - rz,
+                              ty - ry)) % 360
+    if angles is not None:
+        return closest(angles, pitch)
+    else:
+        return pitch
+
 class SensorModel:
     def in_range(self, point, sensor_pose):
         raise NotImplementedError

@@ -27,9 +27,13 @@ class TOS_Observation:
     img: np.ndarray
     img_depth: np.ndarray
     detections: list    # list of (xyxy, conf, cls, loc3d)
-    robot_pose: tuple
+    camera_pose: tuple
     horizon: float
     done: bool = False
+
+    @property
+    def robot_pose(self):
+        return self.camera_pose
 
     def __str__(self):
         return ",".join(list(sorted([d[2] for d in self.detections])))

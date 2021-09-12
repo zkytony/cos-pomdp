@@ -30,8 +30,28 @@ class ObjectState3D(pomdp_py.ObjectState):
         super().__init__(objclass, {"loc": loc, "height": height})
 
     @property
+    def loc(self):
+        return self['loc']
+
+    @property
+    def loc3d(self):
+        return (*self.loc, self.height)
+
+    @property
     def height(self):
         return self['height']
+
+    @property
+    def id(self):
+        return self['id']
+
+    @property
+    def height(self):
+        return self['height']
+
+    def to_2d(self):
+        return ObjectState(self.id, self.objclass, self.loc)
+
 
 @dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
 class RobotStatus:

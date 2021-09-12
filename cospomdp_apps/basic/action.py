@@ -28,6 +28,10 @@ class Move2D(Motion):
     def __repr__(self):
         return str(self)
 
+    @property
+    def dyaw(self):
+        return self.delta[1]
+
 MoveAhead = Move2D("MoveAhead", Move2D.FORWARD)
 RotateLeft = Move2D("RotateLeft", Move2D.LEFT)
 RotateRight = Move2D("RotateRight", Move2D.RIGHT)

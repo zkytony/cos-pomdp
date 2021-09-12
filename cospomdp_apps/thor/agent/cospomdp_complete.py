@@ -14,7 +14,7 @@ from ..constants import GOAL_DISTANCE
 from ..common import TOS_Action
 from ..replay import ReplaySolver
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
-from .components.action import Move, MoveTopo, Stay
+from .components.action import Move, MoveTopo, Stay, grid_h_angles
 from .components.state import RobotStateTopo
 from .components.topo_map import TopoNode, TopoMap, TopoEdge
 from .components.transition_model import RobotTransitionTopo
@@ -218,8 +218,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                  topo_cover_thresh=0.5,
                  local_search_type="basic",
                  local_search_params={},
+                 height_range=None,
                  approx_belief=False,
-                 is3d=True,
                  seed=1000):
         """
         If the probability
@@ -253,8 +253,9 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                           self._init_pitch, init_topo_nid)
         self.thor_movement_params = task_config["nav_config"]["movement_params"]
 
+        h_angles = grid_h_angles(self.task_config['nav_config']['h_angles'])
         robot_trans_model = RobotTransitionTopo(self.robot_id, self.target[0],
-                                                self.topo_map, self.task_config['nav_config']['h_angles'])
+                                                self.topo_map, h_angles)
         goal_distance = (task_config["nav_config"]["goal_distance"] / grid_map.grid_size) * 0.8  # just to make sure we are close enough
         reward_model = cospomdp.ObjectSearchRewardModel(
             self.detectors[self.target_id].sensor,
@@ -277,10 +278,10 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                            initialize_target_belief_2d,
                                            update_target_belief_2d,
                                            belief_type=belief_type,
-                                           prior=prior,
-                                           is3d=is3d)
+                                           prior=prior)
         self._local_search_type = local_search_type
         self._local_search_params = local_search_params
+        self._height_range = height_range
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,
                                          rollout_policy=self.cos_agent.policy_model)
@@ -291,6 +292,10 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         # that achieve goals
         self._goal_handler = None
         self._loop_counter = 0
+
+    @property
+    def height_range(self):
+        return self._height_range
 
     def act(self):
         if isinstance(self.solver, ReplaySolver):
@@ -364,21 +369,21 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                 del self.cos_agent.tree
 
 
-
     def interpret_robot_obz(self, tos_observation):
         # Here, we will build a pose of format (x, y, pitch, yaw, nid)
-        thor_robot_position, thor_robot_rotation = tos_observation.robot_pose
-        x, y, yaw = self.grid_map.to_grid_pose(thor_robot_position['x'],
-                                               thor_robot_position['z'],
-                                               thor_robot_rotation['y'])
+        thor_camera_position, thor_camera_rotation = tos_observation.camera_pose
+        x, y, yaw = self.grid_map.to_grid_pose(thor_camera_position['x'],
+                                               thor_camera_position['z'],
+                                               thor_camera_rotation['y'])
         pitch = tos_observation.horizon
+        height = thor_camera_position['y'] / self.grid_map.grid_size
         nid = self.belief.b(self.robot_id).mpe().topo_nid  # keeps the same topo node id
         return cospomdp.RobotObservation(self.robot_id,
                                          (x, y, yaw),
                                          cospomdp.RobotStatus(done=tos_observation.done),
                                          horizon=pitch,
-                                         topo_nid=nid)
-
+                                         topo_nid=nid,
+                                         height=height)
 
     def interpret_action(self, tos_action):
         # It actually doesn't matter to the CosAgent what low-level
