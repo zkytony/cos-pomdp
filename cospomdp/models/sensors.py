@@ -45,6 +45,8 @@ class FanSensor(SensorModel):
         self.fov = to_rad(fov)  # convert to radian
         self.min_range = min_range
         self.max_range = max_range
+        # this is not actually used unless the sensor model is far range.
+        self.mean_range = params.get("mean_range", max_range)
         # The size of the sensing region here is the area covered by the fan
         # This is a float, but rounding it up should equal to the number of discrete locations
         # in the field of view.
@@ -71,7 +73,7 @@ class FanSensor(SensorModel):
     def sensor_region_size(self):
         return self._sensing_region_size
 
-    def in_range(self, point, sensor_pose):
+    def in_range(self, point, sensor_pose, use_mean=False):
         """
         Args:
             point (x, y): 2D point
@@ -82,7 +84,8 @@ class FanSensor(SensorModel):
         sensor_pose = (*sensor_pose[:2], to_rad(sensor_pose[2]))
 
         dist, bearing = self.shoot_beam(sensor_pose, point)
-        if self.min_range <= dist <= self.max_range:
+        range_bound = self.max_range if not use_mean else self.mean_range
+        if self.min_range <= dist <= range_bound:
             # because we defined bearing to be within 0 to 360, the fov
             # angles should also be defined within the same range.
             fov_ranges = (0, self.fov/2), (2*math.pi - self.fov/2, 2*math.pi)

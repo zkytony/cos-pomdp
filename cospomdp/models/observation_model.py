@@ -1,4 +1,5 @@
 import random
+import math
 from functools import reduce
 from pomdp_py.utils import typ
 from pomdp_py import ObservationModel, Gaussian
@@ -306,7 +307,7 @@ class FanModelSimpleFP(DetectionModel):
         """
         Args:
             objid (int) object id to detect
-            fan_params; (detection_prob, false_pos_rate, sigma);
+            quality_params; (detection_prob, false_pos_rate, sigma);
                 detection_prob is essentially true positive rate.
         """
         self.sensor = FanSensor(**fan_params)
@@ -354,7 +355,6 @@ class FanModelSimpleFP(DetectionModel):
                 else:
                     # true positive
                     # True positive; gaussian centered at object loc
-                    # TODO: sigma shouldn't be 0.1 - it's how far off you can tolerate.c
                     gaussian = Gaussian(list(si["loc"]),
                                         [[self.sigma**2, 0],
                                          [0, self.sigma**2]])
@@ -385,6 +385,134 @@ class FanModelSimpleFP(DetectionModel):
         else:
             zi = Loc(si.id, None)
             event = "out_of_range"
+        if return_event:
+            return zi, event
+        else:
+            return zi
+
+
+class FanModelFarRange(DetectionModel):
+    """Intended for 2D-level observation; Pr(zi | si, srobot')
+
+    Considers false positive rate during belief update, but not when
+    sampling. You could say there is an implicit variable in the distribution
+    that indicates whether it is evaluating a probability or sampling.
+    It is therefore valid to define such a distribution.
+
+    This model assumes objects could be detected infinitely far
+    away, but the probability of detection falls off exponentially
+    as the detection is farther away from the average detection range.
+    If it is within the detection range, then we say it is expected
+    to be detected.
+
+    Pros: semantic parameter;
+    Cons: false positive is not sampled & out of context
+    """
+    def __init__(self, objid, fan_params, quality_params,
+                 round_to="int", max_range_limit=100):
+        """
+        Args:
+            objid (int) object id to detect
+            fan_params (dict): parameters for FanSensor; Will ignore the setting of max_range;
+                The 'max_range' parameter in this dictionary, however, will be regarded
+                as the 'average detection distance'
+            quality_params; (detection_prob, false_pos_rate, sigma);
+                detection_prob is essentially true positive rate.
+        """
+        fan_params['max_range'] = max_range_limit
+        self.sensor = FanSensor(**fan_params)
+        self.params = quality_params
+        super().__init__(objid, round_to)
+
+    @property
+    def detection_prob(self):
+        return self.params[0]
+
+    @property
+    def sigma(self):
+        return self.params[2]
+
+    @property
+    def false_pos_rate(self):
+        return self.params[1]
+
+    def probability(self, zi, si, srobot, a=None):
+        """
+        zi (LocDetection)
+        si (HLObjectstate)
+        srobot (HLObjectstate)
+        """
+        in_range = self.sensor.in_range(si["loc"], srobot["pose"])
+        if in_range:
+            # This is still important, for angular range.
+
+            if zi.loc is None:
+                # false negative
+                return 1.0 - self.detection_prob
+
+            else:
+                # the observation is positive. Now, the probability
+                # of this detection is subject to the distance of
+                # the detection.
+                distance = euclidean_dist(zi.loc, srobot.loc)
+                if distance <= self.sensor.mean_range:
+                    distance_weight = 1.0
+                else:
+                    distance_weight = math.exp(-(distance - self.sensor.mean_range)**2)
+
+                # We will regard the detection as a true positive if it is
+                # within 3*sigma from the object's true location given in si.
+                # Otherwise, it is a false positiv  The probability of the false positive is
+                # uniform within the sensor field range.
+                if euclidean_dist(zi.loc, si.loc) > 3*self.sigma:
+                    # false positive
+                    return self.false_pos_rate / self.sensor.sensor_region_size
+                else:
+                    # true positive
+                    # True positive; gaussian centered at object loc
+                    gaussian = Gaussian(list(si["loc"]),
+                                        [[self.sigma**2, 0],
+                                         [0, self.sigma**2]])
+                    return distance_weight * self.detection_prob * gaussian[zi.loc]
+        else:
+            # Not within angular range
+
+            if zi.loc is None:
+                # True negative;
+                return 1.0 - self.false_pos_rate
+
+            else:
+                return self.false_pos_rate / self.sensor.sensor_region_size
+
+
+    def sample(self, si, srobot, a=None, return_event=False):
+        in_range = self.sensor.in_range(si["loc"], srobot["pose"])
+
+        # si is detectable if it is also within the average detection
+        # distance. Otherwise, we will not consider it detectable; This is a
+        # simpler model than in probability, but it faciliates behavior to drive
+        # the robot closer to where it believes the object is
+        distance = euclidean_dist(si.loc, srobot.loc)
+        if distance > self.sensor.mean_range:
+            in_range = False
+
+        if in_range:
+            if random.uniform(0,1) <= self.detection_prob:
+                # sample according to gaussian
+                gaussian = Gaussian(list(si["loc"]),
+                                    [[self.sigma**2, 0],
+                                     [0, self.sigma**2]])
+                loc = tuple(fround(self._round_to, gaussian.random()))
+                zi = Loc(si.id, loc)
+                event = "detected"
+
+            else:
+                zi = Loc(si.id, None)
+                event = "missed"
+        else:
+            zi = Loc(si.id, None)
+            event = "out_of_range"
+
         if return_event:
             return zi, event
         else:

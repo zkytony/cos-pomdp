@@ -40,6 +40,7 @@ def _test_method(method, scene_type, target_class, scene="FloorPlan21"):
 if __name__ == "__main__":
     # _test_method(Methods.RANDOM, "kitchen", "DishSponge")
     # _test_method(Methods.V_GREEDY_NBV_CRT, "kitchen", "DishSponge")
-    _test_method(Methods.V_HIERARCHICAL_CORR_CRT, "living_room", "CreditCard", scene="FloorPlan223")
+    # _test_method(Methods.V_HIERARCHICAL_CORR_CRT, "living_room", "CreditCard", scene="FloorPlan223")
+    _test_method(Methods.V_HIERARCHICAL_CORR_CRT, "kitchen", "Apple", scene="FloorPlan21")
     # _test_method(Methods.GT_HIERARCHICAL_CORR_CRT, "kitchen", "DishSponge")
     # _test_method(Methods.V_HIERARCHICAL_CORR_CRT, "kitchen", "DishSponge")

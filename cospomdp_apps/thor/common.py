@@ -217,6 +217,9 @@ def make_config(args):
         detector_spec = args.agent_detector_specs[cls]
         if detector_spec[0] in {"fan-simplefp", "fan-nofp"}:
             expected_detection_ranges[cls] = detector_spec[1]['max_range'] * constants.GRID_SIZE
+        elif detector_spec[0] in {"fan-far"}:
+            # In this case, we allow detections arbitrarily far. So we set this to be a large number
+            expected_detection_ranges[cls] = 100 * constants.GRID_SIZE
         else:
             print(f"WARNING: doesn't know how to deal with {detector_spec[0]}")
 

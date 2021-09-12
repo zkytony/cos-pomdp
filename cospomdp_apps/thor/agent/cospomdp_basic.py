@@ -119,15 +119,17 @@ class ThorObjectSearchCosAgent(ThorAgent):
             detectable_objects[object_id] = (object_id, object_class)
 
             detector_type, sensor_params, quality_params = detector_specs[object_id]
-            if detector_type.strip() == "fan-nofp" or detector_type.strip() == "fan-simplefp":
+            if detector_type.strip() in {"fan-nofp", "fan-simplefp", "fan-far"}:
                 if type(sensor_params) == str:
                     sensor_params = eval(f"dict({sensor_params.strip()})")
                 if quality_params == str:
                     quality_params = eval(quality_params.strip())
                 if detector_type.strip() == "fan-nofp":
                     detector = cospomdp.FanModelNoFP(object_id, sensor_params, quality_params)
-                else:
+                elif detector_type.strip() == "fan-simplefp":
                     detector = cospomdp.FanModelSimpleFP(object_id, sensor_params, quality_params)
+                else: # detector_type.strip() == "fan-far":
+                    detector = cospomdp.FanModelFarRange(object_id, sensor_params, quality_params)
                 detectors[object_id] = detector
         return detectors, detectable_objects
 

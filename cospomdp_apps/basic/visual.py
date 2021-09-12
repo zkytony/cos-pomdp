@@ -1,7 +1,29 @@
+import cv2
 from thortils.utils.visual import Visualizer2D, GridMapVisualizer
 from thortils.utils.colors import inverse_color_rgb
+from thortils.utils.images import overlay, cv2shape
 
 class BasicViz2D(Visualizer2D):
+
+    def draw_fov(self, img, sensor, robot_pose,
+                 color=[233, 233, 8]):
+        # We will draw what's in mean range differently from the max range.
+        size = self._res // 2
+        radius = int(round(size / 2))
+        shift = int(round(self._res / 2))
+        for x in range(self._region.width):
+            for y in range(self._region.length):
+                if sensor.in_range((x,y), robot_pose, use_mean=False):
+                    img = cv2shape(img, cv2.circle,
+                                   (y*self._res+shift, x*self._res+shift),
+                                   radius, color, thickness=-1, alpha=0.4)
+
+                if sensor.in_range((x,y), robot_pose, use_mean=True):
+                    img = cv2shape(img, cv2.circle,
+                                   (y*self._res+shift, x*self._res+shift),
+                                   radius, color, thickness=-1, alpha=0.7)
+        return img
+
     def render(self, agent, objlocs, colors={}, robot_state=None, draw_fov=None,
                draw_belief=True, img=None):
         """
@@ -28,14 +50,14 @@ class BasicViz2D(Visualizer2D):
         img = self.draw_robot(img, x, y, th, (255, 20, 20))
         if draw_fov is not None:
             if draw_fov is True:
-                img = self.draw_fov(img,
-                                    agent.sensor(agent.target_id),
-                                    robot_state['pose'],
-                                    inverse_color_rgb(target_color))
+                img = BasicViz2D.draw_fov(self, img,
+                                          agent.sensor(agent.target_id),
+                                          robot_state['pose'],
+                                          inverse_color_rgb(target_color))
             elif hasattr(draw_fov, "__len__"):
                 for objid in sorted(draw_fov):
-                    img = self.draw_fov(img,
-                                        agent.sensor(objid),
-                                        robot_state['pose'],
-                                        inverse_color_rgb(self.get_color(objid, colors, alpha=None)))
+                    img = BasicViz2D.draw_fov(self, img, agent.sensor(objid),
+                                              robot_state['pose'],
+                                              inverse_color_rgb(self.get_color(objid,
+                                                                               colors, alpha=None)))
         return img

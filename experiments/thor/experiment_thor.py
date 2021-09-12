@@ -191,11 +191,11 @@ def read_detector_params(filepath=os.path.join(ABS_PATH, "detector_params.csv"))
         for cls in (OBJECT_CLASSES[scene_type]['target'] + OBJECT_CLASSES[scene_type]['corr']):
             row = df.loc[(df['scene_type'] == scene_type) & (df['class'] == cls)].iloc[0]
             quality_params = (row["TP_rate"], row["FP_rate"], 0.5)
-            max_range = row["dist"] / constants.GRID_SIZE
-            detector_models[cls] = ("fan-simplefp",
+            mean_range = row["dist"] / constants.GRID_SIZE
+            detector_models[cls] = ("fan-far",
                                     dict(fov=constants.FOV,
                                          min_range=1,
-                                         max_range=max_range),
+                                         mean_range=mean_range),
                                     quality_params)
     return detector_models
 
