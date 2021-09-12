@@ -12,6 +12,7 @@ if __name__ == "__main__":
                           num_sims=40,
                           prior='informed',
                           step_act_cb=step_act_cb,
+                          target_false_pos=0.05,
                           local_search_params={"num_sims": 200,
                                                "max_depth": 30,
                                                "discount_factor": 0.95,

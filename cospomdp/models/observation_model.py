@@ -442,6 +442,16 @@ class FanModelFarRange(DetectionModel):
         si (HLObjectstate)
         srobot (HLObjectstate)
         """
+        # the observation is positive. Now, the probability
+        # of this detection is subject to the distance of
+        # the detection.
+        if zi.loc is not None:
+            distance = euclidean_dist(zi.loc, srobot.loc)
+            if distance <= self.sensor.mean_range:
+                distance_weight = 1.0
+            else:
+                distance_weight = math.exp(-(distance - self.sensor.mean_range)**2)
+
         in_range = self.sensor.in_range(si["loc"], srobot["pose"])
         if in_range:
             # This is still important, for angular range.
@@ -451,22 +461,13 @@ class FanModelFarRange(DetectionModel):
                 return 1.0 - self.detection_prob
 
             else:
-                # the observation is positive. Now, the probability
-                # of this detection is subject to the distance of
-                # the detection.
-                distance = euclidean_dist(zi.loc, srobot.loc)
-                if distance <= self.sensor.mean_range:
-                    distance_weight = 1.0
-                else:
-                    distance_weight = math.exp(-(distance - self.sensor.mean_range)**2)
-
                 # We will regard the detection as a true positive if it is
                 # within 3*sigma from the object's true location given in si.
                 # Otherwise, it is a false positiv  The probability of the false positive is
                 # uniform within the sensor field range.
                 if euclidean_dist(zi.loc, si.loc) > 3*self.sigma:
                     # false positive
-                    return self.false_pos_rate / self.sensor.sensor_region_size
+                    return distance_weight * self.false_pos_rate / self.sensor.sensor_region_size
                 else:
                     # true positive
                     # True positive; gaussian centered at object loc
@@ -476,13 +477,12 @@ class FanModelFarRange(DetectionModel):
                     return distance_weight * self.detection_prob * gaussian[zi.loc]
         else:
             # Not within angular range
-
             if zi.loc is None:
                 # True negative;
                 return 1.0 - self.false_pos_rate
 
             else:
-                return self.false_pos_rate / self.sensor.sensor_region_size
+                return distance_weight * self.false_pos_rate / self.sensor.sensor_region_size
 
 
     def sample(self, si, srobot, a=None, return_event=False):

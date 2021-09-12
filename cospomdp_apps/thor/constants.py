@@ -345,4 +345,4 @@ def _load_config():
     return config
 CONFIG = _load_config()
 
-NEARBY_THRES = 1.5
+NEARBY_THRES = 2.0

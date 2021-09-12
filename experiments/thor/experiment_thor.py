@@ -100,7 +100,8 @@ OBJECT_CLASSES = {
                              "Laptop",
                              "Television",
                              "Sofa",
-                             "HousePlant"]},
+                             "HousePlant",
+                             "Painting"]},
 
     "bedroom": {"target": ["CellPhone",
                            "Pen",
