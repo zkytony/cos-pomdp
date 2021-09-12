@@ -96,8 +96,8 @@ class CosObjectObservationModel(ObservationModel):
 
 class DetectionModel:
     """Interface for Pr(zi | si, srobot'); Domain-specific"""
-    def __init__(self, objclass, round_to="int"):
-        self.objclass = objclass
+    def __init__(self, objid, round_to="int"):
+        self.objid = objid
         self._round_to = round_to
 
     def probability(self, zi, si, srobot, a=None):
@@ -112,8 +112,24 @@ class DetectionModel:
     def sample(self, si, srobot, a=None):
         raise NotImplementedError
 
+class FanModel(DetectionModel):
+    def __init__(self, objid, fan_params,
+                 quality_params, round_to="int", **kwargs):
+        self.fan_params = fan_params
+        self.quality_params = quality_params
+        self._kwargs = kwargs
+        self.__dict__.update(kwargs)
+        super().__init__(objid, round_to)
 
-class FanModelYoonseon(DetectionModel):
+    def copy(self):
+        return self.__class__(self.objid,
+                              self.fan_params,
+                              self.quality_params,
+                              round_to=self._round_to,
+                              **self._kwargs)
+
+
+class FanModelYoonseon(FanModel):
     """Intended for 2D-level observation; Pr(zi | si, srobot')
     Yoonseon's model proposed in the OOPOMDP paper;
 
@@ -136,9 +152,10 @@ class FanModelYoonseon(DetectionModel):
         round_to: Round the sampled observation locations to,
             either a float, 'int', or None
         """
+        super().__init__(objid, fan_params,
+                         quality_params, round_to="int")
         self.sensor = FanSensor(**fan_params)
         self.params = quality_params
-        super().__init__(objid, round_to)
 
     def _compute_params(self, object_in_sensing_region, epsilon):
         if object_in_sensing_region:
@@ -210,7 +227,7 @@ class FanModelYoonseon(DetectionModel):
             return zi
 
 
-class FanModelNoFP(DetectionModel):
+class FanModelNoFP(FanModel):
     """Intended for 2D-level observation; Pr(zi | si, srobot')
 
     Model without involving false positives
@@ -226,9 +243,10 @@ class FanModelNoFP(DetectionModel):
         round_to: Round the sampled observation locations to,
             either a float, 'int', or None
         """
+        super().__init__(objid, fan_params,
+                         quality_params, round_to="int")
         self.sensor = FanSensor(**fan_params)
         self.params = quality_params  # calling it self.params to have consistent interface
-        super().__init__(objid, round_to)
 
     @property
     def detection_prob(self):
@@ -292,7 +310,7 @@ class FanModelNoFP(DetectionModel):
             return zi
 
 
-class FanModelSimpleFP(DetectionModel):
+class FanModelSimpleFP(FanModel):
     """Intended for 2D-level observation; Pr(zi | si, srobot')
 
     Considers false positive rate during belief update, but not when
@@ -310,9 +328,10 @@ class FanModelSimpleFP(DetectionModel):
             quality_params; (detection_prob, false_pos_rate, sigma);
                 detection_prob is essentially true positive rate.
         """
+        super().__init__(objid, fan_params,
+                         quality_params, round_to="int")
         self.sensor = FanSensor(**fan_params)
         self.params = quality_params
-        super().__init__(objid, round_to)
 
     @property
     def detection_prob(self):
@@ -391,7 +410,7 @@ class FanModelSimpleFP(DetectionModel):
             return zi
 
 
-class FanModelFarRange(DetectionModel):
+class FanModelFarRange(FanModel):
     """Intended for 2D-level observation; Pr(zi | si, srobot')
 
     Considers false positive rate during belief update, but not when
@@ -419,10 +438,14 @@ class FanModelFarRange(DetectionModel):
             quality_params; (detection_prob, false_pos_rate, sigma);
                 detection_prob is essentially true positive rate.
         """
+        super().__init__(objid, fan_params,
+                         quality_params,
+                         round_to="int",
+                         max_range_limit=max_range_limit)
+
         fan_params['max_range'] = max_range_limit
         self.sensor = FanSensor(**fan_params)
         self.params = quality_params
-        super().__init__(objid, round_to)
 
     @property
     def detection_prob(self):

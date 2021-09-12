@@ -6,7 +6,8 @@ from scipy.spatial.transform import Rotation as R
 from ..utils.math import (to_rad, to_deg, R2d,
                           euclidean_dist, pol2cart,
                           vec, R_quat, R_euler, T,
-                          in_range_inclusive, closest)
+                          in_range_inclusive, closest,
+                          law_of_cos, inverse_law_of_cos)
 
 def yaw_facing(robot_pos, target_pos, angles=None):
     rx, ry = robot_pos
@@ -43,25 +44,32 @@ def pitch_facing(robot_pos3d, target_pos3d, angles=None):
         return pitch
 
 class SensorModel:
+    IS_3D = False
     def in_range(self, point, sensor_pose):
         raise NotImplementedError
 
     def in_range_facing(self, point, sensor_pose,
                         angular_tolerance=15):
-        """sensor_pose is x, y, th"""
+        """sensor_pose is x, y, th
+        Update: not necessarily -
+            If is3d is False, then sensor_pose is
+            indeed (x,y,th); Otherwise, it is (x, y, z, pitch, yaw)
+            where z is the robot height, which is fixed"""
         desired_yaw = yaw_facing(sensor_pose[:2], point)
+        if self.__class__.IS_3D:
+            current_yaw = sensor_pose[4]
+        else:
+            current_yaw = sensor_pose[2]
+
         return self.in_range(point, sensor_pose)\
-            and abs(desired_yaw - sensor_pose[2]) % 360 <= angular_tolerance
+            and abs(desired_yaw - current_yaw) % 360 <= angular_tolerance
 
 
 # sensor_pose is synonymous to robot_pose, outside of this file.
 
 class FanSensor(SensorModel):
-    def __init__(self, name="laser2d_sensor", **params):
-        """
-        2D fanshape sensor. The sensor by default looks at the +x direction.
-        The field of view angles span (-FOV/2, 0) U (0, FOV/2) degrees
-        """
+
+    def init_params(self, name, **params):
         fov = params.get("fov", 90)
         min_range = params["min_range"]
         max_range = params["max_range"]
@@ -71,10 +79,17 @@ class FanSensor(SensorModel):
         self.max_range = max_range
         # this is not actually used unless the sensor model is far range.
         self.mean_range = params.get("mean_range", max_range)
+
+    def __init__(self, name="laser2d_sensor", **params):
+        """
+        2D fanshape sensor. The sensor by default looks at the +x direction.
+        The field of view angles span (-FOV/2, 0) U (0, FOV/2) degrees
+        """
+        self.init_params(name, **params)
         # The size of the sensing region here is the area covered by the fan
         # This is a float, but rounding it up should equal to the number of discrete locations
         # in the field of view.
-        self._sensing_region_size = int(math.ceil(self.fov / (2*math.pi) * math.pi * (max_range - min_range)**2))
+        self._sensing_region_size = int(math.ceil(self.fov / (2*math.pi) * math.pi * (self.max_range - self.min_range)**2))
 
     def uniform_sample_sensor_region(self, sensor_pose):
         """Returns a location in the field of view
@@ -127,6 +142,61 @@ class FanSensor(SensorModel):
         dist = euclidean_dist(point, (rx,ry))
         bearing = (math.atan2(point[1] - ry, point[0] - rx) - rth) % (2*math.pi)  # bearing (i.e. orientation)
         return (dist, bearing)
+
+
+
+class FanSensor3D(SensorModel):
+    """
+    This is a simplified 3D sensor model; Instead of
+    projecting a 3D volume, it re-shapes the 2D fan
+    to account for the pitch of the camera pose. This
+    sensor therefore can still be used to update 2D belief.
+
+    All that is happening is the tilted Fan gets projected
+    down to 2D.
+    """
+    IS_3D = True
+    def __init__(self, name="laser3d_sensor", **params):
+        # Note that because of the tilt, the range will change.
+        self._flat_max_range = params["max_range"]
+        self._flat_mean_range = params.get("mean_range", self._flat_max_range)
+        self._flat_fov = params["fov"]
+        self._flat_min_range = params["mean_range"]
+        self._cache = {}
+
+    def _project_range(self, height, pitch):
+        mean_range_proj = self._flat_mean_range * math.cos(to_deg(pitch))
+        max_range_proj = self._flat_max_range * math.cos(to_deg(pitch))
+        min_range_proj = self._flat_min_range * math.cos(to_deg(pitch))
+        return min_range_proj, max_range_proj, mean_range_proj
+
+    def _project_fov(self, height, pitch):
+        flat_fan_front_edge = law_of_cos(self._flat_max_edge,
+                                         self._flat_max_edge,
+                                         self._flat_fov)
+        max_range_proj = self._flat_max_range * math.cos(to_deg(pitch))
+        fov_proj = inverse_law_of_cos(max_range_proj, max_range_proj, flat_fan_front_edge)
+        return fov_proj
+
+    def _project2d(self, sensor_pose):
+        x, y, height, pitch, yaw = sensor_pose
+        min_range_proj, max_range_proj, mean_range_proj = self._project_range(height, pitch)
+        fov_proj = self._project_fov(height, pitch)
+        fan2d = FanSensor(min_range=min_range_proj,
+                          max_range=max_range_proj,
+                          mean_range=mean_range_proj,
+                          fov=fov_proj)
+        return fan2d
+
+
+    def in_range(self, point, sensor_pose, use_mean=False):
+        # Create a 2D sensor with projected parameters
+        if (point, sensor_pose) in self._cache:
+            fan2d = self._cache[(point, sensor_pose)]
+        else:
+            fan2d = self._project2d(sensor_pose)
+        self._cache[(point, sensor_pose)] = fan2d
+        return fan2d.in_range(point, (x, y, yaw), use_mean=use_mean)
 
 
 class FrustumCamera(SensorModel):

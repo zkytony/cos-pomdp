@@ -48,7 +48,7 @@ class RobotState3D(RobotState):
                  camera_height, camera_horizon, status=RobotStatus()):
         super().__init__(robot_id, pose, status)
         self.horizon = camera_horizon
-        self.height = camera_height  # the robot's own height
+        self.height = camera_height  # the robot's own height, should be fixed
 
     @property
     def pitch(self):

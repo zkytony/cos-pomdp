@@ -315,13 +315,15 @@ class LocalSearch3DHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent):
         self.navigation_actions = grid_navigation_actions2d(movement_params,
                                                             agent.grid_map.grid_size)
         self.camera_look_actions = grid_camera_look_actions(movement_params)
-        v_angles = self.task_config['nav_config']['v_angles']
+        print(self.camera_look_actions)
+        v_angles = agent.task_config['nav_config']['v_angles']
+        print(v_angles)
         robot_trans_model = RobotTransition3D(self.robot_id, reachable_positions, v_angles)
         reward_model = agent.cos_agent.reward_model
-        policy_mdoel = PolicyModel3D(robot_trans_model, reward_model,
+        policy_model = PolicyModel3D(robot_trans_model, reward_model,
                                      movements=self.navigation_actions,
                                      camera_looks=self.camera_look_actions)
-        detectors = convert_to_3d_detectors(agent.detectors)
+        detectors = self._convert_to_3d_detectors(agent.detectors)
 
         # Need to do this in 3d
         _btarget = agent.belief.b(self.target_id)
@@ -332,7 +334,7 @@ class LocalSearch3DHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent):
                                                   robot_trans_model,
                                                   policy_model,
                                                   agent.corr_dists,
-                                                  agent.detectors,
+                                                  detectors,
                                                   reward_model,
                                                   initialize_target_belief_3d,
                                                   update_target_belief_3d,
@@ -341,6 +343,18 @@ class LocalSearch3DHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent):
         self.solver = pomdp_py.POUCT(**pouct_params,
                                      rollout_policy=self._local_cos_agent.policy_model)
         self._done = False
+
+    def _convert_to_3d_detectors(self, detectors):
+        """
+        detectors:  Maps from objid to a DetectionModel Pr(zi | si, srobot')
+                Must contain an entry for the target object
+        """
+        detectors3d = {}
+        for objid in detectors:
+            if detectors[objid].__class__.__name__.startswith("Fan"):
+                detectors3d[objid] = detectors[objid].copy()
+        return detectors3d
+
 
 
 class DummyGoalHandler(GoalHandler):

@@ -72,11 +72,12 @@ def robot_pose_transition3d(robot_pose, action):
 def _to_full_pose(srobot):
     x, y, yaw = srobot["pose"]
     pitch = srobot["horizon"]
-    return (x, y, pitch, yaw)
+    z = srobot["height"]
+    return (x, y, z, pitch, yaw)
 
 def _to_state_pose(full_pose):
-    x, y, pitch, yaw = full_pose
-    return (x, y, yaw), pitch
+    x, y, z, pitch, yaw = full_pose
+    return (x, y, yaw), z, pitch
 
 
 class RobotTransition3D(RobotTransition):
@@ -101,9 +102,11 @@ class RobotTransition3D(RobotTransition):
         elif isinstance(action, Done):
             next_robot_status = RobotStatus(done=True)
 
-        next_pose2d, pitch = _to_state_pose(current_robot_pose)
+        next_pose2d, height, pitch = _to_state_pose(current_robot_pose)
         if pitch not in self._v_angles\
            or next_pose2d[:2] not in self.reachable_positions:
-            return RobotState3D(self.robot_id, srobot["pose"], srobot["horizon"], next_robot_status)
+            return RobotState3D(self.robot_id, srobot["pose"],
+                                height, srobot.horizon, next_robot_status)
         else:
-            return RobotState3D(self.robot_id, next_pose2d, pitch, next_robot_status)
+            return RobotState3D(self.robot_id, next_pose2d,
+                                height, pitch, next_robot_status)
