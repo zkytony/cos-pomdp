@@ -376,7 +376,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
         if len(self._repeating_actions) > 0:
             if action == self._repeating_actions[-1]:
-                self._repeating_action.append(action)
+                self._repeating_actions.append(action)
             else:
                 self._repeating_actions = [action]
         else:
