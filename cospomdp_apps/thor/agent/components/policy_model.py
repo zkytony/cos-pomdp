@@ -70,14 +70,14 @@ class PolicyModelTopo(cospomdp.PolicyModel):
 
         def get_preferred_actions(self, state, history):
             # If you have taken done before, you are done. So keep the done.
+            srobot = state.s(self.policy_model.robot_id)
             last_action = history[-1][0] if len(history) > 0 else None
-            if isinstance(last_action, Done):
+            if srobot.status.done or isinstance(last_action, Done):
                 return {(Done(), 0, 0)}
 
             preferences = set()
 
             topo_map = self.policy_model.topo_map
-            srobot = state.s(self.policy_model.robot_id)
             starget = state.s(self.policy_model.target_id)
 
             if self.policy_model.reward_model.success(srobot, starget):
@@ -130,8 +130,6 @@ class PolicyModel3D(cospomdp.PolicyModel):
 
     def get_all_actions(self, state, history=None):
         all_actions = self.valid_moves(state) | {Done()}
-        if len(all_actions) == 1:
-            import pdb; pdb.set_trace()
         return all_actions
 
     def valid_moves(self, state):
@@ -146,8 +144,6 @@ class PolicyModel3D(cospomdp.PolicyModel):
             for a in self.primitive_motions:
                 if self.robot_trans_model.sample(state, a).pose3d != robot_pose:
                     valid_moves.add(a)
-            # valid_moves = set(a for a in self.primitive_motions
-            #     if self.robot_trans_model.sample(state, a).pose3d != robot_pose)
             self._legal_moves[srobot] = valid_moves
             return valid_moves
 
@@ -159,14 +155,14 @@ class PolicyModel3D(cospomdp.PolicyModel):
             self.policy_model = policy_model
 
         def get_preferred_actions(self, state, history):
-            last_action = history[-1][0] if len(history) > 0 else None
-            if isinstance(last_action, Done):
-                return {(Done(), 0, 0)}
-
             robot_id = self.policy_model.robot_id
             target_id = self.policy_model.observation_model.target_id
             srobot = state.s(robot_id)
             starget = state.s(target_id)
+
+            last_action = history[-1][0] if len(history) > 0 else None
+            if srobot.status.done or isinstance(last_action, Done):
+                return {(Done(), 0, 0)}
 
             preferences = set()
 

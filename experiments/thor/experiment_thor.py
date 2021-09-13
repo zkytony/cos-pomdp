@@ -25,10 +25,10 @@ POUCT_ARGS = dict(max_depth=20,
                   exploration_const=100,
                   show_progress=True)
 
-LOCAL_POUCT_ARGS = dict(max_depth=15,
+LOCAL_POUCT_ARGS = dict(max_depth=12,
                         num_sims=150,
                         discount_factor=0.95,
-                        exploration_const=50,
+                        exploration_const=100,
                         show_progress=True)
 MAX_STEPS = 100
 
