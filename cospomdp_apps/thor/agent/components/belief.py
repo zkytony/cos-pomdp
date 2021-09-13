@@ -111,13 +111,13 @@ def update_target_belief_3d(current_btarget,
     current_btarget_height = current_btarget.height_belief
     next_btarget_height_hist = dict(current_btarget_height.histogram)
     if observation.z(current_btarget.target_id).loc is None:
-        next_btarget_height_hist[Height.ABOVE] *= bu_args.get("prior_above", 2)
-        next_btarget_height_hist[Height.BELOW] *= bu_args.get("prior_below", 5)
-        # next_btarget_height_hist[Height.SAME] = bu_args.get("prior_same", 3)
+        next_btarget_height_hist[Height.ABOVE] += bu_args.get("prior_above", 100)
+        next_btarget_height_hist[Height.BELOW] += bu_args.get("prior_below", 100)
+        next_btarget_height_hist[Height.SAME] += bu_args.get("prior_same", 10)
     else:
-        # next_btarget_height_hist[Height.ABOVE] = bu_args.get("prior_above", 2)
-        # next_btarget_height_hist[Height.BELOW] = bu_args.get("prior_below", 2)
-        next_btarget_height_hist[Height.SAME] *= bu_args.get("prior_same", 2)
+        next_btarget_height_hist[Height.ABOVE] += bu_args.get("prior_above", 10)
+        next_btarget_height_hist[Height.BELOW] += bu_args.get("prior_below", 10)
+        next_btarget_height_hist[Height.SAME] += bu_args.get("prior_same", 1000)
 
     return TargetBelief3D((current_btarget.target_id, current_btarget.target_class),
                           next_btarget_loc,

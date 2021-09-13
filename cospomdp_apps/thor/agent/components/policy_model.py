@@ -145,9 +145,17 @@ class PolicyModel3D(cospomdp.PolicyModel):
         else:
             robot_pose = srobot.pose3d
             valid_moves = set()
+            LookUpin = False
+            LookDownin = False
             for a in self.primitive_motions:
                 if self.robot_trans_model.sample(state, a).pose3d != robot_pose:
                     valid_moves.add(a)
+                    if a.name == "LookUp":
+                        LookUpin = True
+                    if a.name == "LookDown":
+                        LookDownin = True
+            if not LookUpin and not LookDownin:
+                import pdb; pdb.set_trace()
             # valid_moves = set(a for a in self.primitive_motions
             #     if self.robot_trans_model.sample(state, a).pose3d != robot_pose)
             self._legal_moves[srobot] = valid_moves
