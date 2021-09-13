@@ -178,7 +178,7 @@ class FanModelYoonseon(FanModel):
         """
         sigma, epsilon = self.params
         alpha, beta, gamma = self._compute_params(
-            srobot.in_range(self.sensor, si["loc"]), epsilon)
+            srobot.in_range(self.sensor, si), epsilon)
 
         # Requires Python >= 3.6
         prob = 1e-12
@@ -189,7 +189,7 @@ class FanModelYoonseon(FanModel):
             # This has 0.0 probability.
             prob += 0.0 * alpha
         else:
-            gaussian = Gaussian(list(si["loc"]),
+            gaussian = Gaussian(list(si),
                                 [[sigma**2, 0],
                                  [0, sigma**2]])
             prob += gaussian[zi.loc] * alpha
@@ -205,11 +205,11 @@ class FanModelYoonseon(FanModel):
     def sample(self, si, srobot, a=None, return_event=False):
         sigma, epsilon = self.params
         alpha, beta, gamma = self._compute_params(
-            srobot.in_range(self.sensor, si["loc"]), epsilon)
+            srobot.in_range(self.sensor, si), epsilon)
 
         event_occured = random.choices(["A", "B", "C"], weights=[alpha, beta, gamma], k=1)[0]
         if event_occured == "A":
-            gaussian = Gaussian(list(si["loc"]),
+            gaussian = Gaussian(list(si.loc),
                                 [[sigma**2, 0],
                                  [0, sigma**2]])
             # Needs to discretize otherwise MCTS tree cannot handle this.
@@ -263,19 +263,19 @@ class FanModelNoFP(FanModel):
         si (HLObjectstate)
         srobot (HLObjectstate)
         """
-        in_range = srobot.in_range(self.sensor, si["loc"])
+        in_range = srobot.in_range(self.sensor, si)
         if in_range:
             if zi.loc is None:
                 # false negative
                 return 1.0 - self.detection_prob
             else:
-                if srobot.in_range(self.sensor, zi.loc):
+                if srobot.loc_in_range(self.sensor, zi.loc):
                     # the robot would not have received such an observation,
                     # because it is outside of the FOV.
                     return 1e-12
 
                 # True positive; gaussian centered at object loc
-                gaussian = Gaussian(list(si["loc"]),
+                gaussian = Gaussian(list(si),
                                     [[self.sigma**2, 0],
                                      [0, self.sigma**2]])
                 return self.detection_prob * gaussian[zi.loc]
@@ -288,11 +288,11 @@ class FanModelNoFP(FanModel):
 
 
     def sample(self, si, srobot, a=None, return_event=False):
-        in_range = srobot.in_range(self.sensor, si["loc"])
+        in_range = srobot.in_range(self.sensor, si)
         if in_range:
             if random.uniform(0,1) <= self.detection_prob:
                 # sample according to gaussian
-                gaussian = Gaussian(list(si["loc"]),
+                gaussian = Gaussian(list(si.loc),
                                     [[self.sigma**2, 0],
                                      [0, self.sigma**2]])
                 loc = tuple(fround(self._round_to, gaussian.random()))
@@ -352,13 +352,13 @@ class FanModelSimpleFP(FanModel):
         si (HLObjectstate)
         srobot (HLObjectstate)
         """
-        in_range = srobot.in_range(self.sensor, si["loc"])
+        in_range = srobot.in_range(self.sensor, si)
         if in_range:
             if zi.loc is None:
                 # false negative
                 return 1.0 - self.detection_prob
             else:
-                if not srobot.in_range(self.sensor, zi.loc):
+                if not srobot.loc_in_range(self.sensor, zi.loc):
                     # the robot would not have received such a positive observation,
                     # because it is outside of the FOV. It is treatd as a false positive,
                     # that comes uniformly likely outside of the FOV. We estimate the
@@ -375,7 +375,7 @@ class FanModelSimpleFP(FanModel):
                 else:
                     # true positive
                     # True positive; gaussian centered at object loc
-                    gaussian = Gaussian(list(si["loc"]),
+                    gaussian = Gaussian(list(si),
                                         [[self.sigma**2, 0],
                                          [0, self.sigma**2]])
                     return self.detection_prob * gaussian[zi.loc]
@@ -388,11 +388,11 @@ class FanModelSimpleFP(FanModel):
 
 
     def sample(self, si, srobot, a=None, return_event=False):
-        in_range = srobot.in_range(self.sensor, si["loc"])
+        in_range = srobot.in_range(self.sensor, si)
         if in_range:
             if random.uniform(0,1) <= self.detection_prob:
                 # sample according to gaussian
-                gaussian = Gaussian(list(si["loc"]),
+                gaussian = Gaussian(list(si.loc),
                                     [[self.sigma**2, 0],
                                      [0, self.sigma**2]])
                 loc = tuple(fround(self._round_to, gaussian.random()))
@@ -476,7 +476,7 @@ class FanModelFarRange(FanModel):
             else:
                 distance_weight = math.exp(-(distance - self.sensor.mean_range)**2)
 
-        in_range = srobot.in_range(self.sensor, si["loc"])
+        in_range = srobot.in_range(self.sensor, si)
         if in_range:
             # This is still important, for angular range.
 
@@ -495,7 +495,7 @@ class FanModelFarRange(FanModel):
                 else:
                     # true positive
                     # True positive; gaussian centered at object loc
-                    gaussian = Gaussian(list(si["loc"]),
+                    gaussian = Gaussian(list(si),
                                         [[self.sigma**2, 0],
                                          [0, self.sigma**2]])
                     return distance_weight * self.detection_prob * gaussian[zi.loc]
@@ -510,7 +510,7 @@ class FanModelFarRange(FanModel):
 
 
     def sample(self, si, srobot, a=None, return_event=False):
-        in_range = srobot.in_range(self.sensor, si["loc"])
+        in_range = srobot.in_range(self.sensor, si)
 
         # si is detectable if it is also within the average detection
         # distance. Otherwise, we will not consider it detectable; This is a
@@ -523,7 +523,7 @@ class FanModelFarRange(FanModel):
         if in_range:
             if random.uniform(0,1) <= self.detection_prob:
                 # sample according to gaussian
-                gaussian = Gaussian(list(si["loc"]),
+                gaussian = Gaussian(list(si.loc),
                                     [[self.sigma**2, 0],
                                      [0, self.sigma**2]])
                 loc = tuple(fround(self._round_to, gaussian.random()))

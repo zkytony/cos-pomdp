@@ -105,17 +105,20 @@ class RobotState3D(RobotState):
     def __str__(self):
         return str((self.robot_id, *self.pose3d))
 
-    def in_range(self, sensor, loc, **kwargs):
+    def in_range(self, sensor, sobj, **kwargs):
+        return self.loc_in_range(sensor, sobj.loc, **kwargs)
+
+    def loc_in_range(self, sensor, loc, **kwargs):
         if isinstance(sensor, FanSensor3D):
             return sensor.in_range(loc, self.pose3d, **kwargs)
         else:
             return sensor.in_range(loc, self.pose, **kwargs)
 
-    def in_range_facing(self, sensor, point, **kwargs):
+    def in_range_facing(self, sensor, sobj, **kwargs):
         if isinstance(sensor, FanSensor3D):
-            return sensor.in_range_facing(point, self.pose3d, **kwargs)
+            return sensor.in_range_facing(sobj.loc3d, self.pose3d, **kwargs)
         else:
-            return sensor.in_range_facing(point, self.pose, **kwargs)
+            return sensor.in_range_facing(sobj.loc, self.pose, **kwargs)
 
 class RobotStateTopo(RobotState3D):
     def __init__(self, robot_id, pose,

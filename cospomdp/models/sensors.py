@@ -50,19 +50,10 @@ class SensorModel:
 
     def in_range_facing(self, point, sensor_pose,
                         angular_tolerance=15):
-        """sensor_pose is x, y, th
-        Update: not necessarily -
-            If is3d is False, then sensor_pose is
-            indeed (x,y,th); Otherwise, it is (x, y, z, pitch, yaw)
-            where z is the robot height, which is fixed"""
-        desired_yaw = yaw_facing(sensor_pose[:2], point)
-        if self.__class__.IS_3D:
-            current_yaw = sensor_pose[4]
-        else:
-            current_yaw = sensor_pose[2]
-
-        return self.in_range(point, sensor_pose)\
-            and abs(desired_yaw - current_yaw) % 360 <= angular_tolerance
+        """Returns True if the point is within the field of view,
+        AND the sensor pose is facing the object directly,
+        with some angular tolerance"""
+        raise NotImplementedError
 
 
 # sensor_pose is synonymous to robot_pose, outside of this file.
@@ -153,6 +144,13 @@ class FanSensor(SensorModel):
                 return False
         return False
 
+    def in_range_facing(self, point, sensor_pose,
+                        angular_tolerance=15):
+        desired_yaw = yaw_facing(sensor_pose[:2], point)
+        current_yaw = sensor_pose[2]
+        return self.in_range(point, sensor_pose)\
+            and abs(desired_yaw - current_yaw) % 360 <= angular_tolerance
+
     def shoot_beam(self, sensor_pose, point):
         """Shoots a beam from sensor_pose at point. Returns the distance and bearing
         of the beame (i.e. the length and orientation of the beame)"""
@@ -174,7 +172,7 @@ class FanSensor3D(FanSensor):
     down to 2D.
     """
     IS_3D = True
-    def __init__(self, name="laser3d_sensor", **params):
+    def __init__(self, name4="laser3d_sensor", **params):
         # Note that because of the tilt, the range will change.
         super().__init__(**params)
         self._cache = {}
@@ -244,6 +242,21 @@ class FanSensor3D(FanSensor):
         fan2d = self._project2d(sensor_pose)
         x, y, height, pitch, yaw = sensor_pose
         return fan2d.uniform_sample_sensor_region((x,y,yaw))
+
+    def in_range_facing(self, point, sensor_pose,
+                        angular_tolerance=15):
+        x, y, height, pitch, yaw = sensor_pose
+
+        desired_yaw = yaw_facing(sensor_pose[:2], point[:2])
+        current_yaw = sensor_pose[-1]
+
+        desired_pitch = pitch_facing(point, (x,y,height))
+        current_pitch = pitch
+
+        return self.in_range(point, sensor_pose)\
+            and abs(desired_yaw - current_yaw) % 360 <= angular_tolerance\
+            and abs(desired_pitch - current_pitch) % 360 <= angular_tolerance
+
 
 class FrustumCamera(SensorModel):
 

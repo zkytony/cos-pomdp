@@ -41,7 +41,7 @@ def search_region():
 
 @pytest.fixture
 def show_plots():
-    return False
+    return True
 
 def test_observation_model(search_region, show_plots):
     """mainly used for testing correlation observation model belief update"""

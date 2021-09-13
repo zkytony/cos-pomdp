@@ -16,12 +16,12 @@ class BasicViz2D(Visualizer2D):
                 if hasattr(self._region, "unknown") and (x, y) in self._region.unknown:
                     continue  # occluded (don't draw; the model doesn't care about this though but it is ok for now)
 
-                if robot_state.in_range(sensor, (x,y), use_mean=False):
+                if robot_state.loc_in_range(sensor, (x,y), use_mean=False):
                     img = cv2shape(img, cv2.circle,
                                    (y*self._res+shift, x*self._res+shift),
                                    radius, color, thickness=-1, alpha=0.4)
 
-                if robot_state.in_range(sensor, (x,y), use_mean=True):
+                if robot_state.loc_in_range(sensor, (x,y), use_mean=True):
                     img = cv2shape(img, cv2.circle,
                                    (y*self._res+shift, x*self._res+shift),
                                    radius, color, thickness=-1, alpha=0.7)

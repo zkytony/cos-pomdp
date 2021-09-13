@@ -216,6 +216,28 @@ class LocalSearchHandler(GoalHandler):
     def ispomdp(self):
         return True
 
+    @property
+    def updates_first(self):
+        """True if the handler should be updated before
+        the COSPOMDP agent is updated"""
+        return False
+
+    @property
+    def cos_agent(self):
+        return self._local_cos_agent
+
+    @property
+    def detectable_objects(self):
+        return self.cos_agent.detectable_objects
+
+    @property
+    def grid_map(self):
+        return self._parent.grid_map
+
+    @property
+    def done(self):
+        return self._done
+
 
 class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent):
     """Even though the search is expected to be local,
@@ -290,27 +312,6 @@ class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent)
         self._local_cos_agent.set_belief(self._parent.belief)
         self._done = tos_action.name.lower() == "done"
 
-    @property
-    def updates_first(self):
-        """True if the handler should be updated before
-        the COSPOMDP agent is updated"""
-        return False
-
-    @property
-    def cos_agent(self):
-        return self._local_cos_agent
-
-    @property
-    def detectable_objects(self):
-        return self.cos_agent.detectable_objects
-
-    @property
-    def grid_map(self):
-        return self._parent.grid_map
-
-    @property
-    def done(self):
-        return self._done
 
 class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgent):
     """
@@ -399,28 +400,6 @@ class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgen
 
         self._local_cos_agent.set_belief(self._parent.belief)
         self._done = tos_action.name.lower() == "done"
-
-    @property
-    def updates_first(self):
-        """True if the handler should be updated before
-        the COSPOMDP agent is updated"""
-        return False
-
-    @property
-    def cos_agent(self):
-        return self._local_cos_agent
-
-    @property
-    def detectable_objects(self):
-        return self.cos_agent.detectable_objects
-
-    @property
-    def grid_map(self):
-        return self._parent.grid_map
-
-    @property
-    def done(self):
-        return self._done
 
     @property
     def primitive_motions(self):

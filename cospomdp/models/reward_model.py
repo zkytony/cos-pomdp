@@ -34,8 +34,8 @@ class ObjectSearchRewardModel(pomdp_py.RewardModel):
 
     def success(self, srobot, starget):
         if euclidean_dist(srobot.loc, starget.loc) <= self.goal_dist:
-            if srobot.in_range_facing(self.sensor, starget.loc):
-               return True
+            if srobot.in_range_facing(self.sensor, starget):
+                return True
         return False
 
 

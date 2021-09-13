@@ -108,11 +108,14 @@ class RobotState2D(RobotState):
                             robot_obz.pose,
                             robot_obz.status)
 
-    def in_range(self, sensor, loc, **kwargs):
+    def in_range(self, sensor, sobj, **kwargs):
+        return sensor.in_range(sobj.loc, self["pose"], **kwargs)
+
+    def loc_in_range(self, sensor, loc, **kwargs):
         return sensor.in_range(loc, self["pose"], **kwargs)
 
-    def in_range_facing(self, sensor, point, **kwargs):
-        return sensor.in_range_facing(point, self["pose"], **kwargs)
+    def in_range_facing(self, sensor, sobj, **kwargs):
+        return sensor.in_range_facing(sobj.loc, self["pose"], **kwargs)
 
 
 class CosState(pomdp_py.OOState):
