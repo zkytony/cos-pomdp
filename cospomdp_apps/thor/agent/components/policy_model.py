@@ -66,12 +66,9 @@ class PolicyModelTopo(cospomdp.PolicyModel):
             self.num_visits_init = num_visits_init
             self.val_init = val_init
             self.policy_model = policy_model
-            self._cache = {}
+
 
         def get_preferred_actions(self, state, history):
-            if state in self._cache:
-                return self._cache[state]
-
             # If you have taken done before, you are done. So keep the done.
             last_action = history[-1][0] if len(history) > 0 else None
             if isinstance(last_action, Done):
@@ -109,7 +106,6 @@ class PolicyModelTopo(cospomdp.PolicyModel):
                         if zi.loc is not None:
                             preferences.add((move, self.num_visits_init, self.val_init))
                             break
-            self._cache[state] = preferences
             return preferences
 
 
@@ -161,12 +157,8 @@ class PolicyModel3D(cospomdp.PolicyModel):
             self.num_visits_init = num_visits_init
             self.val_init = val_init
             self.policy_model = policy_model
-            self._cache = {}
 
         def get_preferred_actions(self, state, history):
-            if state in self._cache:
-                return self._cache[state]
-
             last_action = history[-1][0] if len(history) > 0 else None
             if isinstance(last_action, Done):
                 return {(Done(), 0, 0)}
@@ -212,6 +204,4 @@ class PolicyModel3D(cospomdp.PolicyModel):
                     if zi.loc is not None:
                         preferences.add((move, self.num_visits_init, self.val_init))
                         break
-
-            self._cache[state] = preferences
             return preferences
