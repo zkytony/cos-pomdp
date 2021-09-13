@@ -22,7 +22,9 @@ class ObjectSearchRewardModel(pomdp_py.RewardModel):
         if srobot.done:
             return 0  # the robot is already done.
         starget = next_state.s(self.target_id)
+
         if isinstance(action, Done):
+            import pdb; pdb.set_trace()
             if self.success(srobot, starget):
                 return self._hi
             else:

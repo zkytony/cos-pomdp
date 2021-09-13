@@ -268,9 +268,10 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                           self._init_pitch, init_topo_nid)
         self.thor_movement_params = task_config["nav_config"]["movement_params"]
 
+        v_angles = [grid_pitch(va) for va in self.task_config['nav_config']['v_angles']]
         h_angles = grid_h_angles(self.task_config['nav_config']['h_angles'])
         robot_trans_model = RobotTransitionTopo(self.robot_id, self.target[0],
-                                                self.topo_map, h_angles)
+                                                self.topo_map, h_angles, v_angles)
         prior_loc = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
                      for p in thor_prior}
         belief_type = "histogram" if not approx_belief else "histogram-approx"
@@ -302,7 +303,6 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             self.robot_id, self.target_id,
             **task_config["reward_config"])
         policy_model = PolicyModelTopo(robot_trans_model, reward_model, self.topo_map)
-        v_angles = [grid_pitch(va) for va in self.task_config['nav_config']['v_angles']]
         self.cos_agent = cospomdp.CosAgent(self.target,
                                            init_robot_state,
                                            self.search_region,
@@ -337,7 +337,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             return action
 
         goal = self.solver.plan(self.cos_agent)
-        if isinstance(goal, Stay):
+        if isinstance(goal, MoveTopo):
             from pomdp_py.utils import TreeDebugger
             dd = TreeDebugger(self.cos_agent.tree)
             import pdb; pdb.set_trace()

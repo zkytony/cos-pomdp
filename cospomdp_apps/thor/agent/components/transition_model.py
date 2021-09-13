@@ -1,7 +1,7 @@
 import math
 from cospomdp.utils.math import to_deg, closest, to_rad, fround
 from cospomdp.models.transition_model import RobotTransition
-from cospomdp.models.sensors import yaw_facing
+from cospomdp.models.sensors import yaw_facing, pitch_facing
 from cospomdp.domain.action import Done
 from cospomdp.domain.state import RobotStatus
 from .state import RobotState3D
@@ -10,11 +10,12 @@ from .state import RobotStateTopo
 
 class RobotTransitionTopo(RobotTransition):
 
-    def __init__(self, robot_id, target_id, topo_map, h_angles):
+    def __init__(self, robot_id, target_id, topo_map, h_angles, v_angles):
         super().__init__(robot_id)
         self._topo_map = topo_map
         self.target_id = target_id
         self.h_angles = h_angles
+        self.v_angles = v_angles
 
     def sample(self, state, action):
         srobot = state.s(self.robot_id)
@@ -31,6 +32,7 @@ class RobotTransitionTopo(RobotTransition):
                 next_robot_pos = self._topo_map.nodes[action.dst_nid].pos
                 # will sample a yaw facing the target object
                 yaw = yaw_facing(next_robot_pos, starget.loc, self.h_angles)
+                horizon = pitch_facing(srobot.loc3d, starget.loc3d, self.v_angles)
                 next_pose = (*next_robot_pos, yaw)
                 next_horizon = 0.0 # there is no pitch
                 next_topo_nid = action.dst_nid

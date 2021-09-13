@@ -250,7 +250,7 @@ class FanSensor3D(FanSensor):
         desired_yaw = yaw_facing(sensor_pose[:2], point[:2])
         current_yaw = sensor_pose[-1]
 
-        desired_pitch = pitch_facing(point, (x,y,height))
+        desired_pitch = pitch_facing((x,y,height), point)
         current_pitch = pitch
 
         return self.in_range(point, sensor_pose)\
