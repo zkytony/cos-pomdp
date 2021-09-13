@@ -1,27 +1,16 @@
 import pomdp_py
-import random
 from thortils.navigation import find_navigation_plan, get_navigation_actions
 
 import cospomdp
 from cospomdp_apps import basic
-from cospomdp_apps.thor.common import TOS_Action, Height
-from cospomdp_apps.thor import constants
+from cospomdp_apps.thor.common import TOS_Action
+from cospomdp.utils.math import approx_equal
 from cospomdp_apps.basic.belief import initialize_target_belief_2d, update_target_belief_2d
-from cospomdp.utils.math import approx_equal, normalize, euclidean_dist
-from .belief import initialize_target_belief_3d, update_target_belief_3d
 from .action import (MoveTopo, Stay,
                      from_grid_action_to_thor_action_params,
                      from_thor_delta_to_thor_action_params,
-                     grid_navigation_actions2d,
-                     grid_navigation_actions,
-                     grid_camera_look_actions,
-                     grid_height_range,
-                     grid_pitch)
-from .state import ObjectState3D, RobotState3D
-from .transition_model import RobotTransition3D
-from .policy_model import PolicyModel3D
+                     grid_navigation_actions2d)
 from ..cospomdp_basic import ThorObjectSearchBasicCosAgent
-
 
 
 # -------- Goal Handlers -------- #
@@ -30,8 +19,8 @@ class GoalHandler:
         """
         agent: ThorObjectSearchCompleteCosAgent
         """
-        self.goal = goal
-
+        self.goal = goa
+l
     def step(self):
         raise NotImplementedError
 
@@ -57,27 +46,6 @@ class GoalHandler:
         """True if the handler should be updated before
         the COSPOMDP agent is updated"""
         return True
-
-
-class DummyGoalHandler(GoalHandler):
-    """A skeleton. Used for replay"""
-    def __init__(self, goal, goal_done, agent):
-        """
-        agent: ThorObjectSearchCompleteCosAgent
-        """
-        self.goal = goal
-        self._goal_done = goal_done
-
-    def step(self):
-        pass
-
-    def update(self, tos_action, tos_observation):
-        pass
-
-    @property
-    def done(self):
-        return True
-
 
 class MacroMoveHandler(GoalHandler):
     def __init__(self, dest_pos, agent, rot=None, angle_tolerance=15, goal=None):
@@ -207,36 +175,12 @@ class LocalSearchHandler(GoalHandler):
         assert isinstance(goal, Stay)
         if search_type == "basic":
             return LocalSearchBasicHandler(goal, agent, params)
-        elif search_type == "3d":
-            return LocalSearch3DHandler(goal, agent, params)
         else:
             raise NotImplemented("Search type {} is not yet implemented".format(search_type))
 
     @property
     def ispomdp(self):
         return True
-
-    @property
-    def updates_first(self):
-        """True if the handler should be updated before
-        the COSPOMDP agent is updated"""
-        return False
-
-    @property
-    def cos_agent(self):
-        return self._local_cos_agent
-
-    @property
-    def detectable_objects(self):
-        return self.cos_agent.detectable_objects
-
-    @property
-    def grid_map(self):
-        return self._parent.grid_map
-
-    @property
-    def done(self):
-        return self._done
 
 
 class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent):
@@ -279,100 +223,10 @@ class LocalSearchBasicHandler(LocalSearchHandler, ThorObjectSearchBasicCosAgent)
                                                   initialize_target_belief_2d,
                                                   update_target_belief_2d,
                                                   prior=prior)
-        pouct_params = params.get("pouct", params)  # backwards compatibliity
-        self.solver = pomdp_py.POUCT(**pouct_params,
+        self.solver = pomdp_py.POUCT(**params,
                                      rollout_policy=self._local_cos_agent.policy_model)
         self._done = False
 
-
-    def step(self):
-        print("Planning locally")
-        action = self.solver.plan(self._local_cos_agent)
-        #### DEBUGGING TREE #####
-        dd = pomdp_py.TreeDebugger(self._local_cos_agent.tree)
-        print(dd)
-        #########################
-        print("     Num Sims:", self.solver.last_num_sims)
-        if isinstance(action, basic.Move2D):
-            params = from_grid_action_to_thor_action_params(
-                action, self._parent.grid_map.grid_size)
-        else:
-            params = {}
-        return TOS_Action(action.name, params)
-
-    def update(self, tos_action, tos_observation):
-        """This local agent updates AFTER the COSPOMDP agent.
-        Because the two both maintain belief at ground level,
-        we can simply sync the beliefs"""
-        # interpret low level action
-        action = self.interpret_action(tos_action)
-        observation = self.interpret_observation(tos_observation)
-        self.solver.update(self._local_cos_agent, action, observation)
-
-        self._local_cos_agent.set_belief(self._parent.belief)
-        self._done = tos_action.name.lower() == "done"
-
-
-class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgent):
-    """
-    Every time the local searcher is created, it inherits the
-    belief from the COS-POMDP about the object's 2D location. Then, it initializes
-    its own belief about the target's height. This belief is only useful locally.
-
-    In fact, you do not need to maintain belief about continuous height;
-    You just need to estimate whether the object is ABOVE, BELOW or AT_THE_SAME_LEVEL
-    with respect to the robot.
-    """
-    def __init__(self, goal, agent, params):
-        """
-        Args:
-            agent (ThorObjectSearchCompleteCosAgent)
-        """
-        LocalSearchHandler.__init__(self, goal, agent)
-        self._parent = agent
-        parent_robot_state = agent.robot_state()
-        local_robot_state = RobotState3D(parent_robot_state.id,
-                                         parent_robot_state.pose,
-                                         parent_robot_state.height,
-                                         parent_robot_state.horizon,
-                                         parent_robot_state.status)
-
-        self.robot_id = agent.robot_id
-        self.target_id = agent.target_id
-
-        self.search_region = agent.search_region
-        reachable_positions = agent.reachable_positions
-
-        movement_params = agent.task_config["nav_config"]["movement_params"]
-        self.navigation_actions = grid_navigation_actions(movement_params,
-                                                          agent.grid_map.grid_size)
-        self.camera_look_actions = grid_camera_look_actions(movement_params)
-        v_angles = [grid_pitch(va) for va in agent.task_config['nav_config']['v_angles']]
-        robot_trans_model = RobotTransition3D(self.robot_id, reachable_positions, v_angles)
-        reward_model = agent.cos_agent.reward_model
-        policy_model = PolicyModel3D(robot_trans_model, reward_model,
-                                     movements=self.navigation_actions,
-                                     camera_looks=self.camera_look_actions)
-
-        _btarget = agent.belief.b(self.target_id)
-        prior_loc = {s.loc: _btarget.loc_belief[s] for s in _btarget}
-        prior_height = _btarget.height_belief
-        self._local_cos_agent = cospomdp.CosAgent(agent.target,
-                                                  local_robot_state,
-                                                  self.search_region,
-                                                  robot_trans_model,
-                                                  policy_model,
-                                                  agent.corr_dists,
-                                                  agent.detectors,
-                                                  reward_model,
-                                                  initialize_target_belief_3d,
-                                                  update_target_belief_3d,
-                                                  prior=(prior_loc, prior_height),
-                                                  binit_args={"grid_size": agent.grid_map.grid_size})
-        pouct_params = params.get("pouct", params)  # backwards compatibility
-        self.solver = pomdp_py.POUCT(**pouct_params,
-                                     rollout_policy=self._local_cos_agent.policy_model)
-        self._done = False
 
     def step(self):
         print("Planning locally")
@@ -402,5 +256,43 @@ class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgen
         self._done = tos_action.name.lower() == "done"
 
     @property
-    def primitive_motions(self):
-        return set(self.navigation_actions) | set(self.camera_look_actions)
+    def updates_first(self):
+        """True if the handler should be updated before
+        the COSPOMDP agent is updated"""
+        return False
+
+    @property
+    def cos_agent(self):
+        return self._local_cos_agent
+
+    @property
+    def detectable_objects(self):
+        return self.cos_agent.detectable_objects
+
+    @property
+    def grid_map(self):
+        return self._parent.grid_map
+
+    @property
+    def done(self):
+        return self._done
+
+
+class DummyGoalHandler(GoalHandler):
+    """A skeleton. Used for replay"""
+    def __init__(self, goal, goal_done, agent):
+        """
+        agent: ThorObjectSearchCompleteCosAgent
+        """
+        self.goal = goal
+        self._goal_done = goal_done
+
+    def step(self):
+        pass
+
+    def update(self, tos_action, tos_observation):
+        pass
+
+    @property
+    def done(self):
+        return True

@@ -144,8 +144,11 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
         corr_objects = set()
 
     agent_init_inputs = ['grid_map']
-    if method["agent"] != "ThorObjectSearchRandomAgent":
+    if method["agent"] != "ThorObjectSearchRandomAgent"\
+       and method["agent"] != "ThorObjectSearchGreedyNbvAgent":
         agent_init_inputs.append('camera_pose')
+    elif method["agent"] == "ThorObjectSearchGreedyNbvAgent":
+        agent_init_inputs.append('agent_pose')  # greedy doesn't do 3D
 
     detector_specs = {
         target: detector_models[target]
