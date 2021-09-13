@@ -140,8 +140,10 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
         corr_objects = set()
 
     agent_init_inputs = ['grid_map']
-    if method["agent"] != "ThorObjectSearchRandomAgent":
+    if "Greedy" in method["agent"]:
         agent_init_inputs.append('agent_pose')
+    elif "Random" not in method["agent"]:
+        agent_init_inputs.append('camera_pose')
 
     detector_specs = {
         target: detector_models[target]
@@ -174,7 +176,7 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
 
     if "CompleteCosAgent" in method['agent']:
         config["agent_config"]["num_place_samples"] = TOPO_PLACE_SAMPLES
-        config["agent_config"]["local_search_type"] = "basic"
+        config["agent_config"]["local_search_type"] = "3d"
         config["agent_config"]["local_search_params"] = LOCAL_POUCT_ARGS
 
     config["visualize"] = visualize
@@ -198,6 +200,11 @@ def read_detector_params(filepath=os.path.join(ABS_PATH, "detector_params.csv"))
                                          min_range=1,
                                          mean_range=mean_range),
                                     quality_params)
+            # detector_models[cls] = ("fan-simplefp",
+            #                         dict(fov=constants.FOV,
+            #                              min_range=1,
+            #                              max_range=mean_range),
+            #                         quality_params)
     return detector_models
 
 CORR_DATASET = os.path.join(ABS_PATH, "../../data/thor/corrs")

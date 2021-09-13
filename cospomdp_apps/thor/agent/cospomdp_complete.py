@@ -440,13 +440,12 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         # if self._goal_handler.done:
         # will update the node id to the goal, if the handled
         # goal is movetopo
-        if isinstance(self._goal_handler.goal, MoveTopo):
-            srobot_old = self.belief.b(self.robot_id).mpe()
-            new_nid = self.topo_map.closest_node(*srobot_old.pose[:2])
-            self._update_belief_topo_nid(srobot_old, new_nid)
-
         if self._goal_handler.done:
-            self.solver.update(self.cos_agent, self._goal_handler.goal, observation)
+            if isinstance(self._goal_handler.goal, MoveTopo):
+                srobot_old = self.belief.b(self.robot_id).mpe()
+                new_nid = self.topo_map.closest_node(*srobot_old.pose[:2])
+                self._update_belief_topo_nid(srobot_old, new_nid)
+
 
     def _resample_topo_map(self, target_hist):
         srobot_old = self.cos_agent.belief.b(self.robot_id).mpe()
