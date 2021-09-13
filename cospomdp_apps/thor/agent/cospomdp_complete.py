@@ -15,7 +15,7 @@ from ..common import TOS_Action, Height
 from ..replay import ReplaySolver
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
 from .components.action import Move, MoveTopo, Stay, grid_h_angles
-from .components.state import RobotStateTopo
+from .components.state import RobotStateTopo, grid_full_pose
 from .components.topo_map import TopoNode, TopoMap, TopoEdge
 from .components.transition_model import RobotTransitionTopo
 from .components.policy_model import PolicyModelTopo
@@ -212,7 +212,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                  solver,
                  solver_args,
                  grid_map,
-                 thor_agent_pose,
+                 thor_camera_pose,
                  thor_prior={},
                  num_place_samples=10,
                  topo_map_degree=(3,5),
@@ -230,7 +230,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                          corr_specs,
                          detector_specs,
                          grid_map,
-                         thor_agent_pose)
+                         thor_camera_pose)
 
         # Form initial topological graph for navigation.
         prior = {loc: 1e-12 for loc in self.search_region}
@@ -386,15 +386,15 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             if hasattr(self.cos_agent, "tree"):
                 del self.cos_agent.tree
 
+        if self.robot_state().horizon == 1:
+            import pdb; pdb.set_trace()
+
 
     def interpret_robot_obz(self, tos_observation):
         # Here, we will build a pose of format (x, y, pitch, yaw, nid)
-        thor_camera_position, thor_camera_rotation = tos_observation.camera_pose
-        x, y, yaw = self.grid_map.to_grid_pose(thor_camera_position['x'],
-                                               thor_camera_position['z'],
-                                               thor_camera_rotation['y'])
-        pitch = tos_observation.horizon
-        height = thor_camera_position['y'] / self.grid_map.grid_size
+        x, y, height, pitch, yaw = grid_full_pose(tos_observation.camera_pose,
+                                                  self.task_config['nav_config']['v_angles'],
+                                                  self.grid_map)
         nid = self.belief.b(self.robot_id).mpe().topo_nid  # keeps the same topo node id
         return cospomdp.RobotObservation(self.robot_id,
                                          (x, y, yaw),

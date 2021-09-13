@@ -29,7 +29,7 @@ def _test_basic_search(target,
     if other is not None:
         detectables.append(other)
 
-    agent_init_inputs = ['grid_map', 'agent_pose']
+    agent_init_inputs = ['grid_map', 'camera_pose']
     if prior == "informed":
         agent_init_inputs.append('groundtruth_prior')
 

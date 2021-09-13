@@ -1,43 +1,21 @@
 from cospomdp.domain.state import RobotState, RobotStatus, RobotState2D, ObjectState
+from cospomdp.utils.math import indicator, normalize, euclidean_dist, roundany, closest
+from .action import grid_pitch
 
-class RobotStateTopo(RobotState):
-    def __init__(self, robot_id, pose, height, horizon, topo_nid, status=RobotStatus()):
-        """
-        We treat robot pose in the same way as Ai2thor does:
-           pose (x, y, yaw): The position and rotation of the base
-           horizon (float): The pitch of the camera (tilt up and down)
-        """
-        super().__init__(robot_id, pose, status)
-        self.topo_nid = topo_nid
-        self.horizon = horizon        #used?
-        self.height = height
 
-    @property
-    def pitch(self):
-        #used?
-        return self.horizon
+def grid_full_pose(thor_pose, thor_v_angles, grid_map):
+    thor_pos, thor_rot = thor_pose
+    x, y, yaw = grid_map.to_grid_pose(
+        thor_pos['x'],  #x
+        thor_pos['z'],  #z
+        thor_rot['y']   #yaw
+    )
 
-    @property
-    def nid(self):
-        return self.topo_nid
+    pitch = grid_pitch(
+        closest(thor_v_angles, thor_rot['x']))
+    height = roundany(thor_pos['y'] / grid_map.grid_size, 1)  #y
+    return (x, y, height, pitch, yaw)
 
-    @property
-    def loc(self):
-        return self['pose'][:2]
-
-    @staticmethod
-    def from_obz(robot_obz):
-        """
-        robot_obz (RobotObservation); Here, we will receive pose
-            as (x, y, pitch, yaw, nid) in the robot_obz. The fields
-            of RobotObservation are not changed.
-        """
-        x, y, yaw = robot_obz.pose
-        return RobotStateTopo(robot_obz.robot_id,
-                              (x, y, yaw),
-                              robot_obz.horizon,
-                              robot_obz.topo_nid,
-                              robot_obz.status)
 
 class RobotState3D(RobotState):
     """
@@ -77,7 +55,7 @@ class RobotState3D(RobotState):
         x, y, yaw = robot_obz.pose
         return RobotState3D(robot_obz.robot_id,
                             (x, y, yaw),
-                            robot_obz.camera_height,
+                            robot_obz.height,
                             robot_obz.horizon,
                             robot_obz.status)
 
@@ -117,4 +95,45 @@ class ObjectState3D(ObjectState):
         return (*self.loc, self.height)
 
     def __str__(self):
-        return str((self.objid, *self.loc, self.height))
+        return str((self.id, *self.loc, self.height))
+
+    def copy(self):
+        return ObjectState3D(self.id,
+                             self.objclass,
+                             self.loc,
+                             self.height)
+
+
+class RobotStateTopo(RobotState3D):
+    def __init__(self, robot_id, pose,
+                 camera_height, camera_horizon,
+                 topo_nid, status=RobotStatus()):
+        """
+        We treat robot pose in the same way as Ai2thor does:
+           pose (x, y, yaw): The position and rotation of the base
+           horizon (float): The pitch of the camera (tilt up and down)
+        """
+        super().__init__(robot_id, pose, camera_height, camera_horizon, status)
+        self.topo_nid = topo_nid
+
+    @property
+    def nid(self):
+        return self.topo_nid
+
+    def __str__(self):
+        return f"({self.robot_id}, {self.pose3d}, topo_nid({self.topo_nid})"
+
+    @staticmethod
+    def from_obz(robot_obz):
+        """
+        robot_obz (RobotObservation); Here, we will receive pose
+            as (x, y, pitch, yaw, nid) in the robot_obz. The fields
+            of RobotObservation are not changed.
+        """
+        x, y, yaw = robot_obz.pose
+        return RobotStateTopo(robot_obz.robot_id,
+                              (x, y, yaw),
+                              robot_obz.height,
+                              robot_obz.horizon,
+                              robot_obz.topo_nid,
+                              robot_obz.status)

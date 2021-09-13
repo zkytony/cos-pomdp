@@ -34,7 +34,7 @@ class CosObservation(pomdp_py.Observation):
         return self._objobzs == other._objobzs
 
     def __str__(self):
-        robotstr = ",".join(map(str, self._robotobz.pose))
+        robotstr = str(self._robotobz)
         objzstr = ""
         for objid in self._objobzs:
             if self._objobzs[objid].loc is not None:
@@ -42,7 +42,7 @@ class CosObservation(pomdp_py.Observation):
         return "CosObservation(r:{};o:{})".format(robotstr, objzstr)
 
     def __repr__(self):
-        return f"{self.__class__}, {self._objobzs}"
+        return str(self)
 
     def __len__(self):
         # Only care about object observations here
@@ -74,10 +74,11 @@ class RobotObservation(pomdp_py.SimpleObservation):
         self.pose = robot_pose
         self.status = status
         self.__dict__.update(kwargs)
+        self._additional_info = kwargs
         super().__init__((self.robot_id, self.pose, self.status))
 
     def __str__(self):
-        return f"({self.robot_pose, self.status})"
+        return f"({self.pose, self.status, self._additional_info})"
 
 class Voxel(pomdp_py.SimpleObservation):
     """3D object observation"""

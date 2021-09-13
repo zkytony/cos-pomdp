@@ -339,8 +339,6 @@ class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgen
         self.robot_id = agent.robot_id
         self.target_id = agent.target_id
 
-        import pdb; pdb.set_trace()
-
         self.search_region = agent.search_region
         reachable_positions = agent.reachable_positions
 
@@ -348,9 +346,7 @@ class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgen
         self.navigation_actions = grid_navigation_actions(movement_params,
                                                           agent.grid_map.grid_size)
         self.camera_look_actions = grid_camera_look_actions(movement_params)
-        print(self.camera_look_actions)
         v_angles = [grid_pitch(va) for va in agent.task_config['nav_config']['v_angles']]
-        print(v_angles)
         robot_trans_model = RobotTransition3D(self.robot_id, reachable_positions, v_angles)
         reward_model = agent.cos_agent.reward_model
         policy_model = PolicyModel3D(robot_trans_model, reward_model,
@@ -437,3 +433,7 @@ class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgen
     @property
     def done(self):
         return self._done
+
+    @property
+    def primitive_motions(self):
+        return set(self.navigation_actions) | set(self.camera_look_actions)

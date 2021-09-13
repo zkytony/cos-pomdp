@@ -86,11 +86,12 @@ class TOS(ThorEnv):
                 output["grid_map"] = grid_map
 
             elif item.lower() == "agent_pose":
-                agent_pose = tt.thor_agent_pose(self.controller, as_tuple=True)
+                print("::::::::: WARNING:: Using agent_pose instead of camera_pose. Are you sure? :::::::")
+                agent_pose = tt.thor_agent_pose(self.controller)
                 output["thor_agent_pose"] = agent_pose
 
             elif item.lower() == "camera_pose":
-                camera_pose = tt.thor_camera_pose(self.controller, as_tuple=True)
+                camera_pose = tt.thor_camera_pose(self.controller)
                 output["thor_camera_pose"] = camera_pose
 
             elif item.lower() == "groundtruth_prior":

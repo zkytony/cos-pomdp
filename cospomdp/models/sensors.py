@@ -191,6 +191,7 @@ class FanSensor3D(SensorModel):
 
     def in_range(self, point, sensor_pose, use_mean=False):
         # Create a 2D sensor with projected parameters
+        print("!!!!!!!!!!!!!!! HELLO !!!!!!!!!!!!!!!!")
         if (point, sensor_pose) in self._cache:
             fan2d = self._cache[(point, sensor_pose)]
         else:

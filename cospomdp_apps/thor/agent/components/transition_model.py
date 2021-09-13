@@ -69,6 +69,8 @@ def robot_pose_transition3d(robot_pose, action):
     nx = rx + forward*math.cos(to_rad(new_yaw))
     ny = ry + forward*math.sin(to_rad(new_yaw))
     new_pitch = (pitch + v_angle) % 360
+    if new_pitch == 1:
+        import pdb; pdb.set_trace()
     return (nx, ny, rz, new_pitch, new_yaw)
 
 def _to_full_pose(srobot):
@@ -105,15 +107,17 @@ class RobotTransition3D(RobotTransition):
             next_robot_status = RobotStatus(done=True)
 
         next_pose2d, height, pitch = _to_state_pose(next_robot_pose)
+        if pitch == 1:
+            print(":::::::::::::::::::::::::::::::::::::")
+            print(":::::::::::::::::::::::::::::::::::::")
+            print(":::::::::::::::::::::::::::::::::::::")
+            print(":::::::::::::::::::::::::::::::::::::")
+            import pdb; pdb.set_trace()
+
         if pitch not in self._v_angles\
            or next_pose2d[:2] not in self.reachable_positions:
             return RobotState3D(self.robot_id, srobot["pose"],
                                 height, srobot.horizon, next_robot_status)
         else:
-            if pitch == 331:
-                print(":::::::::::::::::::::::::::::::::::::")
-                print(":::::::::::::::::::::::::::::::::::::")
-                print(":::::::::::::::::::::::::::::::::::::")
-                print(":::::::::::::::::::::::::::::::::::::")
             return RobotState3D(self.robot_id, next_pose2d,
                                 height, pitch, next_robot_status)

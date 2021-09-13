@@ -5,7 +5,7 @@ Overall control flow
     /               (solver.plan(COSAgent))                   \
    \ (CosAgent.update())                                       \
     \                                                           \
-     \                                                        execute
+     \                       agent                                 execute
       <--------------------- update ------------- observation /
 
 """
@@ -25,8 +25,8 @@ from cospomdp_apps.basic.action import Move2D, ALL_MOVES_2D, Done
 from cospomdp_apps.basic.belief import initialize_target_belief_2d, update_target_belief_2d
 
 from .components.action import (grid_navigation_actions2d,
-                                from_grid_action_to_thor_action_params,
-                                grid_pitch)
+                                from_grid_action_to_thor_action_params)
+from .components.state import grid_full_pose
 
 from ..common import TOS_Action, ThorAgent
 from ..replay import ReplaySolver
@@ -48,7 +48,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
                  corr_specs,
                  detector_specs,
                  grid_map,
-                 thor_agent_pose):
+                 thor_camera_pose):
         """
         Initialize.
         """
@@ -61,15 +61,13 @@ class ThorObjectSearchCosAgent(ThorAgent):
         self.search_region = search_region
         self.reachable_positions = reachable_positions
 
-        self._init_robot_pose = grid_map.to_grid_pose(
-            thor_agent_pose[0][0],  #x
-            thor_agent_pose[0][2],  #z
-            thor_agent_pose[1][1]   #yaw
-        )
-        #pitch/horizon; use int() because sometimes somehow the pitch from thor is 1 degree
-        self._init_pitch = grid_pitch(
-            closest(task_config['nav_config']['v_angles'], thor_agent_pose[1][0]))
-        self._height = roundany(thor_agent_pose[0][1] / self.grid_map.grid_size, 1)  #y
+        x, y, height, pitch, yaw = grid_full_pose(thor_camera_pose,
+                                                  task_config['nav_config']['v_angles'],
+                                                  grid_map)
+
+        self._init_robot_pose = (x, y, yaw)   # 2D pose
+        self._init_pitch = pitch
+        self._height = height
 
         if task_config["task_type"] == 'class':
             target_id = task_config['target']
@@ -255,7 +253,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
                  solver,
                  solver_args,
                  grid_map,
-                 thor_agent_pose,
+                 thor_camera_pose,
                  thor_prior={},
                  approx_belief=False):
         """
@@ -271,7 +269,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
                          corr_specs,
                          detector_specs,
                          grid_map,
-                         thor_agent_pose)
+                         thor_camera_pose)
 
         goal_distance = (task_config["nav_config"]["goal_distance"]
                          / self.grid_map.grid_size) * 0.8  # just to make sure we are close enough
@@ -339,7 +337,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
                                          cospomdp.RobotStatus(done=tos_observation.done))
 
     def interpret_action(self, tos_action):
-        cospomdp_actions = {a.name: a for a in set(self.navigation_actions) | {Done()}}
+        cospomdp_actions = {a.name: a for a in set(self.primitive_motions) | {Done()}}
         if tos_action.name in cospomdp_actions:
             action = cospomdp_actions[tos_action.name]
             return action
@@ -352,3 +350,7 @@ class ThorObjectSearchBasicCosAgent(ThorObjectSearchCosAgent):
         """
         self.cos_agent.update(action, observation)
         self.solver.update(self.cos_agent, action, observation)
+
+    @property
+    def primitive_motions(self):
+        return self.navigation_actions

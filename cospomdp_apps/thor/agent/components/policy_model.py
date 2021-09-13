@@ -38,7 +38,8 @@ class PolicyModelTopo(cospomdp.PolicyModel):
         return self._observation_model.target_id
 
     def get_all_actions(self, state, history=None):
-        return self.valid_moves(state) | {Done()}
+        all_actions = self.valid_moves(state) | {Done()}
+        return all_actions
 
     def valid_moves(self, state):
         srobot = state.s(self.robot_id)
@@ -123,11 +124,14 @@ class PolicyModel3D(cospomdp.PolicyModel):
                                                           self.val_init, self)
 
     @property
-    def primitive_actions(self):
+    def primitive_motions(self):
         return self.movements | self.camera_looks
 
     def get_all_actions(self, state, history=None):
-        return self.valid_moves(state) | {Done()}# + [Search(), Done()]
+        all_actions = self.valid_moves(state) | {Done()}
+        if len(all_actions) == 1:
+            import pdb; pdb.set_trace()
+        return all_actions
 
     def valid_moves(self, state):
         srobot = state.s(self.robot_id)
@@ -136,10 +140,10 @@ class PolicyModel3D(cospomdp.PolicyModel):
         else:
             robot_pose = srobot.pose3d
             valid_moves = set()
-            for a in self.primitive_actions:
+            for a in self.primitive_motions:
                 if self.robot_trans_model.sample(state, a).pose3d != robot_pose:
                     valid_moves.add(a)
-            # valid_moves = set(a for a in self.primitive_actions
+            # valid_moves = set(a for a in self.primitive_motions
             #     if self.robot_trans_model.sample(state, a).pose3d != robot_pose)
             self._legal_moves[srobot] = valid_moves
             return valid_moves
