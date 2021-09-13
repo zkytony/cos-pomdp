@@ -175,14 +175,16 @@ class FanSensor3D(FanSensor):
     def __init__(self, name4="laser3d_sensor", **params):
         # Note that because of the tilt, the range will change.
         super().__init__(**params)
+        self.v_angles = params["v_angles"]
         self._cache = {}
 
     @staticmethod
-    def from_fan(fan):
+    def from_fan(fan, v_angles):
         return FanSensor3D(min_range=fan.min_range,
                            max_range=fan.max_range,
                            fov=fan.fov,
-                           mean_range=fan.mean_range)
+                           mean_range=fan.mean_range,
+                           v_angles=v_angles)
 
     def __str__(self):
         return f"FanSensor3D({self.min_range, self.max_range, self.mean_range, to_deg(self.flat_fov)})"
@@ -245,13 +247,13 @@ class FanSensor3D(FanSensor):
 
     def in_range_facing(self, point, sensor_pose,
                         angular_tolerance=15,
-                        v_angular_tolerance=45):
+                        v_angular_tolerance=15):
         x, y, height, pitch, yaw = sensor_pose
 
         desired_yaw = yaw_facing(sensor_pose[:2], point[:2])
         current_yaw = sensor_pose[-1]
 
-        desired_pitch = pitch_facing((x,y,height), point)
+        desired_pitch = pitch_facing((x,y,height), point, self.v_angles)
         current_pitch = pitch
 
         return self.in_range(point, sensor_pose)\
