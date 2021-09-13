@@ -112,7 +112,7 @@ class RobotState2D(RobotState):
         return sensor.in_range(loc, self["pose"], **kwargs)
 
     def in_range_facing(self, sensor, point, **kwargs):
-        return sensor.in_range(point, self["pose"], **kwargs)
+        return sensor.in_range_facing(point, self["pose"], **kwargs)
 
 
 class CosState(pomdp_py.OOState):

@@ -35,7 +35,8 @@ class RobotTransitionTopo(RobotTransition):
                 next_horizon = 0.0 # there is no pitch
                 next_topo_nid = action.dst_nid
             else:
-                raise ValueError("Unexpected action {} for robot state {}.".format(action, srobot))
+                print(":::::WARNING::::: Unexpected action {} for robot state {}. Ignoring action".format(action, srobot))
+
         elif isinstance(action, Done):
             next_status = RobotStatus(done=True)
 

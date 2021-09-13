@@ -33,10 +33,6 @@ class Move(Motion):
         return self.delta[2]
 
 
-class Goal:
-    def do(self):
-        pass
-
 class MoveTopo(Motion):
     def __init__(self, src_nid, dst_nid, gdist=None,
                  cost_scaling_factor=1.0, atype="move"):

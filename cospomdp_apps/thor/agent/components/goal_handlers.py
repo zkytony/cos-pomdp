@@ -376,6 +376,7 @@ class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgen
     def step(self):
         print("Planning locally")
         action = self.solver.plan(self._local_cos_agent)
+        import pdb; pdb.set_trace()
         #### DEBUGGING TREE #####
         dd = pomdp_py.TreeDebugger(self._local_cos_agent.tree)
         print(dd)

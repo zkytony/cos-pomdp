@@ -271,14 +271,6 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         h_angles = grid_h_angles(self.task_config['nav_config']['h_angles'])
         robot_trans_model = RobotTransitionTopo(self.robot_id, self.target[0],
                                                 self.topo_map, h_angles)
-        goal_distance = (task_config["nav_config"]["goal_distance"] / grid_map.grid_size) * 0.8  # just to make sure we are close enough
-        reward_model = cospomdp.ObjectSearchRewardModel(
-            self.detectors[self.target_id].sensor,
-            goal_distance,
-            self.robot_id, self.target_id,
-            **task_config["reward_config"])
-        policy_model = PolicyModelTopo(robot_trans_model, reward_model, self.topo_map)
-
         prior_loc = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
                      for p in thor_prior}
         belief_type = "histogram" if not approx_belief else "histogram-approx"
@@ -302,6 +294,14 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
         else:
             raise NotImplementedError(f"Unknown local search type {local_search_type}")
+
+        goal_distance = (task_config["nav_config"]["goal_distance"] / grid_map.grid_size) * 0.8  # just to make sure we are close enough
+        reward_model = cospomdp.ObjectSearchRewardModel(
+            self.detectors[self.target_id].sensor,
+            goal_distance,
+            self.robot_id, self.target_id,
+            **task_config["reward_config"])
+        policy_model = PolicyModelTopo(robot_trans_model, reward_model, self.topo_map)
 
         self.cos_agent = cospomdp.CosAgent(self.target,
                                            init_robot_state,
@@ -336,6 +336,10 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             return action
 
         goal = self.solver.plan(self.cos_agent)
+        if isinstance(goal, cospomdp.Done):
+            print("COS-POMDP is Done.")
+            goal = Stay(self.robot_state().nid)  # let the local planner take care of the rest
+
         print("Goal: {}".format(goal), "Num Sims:", self.solver.last_num_sims)
         if self._goal_handler is None or goal != self._goal_handler.goal:
             # Goal is different now. We try to handle this goal

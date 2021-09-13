@@ -187,7 +187,7 @@ class FanSensor3D(FanSensor):
                            mean_range=fan.mean_range)
 
     def __str__(self):
-        return f"FanSensor3D({self._flat_min_range, self._flat_max_range, self._flat_mean_range, to_deg(self._flat_fov)})"
+        return f"FanSensor3D({self.min_range, self.max_range, self.mean_range, to_deg(self.flat_fov)})"
 
     def __repr__(self):
         return str(self)
