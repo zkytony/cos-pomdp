@@ -2,13 +2,17 @@ import pytest
 import random
 import math
 import matplotlib.pyplot as plt
-from cospomdp.models.sensors import FanSensor, FrustumCamera
+from cospomdp.models.sensors import FanSensor, FrustumCamera, FanSensor3D
 from cospomdp.utils.math import to_rad
 from cospomdp.utils.plotting import plot_pose
 
 @pytest.fixture
 def fansensor():
     return FanSensor(fov=75, min_range=0, max_range=4)
+
+@pytest.fixture
+def fansensor_big():
+    return FanSensor(fov=75, min_range=0, max_range=10)
 
 @pytest.fixture
 def dim():
@@ -20,8 +24,9 @@ def robot_pose():
 
 @pytest.fixture
 def show_plots():
-    return False
+    return True
 
+@pytest.mark.skip()
 def test_fansensor_geometry(fansensor, dim, show_plots):
     if show_plots:
         fig, ax = plt.subplots()
@@ -55,11 +60,62 @@ def test_fansensor_geometry(fansensor, dim, show_plots):
         plt.pause(1)
         plt.close()
 
+def test_fansensor3d_geometry(fansensor_big, dim, show_plots):
+    if show_plots:
+        fig, ax = plt.subplots()
+
+    fan2d = fansensor_big
+
+    fan3d = FanSensor3D(max_range=fan2d.max_range,
+                        min_range=fan2d.min_range,
+                        fov=fan2d.fov)
+
+    assert fan3d._project2d((0, 0, 0, 0, 0)) == fan2d
+
+    w, l = dim
+    thetas = [0, 30, 60, 90, 135, 180, 225, 275, 360]
+    pitches = [-60, -45, -30, -15, 0, 15, 30, 45, 60]
+    heights = [0, 2, 4, 6]
+    robot_pos = (10, 10)
+    for k in range(len(heights)):
+        height = heights[k]
+        for i in range(len(thetas)):
+            th = thetas[i]
+            for j in range(len(pitches)):
+                pitch = pitches[j]
+                x = random.uniform(2, w-2)
+                y = random.uniform(2, l-2)
+                robot_pose = (*robot_pos, height, pitch, th)
+
+                if show_plots:
+                    plot_pose(ax, robot_pose[0:2], robot_pose[2], color='red')
+
+                samples_x = []
+                samples_y = []
+                for i in range(200):
+                    point = fan3d.uniform_sample_sensor_region(robot_pose)
+                    samples_x.append(point[0])
+                    samples_y.append(point[1])
+                    assert fan3d.in_range(point, robot_pose)
+
+                if show_plots:
+                    ax.scatter(samples_x, samples_y, zorder=1, s=50, alpha=0.6)
+                    ax.set_xlim(0, w)
+                    ax.set_ylim(0, l)
+                    ax.set_aspect("equal")
+                    ax.set_title(f"Test FanSensor3D ({robot_pose})")
+
+                    if i == j == k == 0:
+                        plt.show(block=False)
+                    plt.pause(1)
+                    ax.clear()
+
 
 @pytest.fixture
 def camera():
     return FrustumCamera(fov=90, aspect_ratio=1.0, near=1, far=5)
 
+@pytest.mark.skip()
 def test_frustum_camera(camera, show_plots):
     points = []
     w, l, h = 30, 30, 30

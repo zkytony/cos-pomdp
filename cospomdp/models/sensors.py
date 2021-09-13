@@ -5,7 +5,7 @@ from scipy.spatial.transform import Rotation as R
 
 from ..utils.math import (to_rad, to_deg, R2d,
                           euclidean_dist, pol2cart,
-                          vec, R_quat, R_euler, T,
+                          vec, R_quat, R_euler, T, R_y,
                           in_range_inclusive, closest,
                           law_of_cos, inverse_law_of_cos)
 
@@ -74,7 +74,8 @@ class FanSensor(SensorModel):
         min_range = params["min_range"]
         max_range = params["max_range"]
         self.name = name
-        self.fov = to_rad(fov)  # convert to radian
+        self.fov = fov  # convert to radian
+        self._fov_rad = to_rad(fov)
         self.min_range = min_range
         self.max_range = max_range
         # this is not actually used unless the sensor model is far range.
@@ -89,7 +90,24 @@ class FanSensor(SensorModel):
         # The size of the sensing region here is the area covered by the fan
         # This is a float, but rounding it up should equal to the number of discrete locations
         # in the field of view.
-        self._sensing_region_size = int(math.ceil(self.fov / (2*math.pi) * math.pi * (self.max_range - self.min_range)**2))
+        self._sensing_region_size = int(math.ceil(self._fov_rad / (2*math.pi) * math.pi * (self.max_range - self.min_range)**2))
+
+    def __eq__(self, other):
+        if not isinstance(other, FanSensor):
+            return False
+        if abs(self.fov - other.fov) <= 1e-4\
+           and abs(self.min_range - other.min_range) <= 1e-4\
+           and abs(self.max_range - other.max_range) <= 1e-4\
+           and abs(self.mean_range - other.mean_range) <= 1e-4:
+            return True
+        else:
+            return False
+
+    def __str__(self):
+        return f"FanSensor({self.min_range, self.max_range, self.mean_range, to_deg(self.fov)})"
+
+    def __repr__(self):
+        return str(self)
 
     def uniform_sample_sensor_region(self, sensor_pose):
         """Returns a location in the field of view
@@ -98,7 +116,7 @@ class FanSensor(SensorModel):
         assert len(sensor_pose) == 3,\
             "Robot pose must have x, y, th"
         # Sample a location (r,th) for the default robot pose
-        th = random.uniform(0, self.fov) - self.fov/2
+        th = random.uniform(0, self._fov_rad) - self._fov_rad/2
         r = random.uniform(self.min_range, self.max_range)
         x, y = pol2cart(r, th)
         # transform to robot pose
@@ -127,7 +145,7 @@ class FanSensor(SensorModel):
         if self.min_range <= dist <= range_bound:
             # because we defined bearing to be within 0 to 360, the fov
             # angles should also be defined within the same range.
-            fov_ranges = (0, self.fov/2), (2*math.pi - self.fov/2, 2*math.pi)
+            fov_ranges = (0, self._fov_rad/2), (2*math.pi - self._fov_rad/2, 2*math.pi)
             if in_range_inclusive(bearing, fov_ranges[0])\
                or in_range_inclusive(bearing, fov_ranges[1]):
                 return True
@@ -161,44 +179,69 @@ class FanSensor3D(SensorModel):
         self._flat_max_range = params["max_range"]
         self._flat_mean_range = params.get("mean_range", self._flat_max_range)
         self._flat_fov = params["fov"]
-        self._flat_min_range = params["mean_range"]
+        self._flat_min_range = params["min_range"]
         self._cache = {}
 
+    def __str__(self):
+        return f"FanSensor3D({self._flat_min_range, self._flat_max_range, self._flat_mean_range, to_deg(self._flat_fov)})"
+
+    def __repr__(self):
+        return str(self)
+
     def _project_range(self, height, pitch):
-        mean_range_proj = self._flat_mean_range * math.cos(to_deg(pitch))
-        max_range_proj = self._flat_max_range * math.cos(to_deg(pitch))
-        min_range_proj = self._flat_min_range * math.cos(to_deg(pitch))
+        mean_range_proj = self._flat_mean_range * math.cos(to_rad(pitch))
+        max_range_proj = self._flat_max_range * math.cos(to_rad(pitch))
+        min_range_proj = self._flat_min_range * math.cos(to_rad(pitch))
         return min_range_proj, max_range_proj, mean_range_proj
 
-    def _project_fov(self, height, pitch):
-        flat_fan_front_edge = law_of_cos(self._flat_max_edge,
-                                         self._flat_max_edge,
-                                         self._flat_fov)
-        max_range_proj = self._flat_max_range * math.cos(to_deg(pitch))
-        fov_proj = inverse_law_of_cos(max_range_proj, max_range_proj, flat_fan_front_edge)
+    def _project_fov(self, pitch):
+        # first we get the vector from fan center to the farthest points in the FOV.
+        # Say the fan's origin is (0,0); the fan looks at +x by default;
+        v1 = np.array([math.cos(to_rad(self._flat_fov/2)),
+                       math.sin(to_rad(self._flat_fov/2)),
+                       0,
+                       1])
+        v2 = np.array([math.cos(to_rad(self._flat_fov/2)),
+                       -math.sin(to_rad(self._flat_fov/2)),
+                       0,
+                       1])  # height doesn't matter here
+
+        # rotate both vectors with respect to the y axis by pitch
+        v1_rot = np.dot(R_y(pitch), v1)
+        v2_rot = np.dot(R_y(pitch), v2)
+
+        # get the distance between the two vector end points on the x-y plane
+        flat_fan_front_edge = euclidean_dist(v1_rot[:2], v2_rot[:2])
+        fov_proj = inverse_law_of_cos(1., 1., flat_fan_front_edge)
         return fov_proj
 
     def _project2d(self, sensor_pose):
-        x, y, height, pitch, yaw = sensor_pose
-        min_range_proj, max_range_proj, mean_range_proj = self._project_range(height, pitch)
-        fov_proj = self._project_fov(height, pitch)
-        fan2d = FanSensor(min_range=min_range_proj,
-                          max_range=max_range_proj,
-                          mean_range=mean_range_proj,
-                          fov=fov_proj)
+        if sensor_pose in self._cache:
+            return self._cache[sensor_pose]
+        else:
+            x, y, height, pitch, yaw = sensor_pose
+            params_proj = self._project_range(height, pitch)
+            min_range_proj, max_range_proj, mean_range_proj = params_proj
+            fov_proj = self._project_fov(pitch)
+            fan2d = FanSensor(min_range=min_range_proj,
+                              max_range=max_range_proj,
+                              mean_range=mean_range_proj,
+                              fov=fov_proj)
+            self._cache[sensor_pose] = fan2d
         return fan2d
 
 
     def in_range(self, point, sensor_pose, use_mean=False):
         # Create a 2D sensor with projected parameters
         print("!!!!!!!!!!!!!!! HELLO !!!!!!!!!!!!!!!!")
-        if (point, sensor_pose) in self._cache:
-            fan2d = self._cache[(point, sensor_pose)]
-        else:
-            fan2d = self._project2d(sensor_pose)
-        self._cache[(point, sensor_pose)] = fan2d
+        fan2d = self._project2d(sensor_pose)
+        x, y, height, pitch, yaw = sensor_pose
         return fan2d.in_range(point, (x, y, yaw), use_mean=use_mean)
 
+    def uniform_sample_sensor_region(self, sensor_pose):
+        fan2d = self._project2d(sensor_pose)
+        x, y, height, pitch, yaw = sensor_pose
+        return fan2d.uniform_sample_sensor_region((x,y,yaw))
 
 class FrustumCamera(SensorModel):
 

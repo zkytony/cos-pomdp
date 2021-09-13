@@ -131,12 +131,12 @@ def overlap(seg1, seg2):
 def law_of_cos(a, b, angle):
     """Given length of edges a and b and angle (degrees)
     in between, return the length of the edge opposite to the angle"""
-    return to_deg(math.sqrt(a**2 + b**2 - 2*a*b*math.cos(to_rad(angle))))
+    return math.sqrt(a**2 + b**2 - 2*a*b*math.cos(to_rad(angle)))
 
 def inverse_law_of_cos(a, b, c):
     """Given three edges, a, b, c, figure out
     the angle between a and b (i.e. opposite of c), in degrees"""
-    costh = (c**2 - a**2 - b**2) / (-2*a*b)
+    costh = (a**2 + b**2 - c**2) / (2*a*b)
     return to_deg(math.acos(costh))
 
 ## Statistics
