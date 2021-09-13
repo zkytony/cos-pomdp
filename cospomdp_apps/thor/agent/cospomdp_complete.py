@@ -329,7 +329,6 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         # that achieve goals
         self._goal_handler = None
         self._loop_counter = 0
-        self._repeating_actions = []
 
     def act(self):
         if isinstance(self.solver, ReplaySolver):
@@ -337,21 +336,12 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             self._goal_handler = DummyGoalHandler(goal, goal_done, self)
             return action
 
-        # If there is an action that is repeated too much, we need to unstuck - terminate the task
-        # This is due to an unknown bug where the agent will keep taking LookDown when it cannot
-        # LookDown any more.
-        if len(self._repeating_actions) > 10:  # TODO: parameterize or fix.
-            return DoneHandler(cospomdp.Done(), self).step()
-
         goal = self.solver.plan(self.cos_agent)
         if isinstance(goal, MoveTopo):
             from pomdp_py.utils import TreeDebugger
             dd = TreeDebugger(self.cos_agent.tree)
             print(dd)
             print("*****************************")
-            # import pdb; pdb.set_trace()
-        #     print("COS-POMDP is Done.")
-        #     goal = Stay(self.robot_state().nid)  # let the local planner take care of the rest
 
         print("Goal: {}".format(goal), "Num Sims:", self.solver.last_num_sims)
         if self._goal_handler is None or goal != self._goal_handler.goal:
@@ -374,14 +364,6 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             self._loop_count = 0
             assert isinstance(action, TOS_Action)
 
-        if len(self._repeating_actions) > 0:
-            if action == self._repeating_actions[-1]:
-                self._repeating_actions.append(action)
-            else:
-                self._repeating_actions = [action]
-        else:
-            self._repeating_actions = [action]
-        print("Repeating actions: {}".format(self._repeating_actions))
         return action
 
     def handle(self, goal):

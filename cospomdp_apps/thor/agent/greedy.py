@@ -461,7 +461,7 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                 camera_position = tos_observation.camera_pose[0]
                 camera_position = [camera_position['x'], camera_position['y'], camera_position['z']]
                 desired_pitch = thor_pitch_facing(camera_position, thor_target_pos, self._thor_v_angles)
-                if abs(desired_pitch - tos_observation.horizon) <= 15:
+                if abs(desired_pitch - tos_observation.horizon) <= 30:
                     # do nothing
                     break
                 elif desired_pitch - tos_observation.horizon > 0:
