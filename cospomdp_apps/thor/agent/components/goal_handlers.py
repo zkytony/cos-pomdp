@@ -352,7 +352,6 @@ class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgen
         policy_model = PolicyModel3D(robot_trans_model, reward_model,
                                      movements=self.navigation_actions,
                                      camera_looks=self.camera_look_actions)
-        detectors = self._convert_to_3d_detectors(agent.detectors)
 
         _btarget = agent.belief.b(self.target_id)
         prior_loc = {s.loc: _btarget.loc_belief[s] for s in _btarget}
@@ -363,7 +362,7 @@ class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgen
                                                   robot_trans_model,
                                                   policy_model,
                                                   agent.corr_dists,
-                                                  detectors,
+                                                  agent.detectors,
                                                   reward_model,
                                                   initialize_target_belief_3d,
                                                   update_target_belief_3d,
@@ -373,17 +372,6 @@ class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgen
         self.solver = pomdp_py.POUCT(**pouct_params,
                                      rollout_policy=self._local_cos_agent.policy_model)
         self._done = False
-
-    def _convert_to_3d_detectors(self, detectors):
-        """
-        detectors:  Maps from objid to a DetectionModel Pr(zi | si, srobot')
-                Must contain an entry for the target object
-        """
-        detectors3d = {}
-        for objid in detectors:
-            if detectors[objid].__class__.__name__.startswith("Fan"):
-                detectors3d[objid] = detectors[objid].copy()
-        return detectors3d
 
     def step(self):
         print("Planning locally")

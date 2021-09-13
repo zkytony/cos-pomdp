@@ -182,6 +182,13 @@ class FanSensor3D(SensorModel):
         self._flat_min_range = params["min_range"]
         self._cache = {}
 
+    @staticmethod
+    def from_fan(fan):
+        return FanSensor3D(min_range=fan.min_range,
+                           max_range=fan.max_range,
+                           fov=fan.fov,
+                           mean_range=fan.mean_range)
+
     def __str__(self):
         return f"FanSensor3D({self._flat_min_range, self._flat_max_range, self._flat_mean_range, to_deg(self._flat_fov)})"
 

@@ -26,4 +26,4 @@ from cospomdp.models.reward_model import ObjectSearchRewardModel, NavRewardModel
 
 from cospomdp.models.policy_model import PolicyModel
 
-from cospomdp.models.sensors import SensorModel, FanSensor, FrustumCamera
+from cospomdp.models.sensors import SensorModel, FanSensor, FrustumCamera, FanSensor3D
