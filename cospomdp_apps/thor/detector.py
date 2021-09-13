@@ -305,11 +305,15 @@ class GroundtruthDetector(Detector):
             else:
                 # returns grid map cells projected from the bounding box
                 xyxy = shrink_bbox(xyxy, self._bbox_margin)
-                thor_points = pj.thor_project_bbox(
-                    xyxy, event.depth_frame,
-                    camera_intrinsic, downsample=0.01,
-                    einv=einv)
-                locs.extend(thor_points)
+                try:
+                    thor_points = pj.thor_project_bbox(
+                        xyxy, event.depth_frame,
+                        camera_intrinsic, downsample=0.01,
+                        einv=einv)
+                    locs.extend(thor_points)
+                except:
+                    # projection can sometimes fail due to bounding box too small
+                    continue
             d = (xyxy, conf, cls, locs)
             if self._accepts(d, camera_pose[0]):
                 results.append(d)

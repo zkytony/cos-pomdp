@@ -7,7 +7,7 @@ def step_act_cb(task_env, agent, **kwargs):
 
 
 if __name__ == "__main__":
-    _test_complete_search("PepperShaker", "StoveBurner",
+    _test_complete_search("Vase", "Shelf",
                           scene="FloorPlan1",
                           num_sims=40,
                           prior='informed',
