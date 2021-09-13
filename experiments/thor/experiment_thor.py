@@ -261,6 +261,7 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
 
                     shared_args = (run_num, scene_type, scene, target, detector_models)
 
+                    gt_hier_corr_crt = make_trial(Methods.GT_HIERARCHICAL_CORR_CRT, *shared_args, corr_objects=corr_objects)
                     v_hier_corr_crt = make_trial(Methods.V_HIERARCHICAL_CORR_CRT, *shared_args, corr_objects=corr_objects)
                     v_hier_corr_lrn = make_trial(Methods.V_HIERARCHICAL_CORR_LRN, *shared_args, corr_objects=corr_objects)
                     v_hier_corr_wrg = make_trial(Methods.V_HIERARCHICAL_CORR_WRG, *shared_args, corr_objects=corr_objects)
