@@ -337,10 +337,6 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             return action
 
         goal = self.solver.plan(self.cos_agent)
-        # if isinstance(goal, cospomdp.Done):
-        #     print("COS-POMDP is Done.")
-        #     goal = Stay(self.robot_state().nid)  # let the local planner take care of the rest
-
         print("Goal: {}".format(goal), "Num Sims:", self.solver.last_num_sims)
         if self._goal_handler is None or goal != self._goal_handler.goal:
             # Goal is different now. We try to handle this goal

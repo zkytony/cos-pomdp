@@ -31,7 +31,7 @@ from .cospomdp_basic import (ThorObjectSearchCosAgent,
                              GridMapSearchRegion,
                              ThorObjectSearchBasicCosAgent)
 from .cospomdp_complete import _shortest_path
-from .components.action import MoveViewpoint, grid_h_angles
+from .components.action import MoveViewpoint
 from .components.goal_handlers import MacroMoveHandler, DoneHandler, DummyGoalHandler
 
 def weighted_particles(particles):
@@ -77,7 +77,6 @@ class GreedyNbvAgent:
                  goal_distance, num_particles=100, prior={},
                  done_check_thres=0.2,
                  num_viewpoint_samples=10,
-                 is3d=False,
                  decision_params={}):
         """
         prior: Maps from object_id to a map from search region location to a float.
@@ -360,10 +359,9 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                  corr_specs,
                  detector_specs,
                  grid_map,
-                 thor_agent_pose,
+                 thor_camera_pose,
                  solver=None,
                  solver_args=None,
-                 is3d=True,
                  **greedy_params):
         """
         thor_prior: dict mapping from thor location to probability; If empty, then the prior will be uniform.
@@ -372,14 +370,14 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                          corr_specs,
                          detector_specs,
                          grid_map,
-                         thor_agent_pose)
+                         thor_camera_pose)
         init_robot_state = cospomdp.RobotState2D(self.robot_id, self._init_robot_pose)
-        h_angles = grid_h_angles(self.task_config['nav_config']['h_angles'])
+        h_angles = self.task_config['nav_config']['h_angles']
         goal_distance = (task_config["nav_config"]["goal_distance"] / grid_map.grid_size) * 0.8
         self.greedy_agent = GreedyNbvAgent(self.target, init_robot_state,
                                            self.search_region, self.reachable_positions,
                                            self.corr_dists, self.detectors, self.detectable_objects, h_angles,
-                                           goal_distance=goal_distance, is3d=is3d,
+                                           goal_distance=goal_distance,
                                            **greedy_params)
         self._goal_handler = None
         self._loop_counter = 0

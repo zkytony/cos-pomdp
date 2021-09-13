@@ -25,7 +25,11 @@ POUCT_ARGS = dict(max_depth=20,
                   exploration_const=100,
                   show_progress=True)
 
-LOCAL_POUCT_ARGS = POUCT_ARGS
+LOCAL_POUCT_ARGS = dict(max_depth=15,
+                        num_sims=150,
+                        discount_factor=0.95,
+                        exploration_const=50,
+                        show_progress=True)
 MAX_STEPS = 100
 
 TOPO_PLACE_SAMPLES = 20  # specific to hierarchical methods
@@ -141,7 +145,7 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
 
     agent_init_inputs = ['grid_map']
     if method["agent"] != "ThorObjectSearchRandomAgent":
-        agent_init_inputs.append('agent_pose')
+        agent_init_inputs.append('camera_pose')
 
     detector_specs = {
         target: detector_models[target]
@@ -174,7 +178,7 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
 
     if "CompleteCosAgent" in method['agent']:
         config["agent_config"]["num_place_samples"] = TOPO_PLACE_SAMPLES
-        config["agent_config"]["local_search_type"] = "basic"
+        config["agent_config"]["local_search_type"] = "3d"
         config["agent_config"]["local_search_params"] = LOCAL_POUCT_ARGS
 
     config["visualize"] = visualize
