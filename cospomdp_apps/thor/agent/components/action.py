@@ -87,9 +87,12 @@ def grid_camera_look_actions(movement_params):
     for action_name in movement_params:
         if action_name in {"LookUp", "LookDown"}:
             degrees = movement_params[action_name]["degrees"]
-            delta = (0, 0, (-degrees % 360))
+            delta = (0, 0, grid_pitch(degrees))
             actions.append(Move(action_name, delta))
     return actions
+
+def grid_pitch(thor_pitch):
+    return -thor_pitch % 360
 
 def grid_h_angles(thor_h_angles):
     """accepted h angles; should be identical with thor, in fact.
@@ -136,10 +139,11 @@ def grid_navigation_actions(movement_params, grid_size):
             h_angle = -abs(h_angle)
 
         elif name == "LookUp":
-            v_angle = abs(v_angle)
+            continue  # will be handled by grid_camera_look_actions
 
         elif name == "LookDown":
-            v_angle = -abs(v_angle)
+            continue  # will be handled by grid_camera_look_actions
+
         else:
             assert h_angle == 0.0
             assert v_angle == 0.0

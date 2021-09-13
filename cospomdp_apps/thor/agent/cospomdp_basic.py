@@ -19,13 +19,14 @@ import pomdp_py
 import thortils as tt
 
 import cospomdp
-from cospomdp.utils.math import indicator, normalize, euclidean_dist
+from cospomdp.utils.math import indicator, normalize, euclidean_dist, roundany, closest
 from cospomdp_apps.basic import PolicyModel2D, RobotTransition2D
 from cospomdp_apps.basic.action import Move2D, ALL_MOVES_2D, Done
 from cospomdp_apps.basic.belief import initialize_target_belief_2d, update_target_belief_2d
 
 from .components.action import (grid_navigation_actions2d,
-                                from_grid_action_to_thor_action_params)
+                                from_grid_action_to_thor_action_params,
+                                grid_pitch)
 
 from ..common import TOS_Action, ThorAgent
 from ..replay import ReplaySolver
@@ -65,8 +66,10 @@ class ThorObjectSearchCosAgent(ThorAgent):
             thor_agent_pose[0][2],  #z
             thor_agent_pose[1][1]   #yaw
         )
-        self._init_pitch = thor_agent_pose[1][0]
-        self._height = thor_agent_pose[0][1] / self.grid_map.grid_size  #y
+        #pitch/horizon; use int() because sometimes somehow the pitch from thor is 1 degree
+        self._init_pitch = grid_pitch(
+            closest(task_config['nav_config']['v_angles'], thor_agent_pose[1][0]))
+        self._height = roundany(thor_agent_pose[0][1] / self.grid_map.grid_size, 1)  #y
 
         if task_config["task_type"] == 'class':
             target_id = task_config['target']

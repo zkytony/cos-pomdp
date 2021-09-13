@@ -451,6 +451,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         """
         srobot = RobotStateTopo(srobot_old.id,
                                 srobot_old.pose,
+                                srobot_old.height,
                                 srobot_old.horizon,
                                 new_nid,
                                 status=srobot_old.status)

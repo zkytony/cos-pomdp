@@ -1,7 +1,7 @@
 import random
 from pomdp_py import RolloutPolicy, ActionPrior
 from cospomdp.domain.action import Done
-from cospomdp.models.sensors import pitch_facing
+from cospomdp.models.sensors import pitch_facing, yaw_facing
 from cospomdp.utils.math import euclidean_dist
 from cospomdp_apps.basic.policy_model import PolicyModel2D
 import cospomdp
@@ -106,12 +106,13 @@ class PolicyModelTopo(cospomdp.PolicyModel):
                             break
             return preferences
 
+
 class PolicyModel3D(cospomdp.PolicyModel):
     def __init__(self, robot_trans_model, reward_model, movements, camera_looks, **kwargs):
         super().__init__(robot_trans_model, **kwargs)
         self._legal_moves = {}
-        self.movements = movements
-        self.camera_looks = camera_looks
+        self.movements = set(movements)
+        self.camera_looks = set(camera_looks)
         self.reward_model = reward_model
 
     def set_observation_model(self, observation_model,
@@ -134,8 +135,12 @@ class PolicyModel3D(cospomdp.PolicyModel):
             return self._legal_moves[srobot]
         else:
             robot_pose = srobot.pose3d
-            valid_moves = set(a for a in self.primitive_actions
-                if self.robot_trans_model.sample(state, a).pose3d != robot_pose)
+            valid_moves = set()
+            for a in self.primitive_actions:
+                if self.robot_trans_model.sample(state, a).pose3d != robot_pose:
+                    valid_moves.add(a)
+            # valid_moves = set(a for a in self.primitive_actions
+            #     if self.robot_trans_model.sample(state, a).pose3d != robot_pose)
             self._legal_moves[srobot] = valid_moves
             return valid_moves
 
@@ -145,7 +150,6 @@ class PolicyModel3D(cospomdp.PolicyModel):
             self.num_visits_init = num_visits_init
             self.val_init = val_init
             self.policy_model = policy_model
-            self._action_prior2d = PolicyModel2D.ActionPrior(num_visits_init, val_init, policy_model)
 
         def get_preferred_actions(self, state, history):
             last_action = history[-1][0] if len(history) > 0 else None
@@ -157,15 +161,45 @@ class PolicyModel3D(cospomdp.PolicyModel):
             srobot = state.s(robot_id)
             starget = state.s(target_id)
 
-            state2d = cospomdp.CosState({robot_id: srobot.to_2d(),
-                                         target_id: starget.to_2d()})
-            preferences = self._action_prior2d.get_preferred_actions(state2d, history)
+            # This borows from Policy2D
+            current_distance = euclidean_dist(srobot.loc, starget.loc)
+            desired_yaw = yaw_facing(srobot.loc, starget.loc)
+            current_yaw_diff = abs(desired_yaw - srobot.pose[2]) % 360
+            preferences = set()
+
+            for move in self.policy_model.movements:
+                # A move is preferred if:
+                # (1) it moves the robot closer to the target
+                next_srobot = self.policy_model.robot_trans_model.sample(state, move)
+                next_distance = euclidean_dist(next_srobot.loc, starget.loc)
+                if next_distance < current_distance:
+                    preferences.add((move, self.num_visits_init, self.val_init))
+
+                # (2) if the move rotates the robot to be more facing the target,
+                # unless the previous move was a rotation in an opposite direction;
+                next_yaw_diff = abs(desired_yaw - next_srobot.pose[2]) % 360
+                if next_yaw_diff < current_yaw_diff:
+                    if hasattr(last_action, "dyaw") and last_action.dyaw * move.dyaw >= 0:
+                        # last action and current are NOT rotations in different directions
+                        preferences.add((move, self.num_visits_init, self.val_init))
+                        break
+
+                # (3) it makes the robot observe any object;
+                next_state = cospomdp.CosState({target_id: state.s(target_id),
+                                                robot_id: next_srobot})
+                observation = self.policy_model.observation_model.sample(next_state, move)
+                for zi in observation:
+                    if zi.loc is not None:
+                        preferences.add((move, self.num_visits_init, self.val_init))
+                        break
 
             # Figure out if we would like to prefer lookup/down
+            if not hasattr(starget, "loc3d"):
+                import pdb; pdb.set_trace()
             desired_pitch = pitch_facing(srobot.loc3d, starget.loc3d)
             current_pitch_diff = abs(desired_pitch - srobot.pitch) % 360
 
-            for look in self.camera_looks:
+            for look in self.policy_model.camera_looks:
                 # We prefer look if:
                 # it brings the robot to be facing the target in terms of pitch rotation.
                 next_srobot = self.policy_model.robot_trans_model.sample(state, look)

@@ -56,6 +56,10 @@ class RobotState3D(RobotState):
         return self.horizon
 
     @property
+    def robot_id(self):
+        return self.id
+
+    @property
     def camera_height(self):
         return self.height
 
@@ -80,7 +84,7 @@ class RobotState3D(RobotState):
     @property
     def pose3d(self):
         x, y, yaw = self.pose
-        return (x, y, self.pitch, yaw)
+        return (x, y, self.height, self.pitch, yaw)
 
     def to_2d(self):
         return RobotState2D(self.robot_id, self.pose, self.status)
@@ -88,6 +92,9 @@ class RobotState3D(RobotState):
     @property
     def loc3d(self):
         return (*self.loc, self.height)
+
+    def __str__(self):
+        return str((self.robot_id, *self.pose3d))
 
 
 class ObjectState3D(ObjectState):
@@ -101,3 +108,13 @@ class ObjectState3D(ObjectState):
     @property
     def height(self):
         return self["height"]
+
+    def to_2d(self):
+        return ObjectState(self.id, self.objclass, self['loc'])
+
+    @property
+    def loc3d(self):
+        return (*self.loc, self.height)
+
+    def __str__(self):
+        return str((self.objid, *self.loc, self.height))

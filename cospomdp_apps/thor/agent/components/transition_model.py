@@ -63,18 +63,18 @@ def robot_pose_transition3d(robot_pose, action):
         robot_pose (x, y, th)
         action (Move2D)
     """
-    rx, ry, pitch, yaw = robot_pose
+    rx, ry, rz, pitch, yaw = robot_pose
     forward, h_angle, v_angle = action.delta
     new_yaw = (yaw + h_angle) % 360
     nx = rx + forward*math.cos(to_rad(new_yaw))
     ny = ry + forward*math.sin(to_rad(new_yaw))
     new_pitch = (pitch + v_angle) % 360
-    return (nx, ny, new_pitch, new_yaw)
+    return (nx, ny, rz, new_pitch, new_yaw)
 
 def _to_full_pose(srobot):
     x, y, yaw = srobot["pose"]
-    pitch = srobot["horizon"]
-    z = srobot["height"]
+    pitch = srobot.horizon
+    z = srobot.height
     return (x, y, z, pitch, yaw)
 
 def _to_state_pose(full_pose):
@@ -95,7 +95,7 @@ class RobotTransition3D(RobotTransition):
 
     def argmax(self, state, action):
         srobot = state.s(self.robot_id)
-        current_robot_pose = _to_full_pose(srobot["pose"])
+        current_robot_pose = _to_full_pose(srobot)
         next_robot_pose = current_robot_pose
         next_robot_status = srobot.status.copy()
         if isinstance(action, Move):
@@ -104,11 +104,16 @@ class RobotTransition3D(RobotTransition):
         elif isinstance(action, Done):
             next_robot_status = RobotStatus(done=True)
 
-        next_pose2d, height, pitch = _to_state_pose(current_robot_pose)
+        next_pose2d, height, pitch = _to_state_pose(next_robot_pose)
         if pitch not in self._v_angles\
            or next_pose2d[:2] not in self.reachable_positions:
             return RobotState3D(self.robot_id, srobot["pose"],
                                 height, srobot.horizon, next_robot_status)
         else:
+            if pitch == 331:
+                print(":::::::::::::::::::::::::::::::::::::")
+                print(":::::::::::::::::::::::::::::::::::::")
+                print(":::::::::::::::::::::::::::::::::::::")
+                print(":::::::::::::::::::::::::::::::::::::")
             return RobotState3D(self.robot_id, next_pose2d,
                                 height, pitch, next_robot_status)
