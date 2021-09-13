@@ -54,11 +54,11 @@ class CosObjectObservationModel(ObservationModel):
             self._cond_dists = {}
             for starget in corr_dist.valrange(target_id):
                 # Obtain Pr(Si | S_target = starget)
-                self._cond_dists[starget] =\
+                self._cond_dists[starget.loc] =\
                     corr_dist.marginal([self.corr_object_id], evidence={self.target_id: starget})
 
     def corr_cond_dist(self, starget):
-        return self._cond_dists[starget]
+        return self._cond_dists[starget.loc]
 
     def probability(self, zi, snext, *args):
         # action doesn't matter here
@@ -73,7 +73,7 @@ class CosObjectObservationModel(ObservationModel):
             # Only the detection model matters, if both classes are the same
             return self.detection_model.probability(zi, starget, srobot)
 
-        dist_si = self._cond_dists[starget]  # Pr(Si | S_target = starget)
+        dist_si = self._cond_dists[starget.loc]  # Pr(Si | S_target = starget)
         pr_total = 1e-12
         for si in dist_si.valrange(self.corr_object_id):
             pr_detection = self.detection_model.probability(zi, si, srobot)
@@ -88,7 +88,7 @@ class CosObjectObservationModel(ObservationModel):
         if self.corr_object_id == self.target_id:
             zi = self.detection_model.sample(starget, srobot)
         else:
-            dist_si = self._cond_dists[starget]  # Pr(Si | S_target = starget)
+            dist_si = self._cond_dists[starget.loc]  # Pr(Si | S_target = starget)
             si = dist_si.sample()[self.corr_object_id]
             zi = self.detection_model.sample(si, srobot)
         return zi

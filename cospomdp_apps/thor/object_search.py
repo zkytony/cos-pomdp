@@ -96,9 +96,6 @@ class TOS(ThorEnv):
             elif item.lower() == "groundtruth_prior":
                 output["thor_prior"] = {self.get_object_loc(self.target) : 1e6}
 
-            elif item.lower() == "height_range":
-                output["height_range"] = tt.thor_objects_height_range(self.controller)
-
             else:
                 raise ValueError("Invalid field item for getting information: {}".format(item))
         return output

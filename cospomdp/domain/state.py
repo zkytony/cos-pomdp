@@ -25,33 +25,10 @@ class ObjectState(pomdp_py.ObjectState):
         return self.id < other.id\
             and self.loc < other.loc
 
-class ObjectState3D(pomdp_py.ObjectState):
-    def __init__(self, objid, objclass, loc, height):
-        super().__init__(objclass, {"loc": loc, "height": height})
-
-    @property
-    def loc(self):
-        return self['loc']
-
-    @property
-    def loc3d(self):
-        return (*self.loc, self.height)
-
-    @property
-    def height(self):
-        return self['height']
-
-    @property
-    def id(self):
-        return self['id']
-
-    @property
-    def height(self):
-        return self['height']
-
-    def to_2d(self):
-        return ObjectState(self.id, self.objclass, self.loc)
-
+    def copy(self):
+        return ObjectState(self.id,
+                           self.objclass,
+                           self.loc)
 
 @dataclass(init=True, frozen=True, eq=True, unsafe_hash=True)
 class RobotStatus:

@@ -4,7 +4,7 @@ from cospomdp.utils.math import normalize, euclidean_dist
 from tqdm import tqdm
 from cospomdp.domain.state import CosState
 
-def initialize_target_belief_2d(target, search_region, belief_type, prior):
+def initialize_target_belief_2d(target, search_region, belief_type, prior, *args):
     def _prob(prior, loc):
         return prior.get(loc, 1.0)
 

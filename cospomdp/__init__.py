@@ -1,4 +1,4 @@
-from cospomdp.domain.state import RobotStatus, RobotState, RobotState2D, CosState
+from cospomdp.domain.state import RobotStatus, RobotState, RobotState2D, CosState, ObjectState
 from cospomdp.domain.action import Motion, Done
 from cospomdp.domain.observation import (Loc, CosObservation,
                                          RobotObservation, Voxel)
@@ -7,7 +7,7 @@ from cospomdp.models.agent import CosAgent
 # from cospomdp.models.basic_env import BasicEnv2D
 from cospomdp.models.belief import CosJointBelief
 
-from cospomdp.models.search_region import SearchRegion, SearchRegion2D, SearchRegion3D
+from cospomdp.models.search_region import SearchRegion, SearchRegion2D
 from cospomdp.models.correlation import CorrelationDist
 
 from cospomdp.models.transition_model import (RobotTransition,

@@ -11,7 +11,7 @@ import cospomdp
 from cospomdp_apps.basic.belief import initialize_target_belief_2d, update_target_belief_2d
 
 from ..constants import GOAL_DISTANCE
-from ..common import TOS_Action
+from ..common import TOS_Action, Height
 from ..replay import ReplaySolver
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
 from .components.action import Move, MoveTopo, Stay, grid_h_angles
@@ -23,6 +23,8 @@ from .components.goal_handlers import (MoveTopoHandler,
                                        DoneHandler,
                                        LocalSearchHandler,
                                        DummyGoalHandler)
+from .components.belief import (initialize_target_belief_3d,
+                                update_target_belief_3d)
 
 
 def _shortest_path(reachable_positions, gloc1, gloc2):
@@ -218,8 +220,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                  topo_cover_thresh=0.5,
                  local_search_type="basic",
                  local_search_params={},
-                 height_range=None,
                  approx_belief=False,
+                 prior_height={},
                  seed=1000):
         """
         If the probability
@@ -249,7 +251,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                          rnd=random.Random(self._seed),
                                          robot_pos=self._init_robot_pose[:2])
         init_topo_nid = self.topo_map.closest_node(*self._init_robot_pose[:2])
-        init_robot_state = RobotStateTopo(self.robot_id, self._init_robot_pose,
+        init_robot_state = RobotStateTopo(self.robot_id, self._init_robot_pose, self._height,
                                           self._init_pitch, init_topo_nid)
         self.thor_movement_params = task_config["nav_config"]["movement_params"]
 
@@ -264,9 +266,29 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             **task_config["reward_config"])
         policy_model = PolicyModelTopo(robot_trans_model, reward_model, self.topo_map)
 
-        prior = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
-                 for p in thor_prior}
+        prior_loc = {grid_map.to_grid_pos(p[0], p[2]): thor_prior[p]
+                     for p in thor_prior}
         belief_type = "histogram" if not approx_belief else "histogram-approx"
+
+        if local_search_type == "basic":
+            target_belief_initializer = initialize_target_belief_2d
+            target_belief_updater = update_target_belief_2d
+            prior = prior_loc
+            binit_args = {}
+
+        elif local_search_type == "3d":
+            target_belief_initializer = initialize_target_belief_3d
+            target_belief_updater = update_target_belief_3d
+            # Separately maintains a belief about target height, used if
+            # local planner searches in 3d
+            prior_height = pomdp_py.Histogram({h: prior_height.get(h, 1.0)
+                                                     for h in Height.SETTINGS})
+            prior = (prior_loc, prior_height)
+            binit_args = {'grid_size': grid_map.grid_size}
+
+        else:
+            raise NotImplementedError(f"Unknown local search type {local_search_type}")
+
         self.cos_agent = cospomdp.CosAgent(self.target,
                                            init_robot_state,
                                            self.search_region,
@@ -275,13 +297,13 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                            self.corr_dists,
                                            self.detectors,
                                            reward_model,
-                                           initialize_target_belief_2d,
-                                           update_target_belief_2d,
+                                           target_belief_initializer,
+                                           target_belief_updater,
                                            belief_type=belief_type,
-                                           prior=prior)
+                                           prior=prior,
+                                           binit_args=binit_args)
         self._local_search_type = local_search_type
         self._local_search_params = local_search_params
-        self._height_range = height_range
         if solver == "pomdp_py.POUCT":
             self.solver = pomdp_py.POUCT(**solver_args,
                                          rollout_policy=self.cos_agent.policy_model)
@@ -292,10 +314,6 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         # that achieve goals
         self._goal_handler = None
         self._loop_counter = 0
-
-    @property
-    def height_range(self):
-        return self._height_range
 
     def act(self):
         if isinstance(self.solver, ReplaySolver):

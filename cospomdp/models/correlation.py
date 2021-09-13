@@ -1,6 +1,8 @@
+from ..domain.state import ObjectState
 from ..probability import JointDist, Event, TabularDistribution
 from tqdm import tqdm
 import pickle
+
 
 class CorrelationDist(JointDist):
     def __init__(self, corr_object, target, search_region,

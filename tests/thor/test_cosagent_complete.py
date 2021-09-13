@@ -55,8 +55,6 @@ def _test_complete_search(target,
     agent_init_inputs = ['grid_map', 'agent_pose']
     if prior == "informed":
         agent_init_inputs.append('groundtruth_prior')
-    if local_search_type == "3d":
-        agent_init_inputs.append('height_range')
 
     if target_false_pos is not None:
         quality = (target_accuracy, target_false_pos, 0.5)

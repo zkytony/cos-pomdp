@@ -1,6 +1,6 @@
 import pomdp_py
 import random
-from ..domain.state import ObjectState, ObjectState3D, RobotState, CosState
+from ..domain.state import ObjectState, RobotState, CosState
 from ..utils.math import normalize, euclidean_dist
 from .belief import CosJointBelief
 from .transition_model import CosTransitionModel
@@ -24,6 +24,7 @@ class CosAgent(pomdp_py.Agent):
                  target_belief_updater,
                  belief_type="histogram",
                  use_heuristic=True,
+                 binit_args={},
                  bu_args={},
                  prior={}):
         """
@@ -52,9 +53,10 @@ class CosAgent(pomdp_py.Agent):
         self._target = target
         self._belief_type = belief_type
         self._bu_args = bu_args
-        init_btarget = target_belief_initializer(target, search_region,
-                                                 belief_type, prior)
         init_brobot = self._initialize_robot_belief(init_robot_state)
+        init_btarget = target_belief_initializer(target, search_region,
+                                                 belief_type, prior,
+                                                 init_robot_state, **binit_args)
         init_belief = CosJointBelief({robot_id: init_brobot,
                                       target_id: init_btarget})
         self.init_robot_state = init_robot_state

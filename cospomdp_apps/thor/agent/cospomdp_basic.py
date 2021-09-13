@@ -38,29 +38,6 @@ class GridMapSearchRegion(cospomdp.SearchRegion2D):
         super().__init__(grid_map.obstacles)
         self.scene = scene
 
-class GridMapSearchRegion3D(cospomdp.SearchRegion3D):
-    def __init__(self, grid_map, height_range, scene=None):
-        """
-        Height range: The range of height the objects could be
-            within the grid map's notion of z coordinates.
-
-        Precisely, here is the difference:
-
-            In GridMap, +x is right, +y is up. angle on the xy-plane rotates from +x to +y
-                +z is, by right and rule, therefore up.
-                angles on the yz-plane rotates from +y to +z
-                angles on the xz-plane rotates from +x to +z
-
-            In ai2thor, +x is right, +z is up. angle on the xz-plane rotates from +z to +x
-                +y is, by left hand rule, up.  (Unity uses left-hand rule);
-                angles on the zy-plane rotates from +y to +z,
-                angles on the zx-plane rotates from +y to +x (left-hand-rule)
-
-
-        """
-        super().__init__(grid_map.obstacles, height_range)
-        self.scene = scene
-
 
 class ThorObjectSearchCosAgent(ThorAgent):
     AGENT_USES_CONTROLLER = False
@@ -89,6 +66,7 @@ class ThorObjectSearchCosAgent(ThorAgent):
             thor_agent_pose[1][1]   #yaw
         )
         self._init_pitch = thor_agent_pose[1][0]
+        self._height = thor_agent_pose[0][1] / self.grid_map.grid_size  #y
 
         if task_config["task_type"] == 'class':
             target_id = task_config['target']

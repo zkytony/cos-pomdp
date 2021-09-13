@@ -22,6 +22,7 @@ class RobotTransitionTopo(RobotTransition):
 
         next_pose = srobot["pose"]
         next_status = srobot.status.copy()
+        next_height = srobot.height
         next_horizon = srobot.horizon
         next_topo_nid = srobot.nid
 
@@ -40,6 +41,7 @@ class RobotTransitionTopo(RobotTransition):
 
         next_srobot = RobotStateTopo(srobot.id,
                                      next_pose,
+                                     next_height,
                                      next_horizon,
                                      next_topo_nid,
                                      next_status)

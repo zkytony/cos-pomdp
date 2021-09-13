@@ -1,7 +1,7 @@
-from cospomdp.domain.state import RobotState, RobotStatus, RobotState2D
+from cospomdp.domain.state import RobotState, RobotStatus, RobotState2D, ObjectState
 
 class RobotStateTopo(RobotState):
-    def __init__(self, robot_id, pose, horizon, topo_nid, status=RobotStatus()):
+    def __init__(self, robot_id, pose, height, horizon, topo_nid, status=RobotStatus()):
         """
         We treat robot pose in the same way as Ai2thor does:
            pose (x, y, yaw): The position and rotation of the base
@@ -10,6 +10,7 @@ class RobotStateTopo(RobotState):
         super().__init__(robot_id, pose, status)
         self.topo_nid = topo_nid
         self.horizon = horizon        #used?
+        self.height = height
 
     @property
     def pitch(self):
@@ -87,3 +88,16 @@ class RobotState3D(RobotState):
     @property
     def loc3d(self):
         return (*self.loc, self.height)
+
+
+class ObjectState3D(ObjectState):
+    def __init__(self, objid, objclass, loc, height):
+        super().__init__(objid, objclass, loc)
+        self.attributes["height"] = height
+
+    def __hash__(self):
+        return hash((self.id, self.loc, self.height))
+
+    @property
+    def height(self):
+        return self["height"]

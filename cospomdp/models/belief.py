@@ -9,17 +9,12 @@ class CosJointBelief(pomdp_py.OOBelief):
     def random(self, rnd=random):
         return CosState(super().random(rnd=random, return_oostate=False))
 
-    def mpe(self, rnd=random):
+    def mpe(self):
         # import pdb; pdb.set_trace()
         return CosState(super().mpe(return_oostate=False))
 
     def b(self, objid):
         return self.object_beliefs[objid]
-
-    def bloc(self, objid, loc):
-        bobj = self.object_beliefs[objid]
-        sobj_mpe = bobj.mpe()
-        return bobj[ObjectState(objid, sobj_mpe.objclass, loc)]
 
     def set_b(self, objid, belief):
         self.object_beliefs[objid] = belief

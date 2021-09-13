@@ -20,7 +20,7 @@ class CosTransitionModel(TransitionModel):
     def sample(self, state, action):
         next_robot_state = self.robot_trans_model.sample(state, action)
         starget = state.s(self.target_id)
-        next_target_state = ObjectState(starget.id, starget.objclass, starget["loc"])
+        next_target_state = starget.copy()
         robot_id = self.robot_trans_model.robot_id
         return CosState({robot_id: next_robot_state,
                          self.target_id: next_target_state})
@@ -38,8 +38,6 @@ class FullTransitionModel(TransitionModel):
         for objid in state.object_states:
             if objid == next_robot_state.id:
                 continue
-            next_object_state = ObjectState(objid,
-                                            state.s(objid).objclass,
-                                            state.s(objid)['loc'])
+            next_object_state = state.s(objid).copy()
             objstates[objid] = next_object_state
         return CosState(objstates)

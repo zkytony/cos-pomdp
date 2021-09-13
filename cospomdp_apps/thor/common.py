@@ -184,6 +184,38 @@ class ThorAgent:
         return detector
 
 
+class Height:
+    ABOVE = "above"
+    BELOW = "below"
+    SAME = "same"
+    INCREMENT = 0.5  # thor unit, meters
+
+    SETTINGS = [ABOVE, BELOW, SAME]
+
+    @staticmethod
+    def to_val(robot_height, hstr):
+        if hstr == Height.ABOVE:
+            return robot_height + Height.INCREMENT
+        elif hstr == Height.BELOW:
+            return robot_height - Height.INCREMENT
+        elif hstr == Height.SAME:
+            return robot_height
+        else:
+            raise ValueError(f"Invalid value of height {h}")
+
+    def to_str(robot_height, hval):
+        diff = robot_height - hval
+        if -Height.INCREMENT < diff < Height.INCREMENT:
+            return Height.SAME
+        elif diff <= -Height.INCREMENT:
+            return Height.ABOVE
+        elif diff >= -Height.INCREMENT:
+            return Height.BELOW
+        else:
+            raise ValueError("Unexpected")
+
+
+
 @dataclass(init=True)
 class TaskArgs:
     detectables: set
