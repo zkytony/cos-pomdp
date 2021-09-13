@@ -191,7 +191,7 @@ def _sample_topo_map(target_hist,
 
     return topo_map
 
-def _convert_to_3d_detectors(detectors):
+def _convert_to_3d_detectors(detectors, v_angles):
     """
     detectors:  Maps from objid to a DetectionModel Pr(zi | si, srobot')
             Must contain an entry for the target object
@@ -200,7 +200,7 @@ def _convert_to_3d_detectors(detectors):
     for objid in detectors:
         if detectors[objid].__class__.__name__.startswith("Fan"):
             detectors3d[objid] = detectors[objid].copy()
-            detectors3d[objid].sensor = cospomdp.FanSensor3D.from_fan(detectors[objid].sensor)
+            detectors3d[objid].sensor = cospomdp.FanSensor3D.from_fan(detectors[objid].sensor, v_angles)
     return detectors3d
 
 
@@ -291,7 +291,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                                      for h in Height.SETTINGS})
             prior = (prior_loc, prior_height)
             binit_args = {'grid_size': grid_map.grid_size}
-            self.detectors = _convert_to_3d_detectors(self.detectors)
+            self.detectors = _convert_to_3d_detectors(self.detectors, v_angles)
 
         else:
             raise NotImplementedError(f"Unknown local search type {local_search_type}")
