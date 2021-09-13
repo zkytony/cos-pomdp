@@ -25,6 +25,7 @@ class ObjectSearchRewardModel(pomdp_py.RewardModel):
 
         if isinstance(action, Done):
             if self.success(srobot, starget):
+                # print("SUCCESS", srobot, starget)
                 return self._hi
             else:
                 return self._lo
