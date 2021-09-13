@@ -156,11 +156,8 @@ class PolicyModel3D(cospomdp.PolicyModel):
             self.num_visits_init = num_visits_init
             self.val_init = val_init
             self.policy_model = policy_model
-            self._cache = {}
 
         def get_preferred_actions(self, state, history):
-            if state in self._cache:
-                return self._cache[state]
 
             last_action = history[-1][0] if len(history) > 0 else None
             if isinstance(last_action, Done):
@@ -208,5 +205,19 @@ class PolicyModel3D(cospomdp.PolicyModel):
                         preferences.add((move, self.num_visits_init, self.val_init))
                         break
 
-            self._cache[state] = preferences
+            # Figure out if we would like to prefer lookup/down
+            if euclidean_dist(srobot.loc, starget.loc) <= self.policy_model.reward_model.goal_dist*4:
+                desired_pitch = pitch_facing(srobot.loc3d, starget.loc3d)
+                current_pitch_diff = abs(desired_pitch - srobot.pitch) % 360
+
+                for look in self.policy_model.camera_looks:
+                    # We prefer look if:
+                    # it brings the robot to be facing the target in terms of pitch rotation.
+                    next_srobot = self.policy_model.robot_trans_model.sample(state, look)
+                    next_pitch = next_srobot.pitch
+                    next_pitch_diff = abs(desired_pitch - next_pitch) % 360
+                    if hasattr(last_action, "dpitch") and last_action.dpitch * move.dpitch >= 0:
+                        if next_pitch_diff < current_pitch_diff:
+                            preferences.add((look, self.num_visits_init, self.val_init))
+                            break
             return preferences
