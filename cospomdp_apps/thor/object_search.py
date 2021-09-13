@@ -274,7 +274,8 @@ class TOS(ThorEnv):
         object_distance = euclidean_dist(objpos, (agent_position['x'],
                                                   agent_position['z']))
         close_enough = (object_distance <= self.goal_distance)
-        success = in_fov and close_enough
+        # success = in_fov and close_enough
+        success = close_enough
 
         # Teleport back, if necessary (i.e. if agent_pose is provided)
         if agent_pose is not None:
