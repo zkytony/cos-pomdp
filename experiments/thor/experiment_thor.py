@@ -181,7 +181,7 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
 
     if "CompleteCosAgent" in method['agent']:
         config["agent_config"]["num_place_samples"] = TOPO_PLACE_SAMPLES
-        config["agent_config"]["local_search_type"] = "basic"
+        config["agent_config"]["local_search_type"] = "3d"
         config["agent_config"]["local_search_params"] = LOCAL_POUCT_ARGS
 
     config["visualize"] = visualize

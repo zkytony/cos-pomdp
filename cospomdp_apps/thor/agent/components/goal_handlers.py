@@ -19,8 +19,8 @@ class GoalHandler:
         """
         agent: ThorObjectSearchCompleteCosAgent
         """
-        self.goal = goa
-l
+        self.goal = goal
+
     def step(self):
         raise NotImplementedError
 
