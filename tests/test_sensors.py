@@ -3,7 +3,7 @@ import random
 import math
 import matplotlib.pyplot as plt
 from thortils.utils.colors import lighter, rgb_to_hex
-from cospomdp.models.sensors import FanSensor, FrustumCamera, FanSensor3D
+from cospomdp.models.sensors import FanSensor, FrustumCamera, FanSensor3D, pitch_facing
 from cospomdp.utils.math import to_rad
 from cospomdp.utils.plotting import plot_pose
 
@@ -64,6 +64,10 @@ def test_fansensor_geometry(fansensor, dim, show_plots):
 def test_fansensor3d_geometry(fansensor_big, dim, show_plots):
     if show_plots:
         fig, ax = plt.subplots()
+
+    assert 0 < pitch_facing((0,0,0), (0,5,3)) < 90
+    assert 270 < pitch_facing((0,0,0), (0,5,-3)) < 360
+    assert 270 < pitch_facing((2,2,0), (0,5,-3)) < 360
 
     fan2d = fansensor_big
 

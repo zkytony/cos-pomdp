@@ -185,6 +185,7 @@ class ThorAgent:
 
 
 class Height:
+    # The object is above, below or the same as the robot's current view level.
     ABOVE = "above"
     BELOW = "below"
     SAME = "same"

@@ -68,6 +68,9 @@ class CosObservation(pomdp_py.Observation):
     def z_robot(self):
         return self._robotobz
 
+    def has_positive_detection(self):
+        return any(zi.loc is not None for zi in self)
+
 class RobotObservation(pomdp_py.SimpleObservation):
     def __init__(self, robot_id, robot_pose, status, **kwargs):
         self.robot_id = robot_id

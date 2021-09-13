@@ -425,6 +425,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         This agent doesn't care about low-level action.
         """
         self.cos_agent.update(None, observation)
+        if hasattr(self.cos_agent.belief.b(self.target_id), "height_belief"):
+            print(pomdp_py.utils.typ.blue("Height Belief: {}".format(self.cos_agent.belief.b(self.target_id).height_belief)))
 
         # If the goal is done, we will supply the observation
         # (because COSAgent here expects observations after
