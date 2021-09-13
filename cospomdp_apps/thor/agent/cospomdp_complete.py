@@ -337,7 +337,10 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             return action
 
         goal = self.solver.plan(self.cos_agent)
-        # if isinstance(goal, cospomdp.Done):
+        if isinstance(goal, Stay):
+            from pomdp_py.utils import TreeDebugger
+            dd = TreeDebugger(self.cos_agent.tree)
+            import pdb; pdb.set_trace()
         #     print("COS-POMDP is Done.")
         #     goal = Stay(self.robot_state().nid)  # let the local planner take care of the rest
 
