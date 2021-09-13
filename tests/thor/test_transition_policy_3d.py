@@ -49,23 +49,33 @@ def _test():
     print("Lookdown:", lookdown.delta[2])
     print("LookUp:", lookup.delta[2])
 
+    print(policy_model.get_all_actions(ns))
     print(state.s("robot"))
     ns = _s(robot_trans_model.sample(state, lookdown))
+    print(policy_model.get_all_actions(ns))
     print(ns.s("robot"))
     ns = _s(robot_trans_model.sample(ns, lookdown))
+    print(policy_model.get_all_actions(ns))
     print(ns.s("robot"))
     ns = _s(robot_trans_model.sample(ns, lookdown))
+    print(policy_model.get_all_actions(ns))
     print(ns.s("robot"))
     ns = _s(robot_trans_model.sample(ns, lookdown))
+    print(policy_model.get_all_actions(ns))
     print(ns.s("robot"))
     assert policy_model.valid_moves(ns)\
         == set(navigation_actions) | (set(camera_look_actions) - {lookdown})
 
     # Do the same for look up
+    print(ns.s("robot"))
     ns = _s(robot_trans_model.sample(state, lookup))
+    print(ns.s("robot"))
     ns = _s(robot_trans_model.sample(ns, lookup))
+    print(ns.s("robot"))
     ns = _s(robot_trans_model.sample(ns, lookup))
+    print(ns.s("robot"))
     ns = _s(robot_trans_model.sample(ns, lookup))
+    print(ns.s("robot"))
     assert policy_model.valid_moves(ns)\
         == set(navigation_actions) | (set(camera_look_actions) - {lookup})
 

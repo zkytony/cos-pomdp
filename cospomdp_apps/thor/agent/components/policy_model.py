@@ -129,8 +129,6 @@ class PolicyModel3D(cospomdp.PolicyModel):
 
     def get_all_actions(self, state, history=None):
         all_actions = self.valid_moves(state) | {Done()}
-        if len(all_actions) == 1:
-            import pdb; pdb.set_trace()
         return all_actions
 
     def valid_moves(self, state):

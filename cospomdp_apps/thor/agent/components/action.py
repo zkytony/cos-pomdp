@@ -98,7 +98,7 @@ def grid_camera_look_actions(movement_params):
     return actions
 
 def grid_pitch(thor_pitch):
-    return thor_pitch % 360
+    return -thor_pitch % 360
 
 def grid_h_angles(thor_h_angles):
     """accepted h angles; should be identical with thor, in fact.
