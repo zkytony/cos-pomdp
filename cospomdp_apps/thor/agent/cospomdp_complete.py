@@ -340,7 +340,9 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         if isinstance(goal, MoveTopo):
             from pomdp_py.utils import TreeDebugger
             dd = TreeDebugger(self.cos_agent.tree)
-            import pdb; pdb.set_trace()
+            print(dd)
+            print("*****************************")
+            # import pdb; pdb.set_trace()
         #     print("COS-POMDP is Done.")
         #     goal = Stay(self.robot_state().nid)  # let the local planner take care of the rest
 

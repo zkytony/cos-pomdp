@@ -34,10 +34,10 @@ def pitch_facing(robot_pos3d, target_pos3d, angles=None):
     Returns:
         .pitch angle between 0 - 360 degrees
     """
-    _, ry, rz = robot_pos3d
-    _, ty, tz = target_pos3d
-    pitch = to_deg(math.atan2(tz - rz,
-                              ty - ry)) % 360
+    rx, _, rz = robot_pos3d
+    tx, _, tz = target_pos3d
+    pitch = to_deg(math.atan2(tx - rx,
+                              tz - rz)) % 360
     if angles is not None:
         return closest(angles, pitch)
     else:
@@ -244,7 +244,8 @@ class FanSensor3D(FanSensor):
         return fan2d.uniform_sample_sensor_region((x,y,yaw))
 
     def in_range_facing(self, point, sensor_pose,
-                        angular_tolerance=15):
+                        angular_tolerance=15,
+                        v_angular_tolerance=45):
         x, y, height, pitch, yaw = sensor_pose
 
         desired_yaw = yaw_facing(sensor_pose[:2], point[:2])
@@ -255,7 +256,7 @@ class FanSensor3D(FanSensor):
 
         return self.in_range(point, sensor_pose)\
             and abs(desired_yaw - current_yaw) % 360 <= angular_tolerance\
-            and abs(desired_pitch - current_pitch) % 360 <= angular_tolerance
+            and abs(desired_pitch - current_pitch) % 360 <= v_angular_tolerance
 
 
 class FrustumCamera(SensorModel):

@@ -32,7 +32,7 @@ class RobotTransitionTopo(RobotTransition):
                 next_robot_pos = self._topo_map.nodes[action.dst_nid].pos
                 # will sample a yaw facing the target object
                 yaw = yaw_facing(next_robot_pos, starget.loc, self.h_angles)
-                horizon = pitch_facing(srobot.loc3d, starget.loc3d, self.v_angles)
+                next_horizon = pitch_facing(srobot.loc3d, starget.loc3d, self.v_angles)
                 next_pose = (*next_robot_pos, yaw)
                 next_horizon = 0.0 # there is no pitch
                 next_topo_nid = action.dst_nid
