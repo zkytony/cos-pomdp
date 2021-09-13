@@ -23,7 +23,7 @@ def _test():
     camera_look_actions = grid_camera_look_actions(movement_params)
     navigation_actions = grid_navigation_actions(movement_params, 0.25)
 
-    sensor = cospomdp.FanSensor3D(min_range=1, max_range=5, fov=50)
+    sensor = cospomdp.FanSensor3D(min_range=1, max_range=5, fov=50, v_angles=v_angles)
 
     reward_model = cospomdp.ObjectSearchRewardModel(sensor,
                                                     1.0 / 0.25,
@@ -42,6 +42,12 @@ def _test():
     ll = {a.name: a for a in grid_camera_look_actions(movement_params)}
     lookdown = ll["LookDown"]
     lookup = ll["LookUp"]
+
+    ns = _s(robot_trans_model.sample(state, lookdown))
+    assert ns.s("robot").pitch == lookdown.delta[2] % 360,\
+        f"{ns.s('robot').pitch} != {lookdown.delta[2]}"
+    print("Lookdown:", lookdown.delta[2])
+    print("LookUp:", lookup.delta[2])
 
     print(state.s("robot"))
     ns = _s(robot_trans_model.sample(state, lookdown))
