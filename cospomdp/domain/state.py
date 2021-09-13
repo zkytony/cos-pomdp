@@ -81,6 +81,9 @@ class RobotState(pomdp_py.ObjectState):
         """
         raise NotImplementedError
 
+    def in_range(self, sensor, loc):
+        raise NotImplementedError
+
 
 class RobotState2D(RobotState):
     """2D robot state; pose is x, y, th"""
@@ -104,6 +107,12 @@ class RobotState2D(RobotState):
         return RobotState2D(robot_obz.robot_id,
                             robot_obz.pose,
                             robot_obz.status)
+
+    def in_range(self, sensor, loc, **kwargs):
+        return sensor.in_range(loc, self["pose"], **kwargs)
+
+    def in_range_facing(self, sensor, point, **kwargs):
+        return sensor.in_range(point, self["pose"], **kwargs)
 
 
 class CosState(pomdp_py.OOState):

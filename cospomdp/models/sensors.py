@@ -163,7 +163,7 @@ class FanSensor(SensorModel):
 
 
 
-class FanSensor3D(SensorModel):
+class FanSensor3D(FanSensor):
     """
     This is a simplified 3D sensor model; Instead of
     projecting a 3D volume, it re-shapes the 2D fan
@@ -176,10 +176,7 @@ class FanSensor3D(SensorModel):
     IS_3D = True
     def __init__(self, name="laser3d_sensor", **params):
         # Note that because of the tilt, the range will change.
-        self._flat_max_range = params["max_range"]
-        self._flat_mean_range = params.get("mean_range", self._flat_max_range)
-        self._flat_fov = params["fov"]
-        self._flat_min_range = params["min_range"]
+        super().__init__(**params)
         self._cache = {}
 
     @staticmethod
@@ -196,20 +193,20 @@ class FanSensor3D(SensorModel):
         return str(self)
 
     def _project_range(self, height, pitch):
-        mean_range_proj = self._flat_mean_range * math.cos(to_rad(pitch))
-        max_range_proj = self._flat_max_range * math.cos(to_rad(pitch))
-        min_range_proj = self._flat_min_range * math.cos(to_rad(pitch))
+        mean_range_proj = self.mean_range * math.cos(to_rad(pitch))
+        max_range_proj = self.max_range * math.cos(to_rad(pitch))
+        min_range_proj = self.min_range * math.cos(to_rad(pitch))
         return min_range_proj, max_range_proj, mean_range_proj
 
     def _project_fov(self, pitch):
         # first we get the vector from fan center to the farthest points in the FOV.
         # Say the fan's origin is (0,0); the fan looks at +x by default;
-        v1 = np.array([math.cos(to_rad(self._flat_fov/2)),
-                       math.sin(to_rad(self._flat_fov/2)),
+        v1 = np.array([math.cos(to_rad(self.fov/2)),
+                       math.sin(to_rad(self.fov/2)),
                        0,
                        1])
-        v2 = np.array([math.cos(to_rad(self._flat_fov/2)),
-                       -math.sin(to_rad(self._flat_fov/2)),
+        v2 = np.array([math.cos(to_rad(self.fov/2)),
+                       -math.sin(to_rad(self.fov/2)),
                        0,
                        1])  # height doesn't matter here
 
@@ -237,10 +234,8 @@ class FanSensor3D(SensorModel):
             self._cache[sensor_pose] = fan2d
         return fan2d
 
-
     def in_range(self, point, sensor_pose, use_mean=False):
         # Create a 2D sensor with projected parameters
-        print("!!!!!!!!!!!!!!! HELLO !!!!!!!!!!!!!!!!")
         fan2d = self._project2d(sensor_pose)
         x, y, height, pitch, yaw = sensor_pose
         return fan2d.in_range(point, (x, y, yaw), use_mean=use_mean)

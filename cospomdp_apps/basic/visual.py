@@ -5,7 +5,7 @@ from thortils.utils.images import overlay, cv2shape
 
 class BasicViz2D(Visualizer2D):
 
-    def draw_fov(self, img, sensor, robot_pose,
+    def draw_fov(self, img, sensor, robot_state,
                  color=[233, 233, 8]):
         # We will draw what's in mean range differently from the max range.
         size = self._res // 2
@@ -16,12 +16,12 @@ class BasicViz2D(Visualizer2D):
                 if hasattr(self._region, "unknown") and (x, y) in self._region.unknown:
                     continue  # occluded (don't draw; the model doesn't care about this though but it is ok for now)
 
-                if sensor.in_range((x,y), robot_pose, use_mean=False):
+                if robot_state.in_range(sensor, (x,y), use_mean=False):
                     img = cv2shape(img, cv2.circle,
                                    (y*self._res+shift, x*self._res+shift),
                                    radius, color, thickness=-1, alpha=0.4)
 
-                if sensor.in_range((x,y), robot_pose, use_mean=True):
+                if robot_state.in_range(sensor, (x,y), use_mean=True):
                     img = cv2shape(img, cv2.circle,
                                    (y*self._res+shift, x*self._res+shift),
                                    radius, color, thickness=-1, alpha=0.7)
@@ -55,12 +55,12 @@ class BasicViz2D(Visualizer2D):
             if draw_fov is True:
                 img = BasicViz2D.draw_fov(self, img,
                                           agent.sensor(agent.target_id),
-                                          robot_state['pose'],
+                                          robot_state,
                                           inverse_color_rgb(target_color))
             elif hasattr(draw_fov, "__len__"):
                 for objid in sorted(draw_fov):
                     img = BasicViz2D.draw_fov(self, img, agent.sensor(objid),
-                                              robot_state['pose'],
+                                              robot_state,
                                               inverse_color_rgb(self.get_color(objid,
                                                                                colors, alpha=None)))
         return img

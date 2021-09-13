@@ -2,6 +2,7 @@ import pytest
 import random
 import math
 import matplotlib.pyplot as plt
+from thortils.utils.colors import lighter, rgb_to_hex
 from cospomdp.models.sensors import FanSensor, FrustumCamera, FanSensor3D
 from cospomdp.utils.math import to_rad
 from cospomdp.utils.plotting import plot_pose

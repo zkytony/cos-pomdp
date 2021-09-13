@@ -1,5 +1,6 @@
 from cospomdp.domain.state import RobotState, RobotStatus, RobotState2D, ObjectState
 from cospomdp.utils.math import indicator, normalize, euclidean_dist, roundany, closest
+from cospomdp.models.sensors import FanSensor3D
 from .action import grid_pitch
 
 
@@ -15,6 +16,36 @@ def grid_full_pose(thor_pose, thor_v_angles, grid_map):
         closest(thor_v_angles, thor_rot['x']))
     height = roundany(thor_pos['y'] / grid_map.grid_size, 1)  #y
     return (x, y, height, pitch, yaw)
+
+
+
+class ObjectState3D(ObjectState):
+    def __init__(self, objid, objclass, loc, height):
+        super().__init__(objid, objclass, loc)
+        self.attributes["height"] = height
+
+    def __hash__(self):
+        return hash((self.id, self.loc, self.height))
+
+    @property
+    def height(self):
+        return self["height"]
+
+    def to_2d(self):
+        return ObjectState(self.id, self.objclass, self['loc'])
+
+    @property
+    def loc3d(self):
+        return (*self.loc, self.height)
+
+    def __str__(self):
+        return str((self.id, *self.loc, self.height))
+
+    def copy(self):
+        return ObjectState3D(self.id,
+                             self.objclass,
+                             self.loc,
+                             self.height)
 
 
 class RobotState3D(RobotState):
@@ -74,35 +105,12 @@ class RobotState3D(RobotState):
     def __str__(self):
         return str((self.robot_id, *self.pose3d))
 
+    def in_range(self, sensor, loc, **kwargs):
+        assert isinstance(sensor, FanSensor3D)
+        return sensor.in_range(loc, self.pose3d, **kwargs)
 
-class ObjectState3D(ObjectState):
-    def __init__(self, objid, objclass, loc, height):
-        super().__init__(objid, objclass, loc)
-        self.attributes["height"] = height
-
-    def __hash__(self):
-        return hash((self.id, self.loc, self.height))
-
-    @property
-    def height(self):
-        return self["height"]
-
-    def to_2d(self):
-        return ObjectState(self.id, self.objclass, self['loc'])
-
-    @property
-    def loc3d(self):
-        return (*self.loc, self.height)
-
-    def __str__(self):
-        return str((self.id, *self.loc, self.height))
-
-    def copy(self):
-        return ObjectState3D(self.id,
-                             self.objclass,
-                             self.loc,
-                             self.height)
-
+    def in_range_facing(self, sensor, point, **kwargs):
+        return sensor.in_range_facing(point, self.pose3d, **kwargs)
 
 class RobotStateTopo(RobotState3D):
     def __init__(self, robot_id, pose,
