@@ -75,6 +75,7 @@ class PolicyModel2D(cospomdp.PolicyModel):
                 next_distance = euclidean_dist(next_srobot.loc, starget.loc)
                 if next_distance < current_distance:
                     preferences.add((move, self.num_visits_init, self.val_init))
+                    break
 
                 # (2) if the move rotates the robot to be more facing the target,
                 # unless the previous move was a rotation in an opposite direction;

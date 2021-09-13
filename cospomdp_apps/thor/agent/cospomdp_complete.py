@@ -14,7 +14,7 @@ from ..constants import GOAL_DISTANCE
 from ..common import TOS_Action, Height
 from ..replay import ReplaySolver
 from .cospomdp_basic import GridMapSearchRegion, ThorObjectSearchCosAgent
-from .components.action import Move, MoveTopo, Stay, grid_h_angles
+from .components.action import Move, MoveTopo, Stay, grid_h_angles, grid_pitch
 from .components.state import RobotStateTopo, grid_full_pose
 from .components.topo_map import TopoNode, TopoMap, TopoEdge
 from .components.transition_model import RobotTransitionTopo
@@ -302,7 +302,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             self.robot_id, self.target_id,
             **task_config["reward_config"])
         policy_model = PolicyModelTopo(robot_trans_model, reward_model, self.topo_map)
-
+        v_angles = [grid_pitch(va) for va in self.task_config['nav_config']['v_angles']]
         self.cos_agent = cospomdp.CosAgent(self.target,
                                            init_robot_state,
                                            self.search_region,
@@ -315,7 +315,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                                            target_belief_updater,
                                            belief_type=belief_type,
                                            prior=prior,
-                                           binit_args=binit_args)
+                                           binit_args=binit_args,
+                                           bu_args={"v_angles": v_angles})
         self._local_search_type = local_search_type
         self._local_search_params = local_search_params
         if solver == "pomdp_py.POUCT":
@@ -436,14 +437,15 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         # (because COSAgent here expects observations after
         # a goal is completed. If not, then the observation
         # is not useful, and we don't update the solver
-        if self._goal_handler.done:
-            # will update the node id to the goal, if the handled
-            # goal is movetopo
-            if isinstance(self._goal_handler.goal, MoveTopo):
-                srobot_old = self.belief.b(self.robot_id).mpe()
-                new_nid = self.topo_map.closest_node(*srobot_old.pose[:2])
-                self._update_belief_topo_nid(srobot_old, new_nid)
+        # if self._goal_handler.done:
+        # will update the node id to the goal, if the handled
+        # goal is movetopo
+        if isinstance(self._goal_handler.goal, MoveTopo):
+            srobot_old = self.belief.b(self.robot_id).mpe()
+            new_nid = self.topo_map.closest_node(*srobot_old.pose[:2])
+            self._update_belief_topo_nid(srobot_old, new_nid)
 
+        if self._goal_handler.done:
             self.solver.update(self.cos_agent, self._goal_handler.goal, observation)
 
     def _resample_topo_map(self, target_hist):

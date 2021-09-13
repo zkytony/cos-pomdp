@@ -108,16 +108,22 @@ def update_target_belief_3d(current_btarget,
     # If not, then the object is either below or above.
     # Indeed, there is a chance there is a false negative.
 
+    v_angles = bu_args["v_angles"]
     current_btarget_height = current_btarget.height_belief
     next_btarget_height_hist = dict(current_btarget_height.histogram)
-    if observation.z(current_btarget.target_id).loc is None:
-        next_btarget_height_hist[Height.ABOVE] += bu_args.get("prior_above", 100)
-        next_btarget_height_hist[Height.BELOW] += bu_args.get("prior_below", 100)
-        next_btarget_height_hist[Height.SAME] += bu_args.get("prior_same", 10)
+    if next_srobot.pitch == max(v_angles):
+        next_btarget_height_hist[Height.ABOVE] = bu_args.get("prior_above", 0)
+    elif next_srobot.pitch == max(v_angles):
+        next_btarget_height_hist[Height.BELOW] = bu_args.get("prior_below", 0)
     else:
-        next_btarget_height_hist[Height.ABOVE] += bu_args.get("prior_above", 10)
-        next_btarget_height_hist[Height.BELOW] += bu_args.get("prior_below", 10)
-        next_btarget_height_hist[Height.SAME] += bu_args.get("prior_same", 1000)
+        if observation.z(current_btarget.target_id).loc is None:
+            next_btarget_height_hist[Height.ABOVE] *= bu_args.get("prior_above", 1.2)
+            next_btarget_height_hist[Height.BELOW] *= bu_args.get("prior_below", 1.5)
+            next_btarget_height_hist[Height.SAME] *= bu_args.get("prior_same", 0.5)
+        else:
+            next_btarget_height_hist[Height.ABOVE] *= bu_args.get("prior_above", 0.5)
+            next_btarget_height_hist[Height.BELOW] *= bu_args.get("prior_below", 0.5)
+            next_btarget_height_hist[Height.SAME] *= bu_args.get("prior_same", 2.0)
 
     return TargetBelief3D((current_btarget.target_id, current_btarget.target_class),
                           next_btarget_loc,

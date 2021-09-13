@@ -232,7 +232,7 @@ class TaskArgs:
     save_load_corr: bool = False
     # detectors
     use_vision_detector: bool = False
-    bbox_margin: float = 0.3 # percentage of the bbox to exclude along each axis
+    bbox_margin: float = 0.25 # percentage of the bbox to exclude along each axis
     conf_thres: float = 0.25
     keep_most_confident: bool = True  # if multiple bounding boxes for an object, keep only the most confident one
     plot_detections: bool = False

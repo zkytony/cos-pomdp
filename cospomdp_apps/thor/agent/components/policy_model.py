@@ -149,15 +149,7 @@ class PolicyModel3D(cospomdp.PolicyModel):
             LookDownin = False
             for a in self.primitive_motions:
                 if self.robot_trans_model.sample(state, a).pose3d != robot_pose:
-                    print(a, self.robot_trans_model.sample(state, a).pose3d, robot_pose)
-
                     valid_moves.add(a)
-                    if a.name == "LookUp":
-                        LookUpin = True
-                    if a.name == "LookDown":
-                        LookDownin = True
-            if not LookUpin and not LookDownin:
-                import pdb; pdb.set_trace()
             # valid_moves = set(a for a in self.primitive_motions
             #     if self.robot_trans_model.sample(state, a).pose3d != robot_pose)
             self._legal_moves[srobot] = valid_moves
@@ -184,11 +176,15 @@ class PolicyModel3D(cospomdp.PolicyModel):
             srobot = state.s(robot_id)
             starget = state.s(target_id)
 
+            preferences = set()
+
+            if self.policy_model.reward_model.success(srobot, starget):
+                preferences.add((Done(), self.num_visits_init, self.val_init))
+
             # This borows from Policy2D
             current_distance = euclidean_dist(srobot.loc, starget.loc)
             desired_yaw = yaw_facing(srobot.loc, starget.loc)
             current_yaw_diff = abs(desired_yaw - srobot.pose[2]) % 360
-            preferences = set()
 
             for move in self.policy_model.movements:
                 # A move is preferred if:
@@ -197,6 +193,7 @@ class PolicyModel3D(cospomdp.PolicyModel):
                 next_distance = euclidean_dist(next_srobot.loc, starget.loc)
                 if next_distance < current_distance:
                     preferences.add((move, self.num_visits_init, self.val_init))
+                    break
 
                 # (2) if the move rotates the robot to be more facing the target,
                 # unless the previous move was a rotation in an opposite direction;
@@ -216,20 +213,5 @@ class PolicyModel3D(cospomdp.PolicyModel):
                         preferences.add((move, self.num_visits_init, self.val_init))
                         break
 
-            # Figure out if we would like to prefer lookup/down
-            # This only makes sense when the robot is facing the target in yaw
-            if abs(current_yaw_diff) <= 15:
-                desired_pitch = pitch_facing(srobot.loc3d, starget.loc3d)
-                current_pitch_diff = abs(desired_pitch - srobot.pitch) % 360
-                if abs(current_pitch_diff) > 1e-4:
-                    for look in self.policy_model.camera_looks:
-                        # We prefer look if:
-                        # it brings the robot to be facing the target in terms of pitch rotation.
-                        next_srobot = self.policy_model.robot_trans_model.sample(state, look)
-                        next_pitch = next_srobot.pitch
-                        next_pitch_diff = abs(desired_pitch - next_pitch) % 360
-                        if next_pitch_diff < current_pitch_diff:
-                            preferences.add((look, self.num_visits_init, self.val_init))
-                            break
             self._cache[state] = preferences
             return preferences
