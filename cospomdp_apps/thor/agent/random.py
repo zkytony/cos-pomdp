@@ -5,7 +5,9 @@ from cospomdp_apps.basic.action import Move2D
 
 from ..common import TOS_Action, ThorAgent
 from .components.action import (grid_navigation_actions2d,
-                                from_grid_action_to_thor_action_params)
+                                from_grid_action_to_thor_action_params,
+                                grid_camera_look_actions,
+                                Move)
 
 class ThorObjectSearchRandomAgent(ThorAgent):
     """
@@ -28,12 +30,13 @@ class ThorObjectSearchRandomAgent(ThorAgent):
         movement_params = self.task_config["nav_config"]["movement_params"]
         self.navigation_actions = set(grid_navigation_actions2d(movement_params,
                                                                 grid_map.grid_size))
+        self.camera_look_actions = set(grid_camera_look_actions(movement_params))
 
     def act(self):
-        action = self.rnd.sample(self.navigation_actions | {Done()}, 1)[0]
+        action = self.rnd.sample(self.navigation_actions | self.camera_look_actions | {Done()}, 1)[0]
 
         if not isinstance(action, TOS_Action):
-            if isinstance(action, Move2D):
+            if isinstance(action, Move) or isinstance(action, Move2D):
                 name = action.name
                 params = from_grid_action_to_thor_action_params(action, self.grid_map.grid_size)
             elif isinstance(action, Done):

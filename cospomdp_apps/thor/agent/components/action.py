@@ -2,6 +2,7 @@
 from cospomdp.domain.action import Motion
 from thortils.navigation import get_navigation_actions
 from cospomdp_apps.basic.action import Move2D
+from cospomdp_apps.thor.common import TOS_Action
 
 class Move(Motion):
     """
@@ -70,6 +71,13 @@ def grid_navigation_actions2d(movement_params, grid_size):
         if a.name not in {"LookUp", "LookDown"}:
             actions2d.append(Move2D(a.name, a.delta[:2]))
     return actions2d
+
+def thor_camera_look_actions(movement_params):
+    looks = {}
+    for a in movement_params:
+        if a in {"LookUp", "LookDown"}:
+            looks[a] = (TOS_Action(a, movement_params[a]))
+    return looks
 
 def grid_camera_look_actions(movement_params):
     """In ai2thor, "Since the agent looks up and down in 30 degree

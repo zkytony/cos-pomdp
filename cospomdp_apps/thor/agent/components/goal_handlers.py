@@ -9,7 +9,7 @@ from cospomdp_apps.thor import constants
 from cospomdp_apps.basic.belief import initialize_target_belief_2d, update_target_belief_2d
 from cospomdp.utils.math import approx_equal, normalize, euclidean_dist
 from .belief import initialize_target_belief_3d, update_target_belief_3d
-from .action import (MoveTopo, Stay,
+from .action import (MoveTopo, Stay, Move,
                      from_grid_action_to_thor_action_params,
                      from_thor_delta_to_thor_action_params,
                      grid_navigation_actions2d,
@@ -382,7 +382,7 @@ class LocalSearch3DHandler(LocalSearchBasicHandler, ThorObjectSearchBasicCosAgen
         print(dd)
         #########################
         print("     Num Sims:", self.solver.last_num_sims)
-        if isinstance(action, basic.Move2D):
+        if isinstance(action, Move) or isinstance(action, Move2D):
             params = from_grid_action_to_thor_action_params(
                 action, self._parent.grid_map.grid_size)
         else:

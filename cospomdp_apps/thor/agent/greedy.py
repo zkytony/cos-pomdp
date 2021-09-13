@@ -19,6 +19,9 @@ searching for the target object based on the maintained belief.
 import math
 import pomdp_py
 import random
+import numpy as np
+
+from thortils.navigation import _pitch_facing as thor_pitch_facing
 
 from cospomdp.models.agent import build_cos_observation_model
 from cospomdp.models.sensors import yaw_facing
@@ -31,7 +34,7 @@ from .cospomdp_basic import (ThorObjectSearchCosAgent,
                              GridMapSearchRegion,
                              ThorObjectSearchBasicCosAgent)
 from .cospomdp_complete import _shortest_path
-from .components.action import MoveViewpoint, grid_h_angles
+from .components.action import MoveViewpoint, grid_h_angles, thor_camera_look_actions
 from .components.goal_handlers import MacroMoveHandler, DoneHandler, DummyGoalHandler
 
 def weighted_particles(particles):
@@ -381,9 +384,13 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
                                            self.corr_dists, self.detectors, self.detectable_objects, h_angles,
                                            goal_distance=goal_distance, is3d=is3d,
                                            **greedy_params)
+
+        self._thor_v_angles = self.task_config['nav_config']['v_angles']
+        self._thor_camera_look_actions = thor_camera_look_actions(task_config["nav_config"]["movement_params"])
         self._goal_handler = None
         self._loop_counter = 0
         self._solver = solver
+        self._look_action = None
 
     @property
     def cos_agent(self):
@@ -400,6 +407,12 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
             else:
                 action = a
             return action
+
+        # Check if there is a look action
+        if self._look_action is not None:
+            look = self._look_action
+            self._look_action = None
+            return look
 
         goal = self.greedy_agent.act()
         print("Goal: {}".format(goal))
@@ -434,6 +447,36 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
             self._goal_handler.update(tos_action, tos_observation)
 
         super().update(tos_action, tos_observation)
+
+        # If the target object is detected, then look up or down
+        # depending on the pitch difference (not maintained by
+        # the greedy agent, but it is present in the tos_observation).
+        target_detected = False
+        for xyxy, conf, cls, locs in tos_observation.detections:
+            if cls == self.target_id:
+                # target detected
+                thor_target_pos = np.mean(np.asarray(locs), axis=0)
+
+                # get desired pitch and current pitch
+                camera_position = tos_observation.camera_pose[0]
+                camera_position = [camera_position['x'], camera_position['y'], camera_position['z']]
+                desired_pitch = thor_pitch_facing(camera_position, thor_target_pos, self._thor_v_angles)
+                if abs(desired_pitch - tos_observation.horizon) <= 15:
+                    # do nothing
+                    break
+                elif desired_pitch - tos_observation.horizon > 0:
+                    # in thor coordinates, negative is look up. Desired
+                    # is greater than current, so we look down.
+                    self._look_action = self._thor_camera_look_actions["LookDown"]
+                else:
+                    # desired pitch is smaller, so we need to decrease our pitch,
+                    # and that corresponds to LookUp
+                    self._look_action = self._thor_camera_look_actions["LookUp"]
+                target_detected = True
+                break
+
+        if not target_detected:
+            self._look_action = None
 
         if not self._goal_handler.updates_first:
             self._goal_handler.update(tos_action, tos_observation)
