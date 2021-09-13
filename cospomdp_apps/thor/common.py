@@ -320,7 +320,8 @@ def make_config(args):
        and not (agent_class == agentlib.ThorObjectSearchRandomAgent):
         config["agent_config"]["detector_specs"] = args.agent_detector_specs
         config["agent_config"]["corr_specs"] = args.corr_specs
-    if not (agent_class == agentlib.ThorObjectSearchGreedyNbvAgent):
+    if not (agent_class == agentlib.ThorObjectSearchGreedyNbvAgent)\
+       and not (agent_class == agentlib.ThorObjectSearchRandomAgent):
         config["agent_config"]["approx_belief"] = args.approx_belief
 
     # You are expected to modify config['agent_config']
