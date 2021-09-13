@@ -375,7 +375,7 @@ class FanModelSimpleFP(FanModel):
                 else:
                     # true positive
                     # True positive; gaussian centered at object loc
-                    gaussian = Gaussian(list(si),
+                    gaussian = Gaussian(list(si.loc),
                                         [[self.sigma**2, 0],
                                          [0, self.sigma**2]])
                     return self.detection_prob * gaussian[zi.loc]
