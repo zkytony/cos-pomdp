@@ -329,12 +329,19 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
         # that achieve goals
         self._goal_handler = None
         self._loop_counter = 0
+        self._repeating_actions = []
 
     def act(self):
         if isinstance(self.solver, ReplaySolver):
             goal, goal_done, action = self.solver.plan(self.cos_agent)
             self._goal_handler = DummyGoalHandler(goal, goal_done, self)
             return action
+
+        # If there is an action that is repeated too much, we need to unstuck - terminate the task
+        # This is due to an unknown bug where the agent will keep taking LookDown when it cannot
+        # LookDown any more.
+        if len(self._repeating_actions) > 10:  # TODO: parameterize or fix.
+            return DoneHandler(cospomdp.Done(), self).step()
 
         goal = self.solver.plan(self.cos_agent)
         if isinstance(goal, MoveTopo):
@@ -357,15 +364,24 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                 # too much replanning - take a random action
                 action_name = random.sample(self.thor_movement_params.keys(), 1)[0]
                 action_params = self.thor_movement_params[action_name]
-                return TOS_Action(action_name, action_params)
+                action = TOS_Action(action_name, action_params)
+            else:
+                # replan
+                self._loop_counter += 1
+                print("Loop", self._loop_count)
+                action = self.act()
+        else:
+            self._loop_count = 0
+            assert isinstance(action, TOS_Action)
 
-            # replan
-            self._loop_counter += 1
-            print("Loop", self._loop_count)
-            return self.act()
-
-        self._loop_count = 0
-        assert isinstance(action, TOS_Action)
+        if len(self._repeating_actions) > 0:
+            if action == self._repeating_actions[-1]:
+                self._repeating_action.append(action)
+            else:
+                self._repeating_actions = [action]
+        else:
+            self._repeating_actions = [action]
+        print("Repeating actions: {}".format(self._repeating_actions))
         return action
 
     def handle(self, goal):
