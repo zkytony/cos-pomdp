@@ -24,6 +24,14 @@ class ObjectState3D(ObjectState):
         super().__init__(objid, objclass, loc)
         self.attributes["height"] = height
 
+    def __eq__(self, other):
+        if isinstance(other, ObjectState3D):
+            return other.id == self.id\
+                and other.loc == self.loc\
+                and other.height == self.height
+        else:
+            return False
+
     def __hash__(self):
         return hash((self.id, self.loc, self.height))
 
@@ -59,6 +67,16 @@ class RobotState3D(RobotState):
         super().__init__(robot_id, pose, status)
         self.horizon = camera_horizon
         self.height = camera_height  # the robot's own height, should be fixed
+
+    def __eq__(self, other):
+        if isinstance(other, ObjectState3D):
+            return other.id == self.id\
+                and other.pose3d == self.pose3d
+        else:
+            return False
+
+    def __hash__(self):
+        return hash(self.pose3d)
 
     @property
     def pitch(self):

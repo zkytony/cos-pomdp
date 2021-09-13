@@ -43,12 +43,25 @@ def _test():
     lookdown = ll["LookDown"]
     lookup = ll["LookUp"]
 
+    print(state.s("robot"))
     ns = _s(robot_trans_model.sample(state, lookdown))
+    print(ns.s("robot"))
     ns = _s(robot_trans_model.sample(ns, lookdown))
+    print(ns.s("robot"))
     ns = _s(robot_trans_model.sample(ns, lookdown))
+    print(ns.s("robot"))
     ns = _s(robot_trans_model.sample(ns, lookdown))
+    print(ns.s("robot"))
     assert policy_model.valid_moves(ns)\
         == set(navigation_actions) | (set(camera_look_actions) - {lookdown})
+
+    # Do the same for look up
+    ns = _s(robot_trans_model.sample(state, lookup))
+    ns = _s(robot_trans_model.sample(ns, lookup))
+    ns = _s(robot_trans_model.sample(ns, lookup))
+    ns = _s(robot_trans_model.sample(ns, lookup))
+    assert policy_model.valid_moves(ns)\
+        == set(navigation_actions) | (set(camera_look_actions) - {lookup})
 
 
 if __name__ == "__main__":
