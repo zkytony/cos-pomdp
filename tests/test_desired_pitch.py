@@ -15,7 +15,7 @@ def _test():
                 assert pitch < 0
         except:
             import pdb; pdb.set_trace()
-
+    print("Passed.")
 
 if __name__ == "__main__":
     _test()
