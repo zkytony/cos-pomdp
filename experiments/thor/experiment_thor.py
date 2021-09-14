@@ -59,28 +59,39 @@ class Methods:
 
     @staticmethod
     def get_name(method):
+        name = ""
+
         if "random" in method['agent'].lower():
-            return "random"
+            name = "random"
         if "greedy" in method['agent'].lower():
-            return "greedy-nbv"
+            name = "greedy-nbv"
+
         if "basic" in method['agent'].lower():
             if not method['use_corr']:
-                return "flat#target-only"
+                name = "flat#target-only"
             else:
                 assert method['corr_type'] == "correct"
-                return "flat#corr"
+                name = "flat#corr"
+
         if "complete" in method['agent'].lower():
             if not method["use_corr"]:
-                return "hierarchical#target-only"
+                name = "hierarchical#target-only"
             else:
                 if method["corr_type"] == "correct":
-                    return "hierarchical#corr"
+                    name = "hierarchical#corr"
                 elif method["corr_type"] == "learned":
-                    return "hierarchical#corr-learned"
+                    name = "hierarchical#corr-learned"
                 elif method["corr_type"] == "wrong":
-                    return "hierarchical#corr-wrong"
+                    name = "hierarchical#corr-wrong"
                 else:
                     raise ValueError("Does not understand correlation type: {}".format(method["corr_type"]))
+
+        if method["use_vision_detector"]:
+            name += "#vision"
+        else:
+            name += "#gt"
+        return name
+
 
 OBJECT_CLASSES = {
     # Target: At least 10% FP rate or average TP detection distance is within 2m
