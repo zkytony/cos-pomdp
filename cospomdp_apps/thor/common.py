@@ -189,7 +189,7 @@ class Height:
     ABOVE = "above"
     BELOW = "below"
     SAME = "same"
-    INCREMENT = 0.5  # thor unit, meters
+    INCREMENT = 0.4  # thor unit, meters
 
     SETTINGS = [ABOVE, BELOW, SAME]
 

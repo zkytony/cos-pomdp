@@ -93,7 +93,7 @@ def grid_camera_look_actions(movement_params):
             degrees = abs(movement_params[action_name]["degrees"])
             if action_name == "LookDown":
                 degrees = -degrees
-            delta = (0, 0, -degrees)
+            delta = (0, 0, degrees)
             actions.append(Move(action_name, delta))
     return actions
 

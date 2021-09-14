@@ -247,7 +247,7 @@ class FanSensor3D(FanSensor):
 
     def in_range_facing(self, point, sensor_pose,
                         angular_tolerance=15,
-                        v_angular_tolerance=20):
+                        v_angular_tolerance=15):
         x, y, height, pitch, yaw = sensor_pose
 
         desired_yaw = yaw_facing(sensor_pose[:2], point[:2])
