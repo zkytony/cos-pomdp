@@ -270,7 +270,8 @@ def EXPERIMENT_THOR(split=10, num_trials=1):
                     v_greedy_crt = make_trial(Methods.V_GREEDY_NBV_CRT, *shared_args, corr_objects=corr_objects)
                     random_trial = make_trial(Methods.RANDOM, *shared_args)
 
-                    trials = [v_hier_corr_crt,
+                    trials = [gt_hier_corr_crt,
+                              v_hier_corr_crt,
                               v_hier_corr_lrn,
                               v_hier_corr_wrg,
                               v_hier_target,
