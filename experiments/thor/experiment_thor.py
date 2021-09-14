@@ -86,8 +86,8 @@ OBJECT_CLASSES = {
     # Target: At least 10% FP rate or average TP detection distance is within 2m
     # Correlated: Around 5% FP rate and average TP detection distance is approximately 2m or more
     "kitchen": {"target": ["Bowl",
-                           "Pot",
-                           "Apple"],
+                           "PepperShaker",
+                           "Knife"],
                 "corr": ["Lettuce",
                          "Plate",
                          "Microwave",
@@ -96,30 +96,31 @@ OBJECT_CLASSES = {
 
     "living_room": {"target": ["CreditCard",
                                "RemoteControl",
-                               "Sofa"],
+                               "Television"],
                     "corr": ["LightSwitch",
                              "Pillow",
                              "HousePlant",
                              "Laptop",
+                             "FloorLamp",
                              "Painting"]},
 
-    "bedroom": {"target": ["CellPhone",
-                           "KeyChain",
+    "bedroom": {"target": ["AlarmClock",
+                           "Pillow",
                            "CD"],
                 "corr": ["DeskLamp",
                          "Laptop",
                          "Mirror",
                          "LightSwitch",
-                         "Pillow"]},
+                         "Bed"]},
 
     "bathroom": {"target": ["Faucet",
-                            "TowelHolder",
+                            "ScrubBrush",
                             "Candle"],
                  "corr": ["ToiletPaperHanger",
                           "Towel",
                           "Mirror",
-                          "LightSwitch",
-                          "HandTowel"]}
+                          "Toilet",
+                          "SoapBar"]}
 }
 
 def make_trial(method, run_num, scene_type, scene, target, detector_models,
