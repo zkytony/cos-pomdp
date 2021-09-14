@@ -7,6 +7,7 @@ from cospomdp_apps import basic
 from cospomdp_apps.thor.common import TOS_Action, Height
 from cospomdp_apps.thor import constants
 from cospomdp_apps.basic.belief import initialize_target_belief_2d, update_target_belief_2d
+from cospomdp_apps.basic.action import Move2D
 from cospomdp.utils.math import approx_equal, normalize, euclidean_dist
 from .belief import initialize_target_belief_3d, update_target_belief_3d
 from .action import (MoveTopo, Stay, Move,
