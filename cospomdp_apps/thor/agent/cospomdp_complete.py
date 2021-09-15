@@ -408,6 +408,11 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             if hasattr(self.cos_agent, "tree"):
                 del self.cos_agent.tree
 
+        # Update the replay solver
+        if isinstance(self.solver, ReplaySolver):
+            self.solver.update()
+
+
 
     def interpret_robot_obz(self, tos_observation):
         # Here, we will build a pose of format (x, y, pitch, yaw, nid)
@@ -448,6 +453,8 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                 srobot_old = self.belief.b(self.robot_id).mpe()
                 new_nid = self.topo_map.closest_node(*srobot_old.pose[:2])
                 self._update_belief_topo_nid(srobot_old, new_nid)
+
+            self.solver.update(self.cos_agent, self._goal_handler.goal, observation)
 
 
     def _resample_topo_map(self, target_hist):

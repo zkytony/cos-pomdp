@@ -19,7 +19,7 @@ class ReplaySolver(pomdp_py.Planner):
                     info["action"]["goal_done"],
                     info["action"]["base"])
 
-    def update(self, agent, action, observation):
+    def update(self, *args):
         self.index += 1
 
 
