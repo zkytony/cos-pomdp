@@ -399,11 +399,6 @@ class ThorObjectSearchTrialSaver:
             fp_img = cv2.cvtColor(fp_img, cv2.COLOR_BGR2RGB)
             td_img = thor_topdown_img(controller, cv2=False)
 
-        # we will do a nice visualization for the td image:
-        nice_td_img = self.nice_topdown_viz(td_img,
-                                            self._log["poses"],
-                                            self._log["object_detections"])
-
         fp_path = os.path.join(self.fpdir, f"fpv_{step:0>3}.png")
         saveimg(fp_img, fp_path)
         print(f"Saved first person view image for step {step}")
