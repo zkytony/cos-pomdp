@@ -85,7 +85,8 @@ class ThorTrial(Trial):
             result['viz'] = viz
 
             if "save_path" in self.config:
-                saver = task_env.saver(self.config["save_path"], agent)
+                saver = task_env.saver(self.config["save_path"], agent,
+                                       **self.config["save_opts"])
                 result['saver'] = saver
                 saver.save_step(0, img, None, None)
 
@@ -167,6 +168,9 @@ class ThorTrial(Trial):
         controller.stop()
         if self.config.get("visualize", False):
             viz.on_cleanup()
+            if saver is not None:
+                saver.finish()
+
         return results
 
     @property

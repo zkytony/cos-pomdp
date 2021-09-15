@@ -333,8 +333,8 @@ class TOS(ThorEnv):
     def visualizer(self, **config):
         return ThorObjectSearchViz2D(**config)
 
-    def saver(self, save_path, agent):
-        return ThorObjectSearchTrialSaver(self, agent, save_path)
+    def saver(self, save_path, agent, **kwargs):
+        return ThorObjectSearchTrialSaver(self, agent, save_path, **kwargs)
 
 # Class naming aliases
 ThorObjectSearch = TOS
@@ -342,7 +342,7 @@ ThorObjectSearch = TOS
 import os
 class ThorObjectSearchTrialSaver:
 
-    def __init__(self, task_env, agent, savedir):
+    def __init__(self, task_env, agent, savedir, **kwargs):
         self.task_env = task_env
         self.agent = agent
 
@@ -350,12 +350,13 @@ class ThorObjectSearchTrialSaver:
         self.fpdir = os.path.join(savedir, "first-person")
         self.tddir = os.path.join(savedir, "topdown")
         self.savedir = savedir
+        self._generate_gif = kwargs.get("gif", False)
 
         print(f"Will save the trial visualizations to {savedir}")
-        os.makedir(savedir, exist_ok=True)
-        os.makedir(self.beliefsdir, exist_ok=True)
-        os.makedir(self.fpdir, exist_ok=True)
-        os.makedir(self.tddir, exist_ok=True)
+        os.makedirs(savedir, exist_ok=True)
+        os.makedirs(self.beliefsdir, exist_ok=True)
+        os.makedirs(self.fpdir, exist_ok=True)
+        os.makedirs(self.tddir, exist_ok=True)
         self._log = []
 
     def save_step(self, step, img, action, observation):
@@ -370,12 +371,11 @@ class ThorObjectSearchTrialSaver:
         controller = self.task_env.controller
         if step == 0:
             assert action is None and observation is None
-            fp_img = observation.img
+            fp_img = thor_img(controller, cv2=False)
             td_img = thor_topdown_img(controller, cv2=False)
 
         else:
             # Get the object detection visualization
-            self.agent.detector.plot_detections()
             fp_img = self.agent.detector.plot_detections(
                 observation.img, observation.detections)
             td_img = thor_topdown_img(controller, cv2=False)
@@ -389,4 +389,32 @@ class ThorObjectSearchTrialSaver:
         print(f"Saved top-down view image for step {step}")
 
 
-        self._step_count += 1
+    def finish(self):
+        import imageio
+
+        # generate gif if wanted
+        if self._generate_gif:
+            # belief gif
+            print("Generating GIF for beliefs")
+            belief_images = []
+            for filename in sorted(os.listdir(self.beliefsdir)):
+                if filename.endswith("png"):
+                    file_path = os.path.join(self.beliefsdir, filename)
+                    belief_images.append(imageio.imread(file_path))
+            imageio.mimsave(os.path.join(self.savedir, "beliefs.gif"), belief_images)
+
+            print("Generating GIF for First-Person Views")
+            fp_images = []
+            for filename in sorted(os.listdir(self.fpdir)):
+                if filename.endswith("png"):
+                    file_path = os.path.join(self.fpdir, filename)
+                    fp_images.append(imageio.imread(file_path))
+            imageio.mimsave(os.path.join(self.savedir, "fps.gif"), fp_images)
+
+            print("Generating GIF for Top-Down views")
+            td_images = []
+            for filename in sorted(os.listdir(self.tddir)):
+                if filename.endswith("png"):
+                    file_path = os.path.join(self.tddir, filename)
+                    td_images.append(imageio.imread(file_path))
+            imageio.mimsave(os.path.join(self.savedir, "tds.gif"), td_images)
