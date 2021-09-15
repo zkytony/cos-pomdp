@@ -364,7 +364,7 @@ class ThorObjectSearchTrialSaver:
         # First, save the img visulized by the visualizer
         belief_path = os.path.join(self.beliefsdir, f"belief_{step}.png")
         saveimg(img, belief_path)
-        print(f"Saved beliefs visualization for step {step}")
+        print(f"Saved beliefs visualization for step {step:0>3}")
 
         # Then, save the img from Ai2thor (both first person view and top-down view);
         # If it is the first step, then directly save the FPV from thor controller;
@@ -381,11 +381,11 @@ class ThorObjectSearchTrialSaver:
                 observation.img, observation.detections)
             td_img = thor_topdown_img(controller, cv2=False)
 
-        fp_path = os.path.join(self.fpdir, f"fpv_{step}.png")
+        fp_path = os.path.join(self.fpdir, f"fpv_{step:0>3}.png")
         saveimg(fp_img, fp_path)
         print(f"Saved first person view image for step {step}")
 
-        td_path = os.path.join(self.tddir, f"fpv_{step}.png")
+        td_path = os.path.join(self.tddir, f"fpv_{step:0>3}.png")
         saveimg(td_img, td_path)
         print(f"Saved top-down view image for step {step}")
 
