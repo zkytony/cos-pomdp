@@ -15,7 +15,7 @@ import os
 def baseline_name(baseline):
     mapping = {"random#gt" : 'Random',
                "greedy-nbv#vision": 'Greedy-NBV (v, acc)',
-               "hierarchical#target-only#vision": 'Target-POMDP',
+               "hierarchical#target-only#vision": 'Target-POMDP (v)',
                "hierarchical#corr#vision": 'COS-POMDP (v, acc)',
                "hierarchical#corr#gt": 'COS-POMDP (gt, acc)',
                "hierarchical#corr-learned#vision": 'COS-POMDP (v, lrn)',
@@ -197,6 +197,8 @@ class PathResult(PklResult):
             table_rows.append(result_row)
         df_main = pd.DataFrame(table_rows)
         df_main.columns = pd.MultiIndex.from_tuples(df_main.transpose().index, names=['scene_type', 'metric'])
+        df_main.index = df_main.loc[:, ('', 'Method')]
+        df_main = df_main.iloc[:, 1:]
         print(df_main.to_latex())
 
         # Second table: summary by objects
@@ -233,7 +235,9 @@ class PathResult(PklResult):
                 scene_target_data.append(result_row)
         df_target = pd.DataFrame(scene_target_data)
         df_target.columns = pd.MultiIndex.from_tuples(df_target.transpose().index, names=['baseline', 'metric'])
-        print(df_target.to_latex())
+        df_target.index = pd.MultiIndex.from_tuples(zip(df_target.loc[:, ('', 'Room Type')], df_target.loc[:, ('', 'Target Class')]))
+        df_target = df_target.iloc[:, 2:]
+        print(df_target.to_latex(multirow=True))
 
 
 
