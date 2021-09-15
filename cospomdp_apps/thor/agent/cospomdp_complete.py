@@ -332,9 +332,12 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
 
     def act(self):
         if isinstance(self.solver, ReplaySolver):
-            goal, goal_done, action = self.solver.plan(self.cos_agent)
+            action_taken = self.solver.plan(self.cos_agent)
+            if not isinstance(action_taken, TOS_Action):
+                assert type(action_taken) == tuple
+                goal, goal_done, action_taken = action_taken
             self._goal_handler = DummyGoalHandler(goal, goal_done, self)
-            return action
+            return action_taken
 
         goal = self.solver.plan(self.cos_agent)
         if isinstance(goal, MoveTopo):
@@ -407,10 +410,6 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             # existing search tree is invalid.
             if hasattr(self.cos_agent, "tree"):
                 del self.cos_agent.tree
-
-        # Update the replay solver
-        if isinstance(self.solver, ReplaySolver):
-            self.solver.update()
 
 
 

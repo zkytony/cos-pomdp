@@ -11,6 +11,10 @@ class ReplaySolver(pomdp_py.Planner):
         self.index = 1
 
     def plan(self, agent):
+        if self.index >= len(self.history):
+            print("No more!")
+            return None
+
         info = self.history[self.index]
         if type(info["action"]) == TOS_Action:
             return info["action"]
@@ -21,6 +25,7 @@ class ReplaySolver(pomdp_py.Planner):
 
     def update(self, *args):
         self.index += 1
+        print("::::::::::::::::::::::::::::", self.index)
 
 
 def main():
