@@ -43,6 +43,9 @@ from cospomdp_apps.thor.data.browse import yolo_load_info, yolo_load_one, yolo_p
 # Validate vision detector. My own script.
 OUTDIR = "../results/true_false_positive_rates"
 
+def true_false_pose():
+
+
 def run(args):
     # Randomly place the agent in each environment for N times.
     # Then run the detector and record the detections in `results`.
@@ -69,75 +72,6 @@ def run(args):
 
         # determine TP/FP/TN/FN outcome for the detections of this frame
         for cls in detector.detectable_classes:
-            # For each detectable object, if it is not present in gtbboxes,
-            # and if it is not present in detections, then we have a True Negative
-            # for this class.
-            #
-            # If it is not present in gtboxes but present in detections, it's FP.
-            # If it is present in gtboxes, but not present in detections, it's FN.
-            # If it is present in gtboxes, and IOU < thresh, it's FP
-            # If it is present in gtboxes, and IOU >= thresh, it's TP
-            gtpresent = any(gtcls == cls
-                            for gtcls in gtbboxes)
-            detpresent = any(d[2] == cls
-                             for d in detections)
-            if not gtpresent:
-                if not detpresent:
-                    # true negative
-                    results.append([cls, "TN", 1])
-                else:
-                    # the detected bounding boxes are true positives
-                    for xyxy, conf, objtype in detections:
-                        if objtype == cls:
-                            results.append([cls, "FP", 1])
-                            results.append([cls, "FP_off", 1])
-
-            else:
-                if not detpresent:
-                    # false negative
-                    results.append([cls, "FN", 1])
-                else:
-                    # check whether it's a TP and compute detection distance
-                    for xyxy, conf, objtype in detections:
-                        if objtype == cls:
-                            # If the detected bounding box matches any one of the
-                            # annotated bounding box for this class, then it is a
-                            # true positive.
-                            is_tp = False
-                            _max_iou = float('-inf')
-                            for bbox2D in gtbboxes[cls]:
-                                iou = simple_box_iou(bbox2D, xyxy)
-                                _max_iou = max(_max_iou, iou)
-                                if iou >= args.iou_thres:
-                                    results.append([cls, "TP", 1])
-                                    is_tp = True
-                                    break
-                            if not is_tp:
-                                ######## DEBUGGING
-                                if args.debug and cls == "StoveBurner":
-                                    xywh = xyxy_to_normalized_xywh(xyxy, img.shape[:2])
-                                    annots = []
-                                    for bbox2D in gtbboxes[cls]:
-                                        xywh_gt = xyxy_to_normalized_xywh(bbox2D, img.shape[:2])
-                                        annots.append([classes.index(cls), *xywh_gt])
-                                    img = yolo_plot_one(img,
-                                                        annots,
-                                                        classes,
-                                                        colors)
-                                    old_color = colors[classes.index(cls)]
-                                    colors[classes.index(cls)] = [200.0, 0.0, 0.0]
-                                    img = yolo_plot_one(img,
-                                                        [[classes.index(cls), *xywh]],
-                                                        classes,
-                                                        colors)
-                                    colors[classes.index(cls)] = old_color
-                                    img_rgb = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                                    cv2.imshow(cls, img_rgb)
-                                    cv2.waitKey(0)
-
-                                results.append([cls, "FP", 1])
-                                if _max_iou <= 0.05:
-                                    results.append([cls, "FP_off", 1])
 
     # Saves results as DataFrame. Use
     df = pd.DataFrame(results,

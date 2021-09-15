@@ -1,7 +1,9 @@
 # Visualization
+import cv2
 from os import environ
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'  # hide "hello from pygame community"
 
+from thortils.vision import thor_topdown_img
 from cospomdp_apps.basic.visual import GridMapVisualizer, BasicViz2D
 from cospomdp.domain.state import RobotState2D
 from .agent.components.topo_map import draw_topo

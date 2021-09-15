@@ -16,6 +16,7 @@ from thortils.utils import euclidean_dist
 import thortils.vision.projection as pj
 from thortils.vision.general import saveimg
 from thortils.vision import thor_img, thor_img_depth, thor_topdown_img
+from thortils.utils.visual import GridMapVisualizer
 
 from .result_types import PathResult, HistoryResult
 from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation, ThorAgent
@@ -359,9 +360,25 @@ class ThorObjectSearchTrialSaver:
         os.makedirs(self.beliefsdir, exist_ok=True)
         os.makedirs(self.fpdir, exist_ok=True)
         os.makedirs(self.tddir, exist_ok=True)
-        self._log = []
+        self._log = {"poses":[],
+                     "object_detections": {}}
 
     def save_step(self, step, img, action, observation):
+        # record pose and detections - the pose is already in the controller
+        controller = self.task_env.controller
+        agent_pose = self.task_env.get_state(controller.last_event).agent_pose
+        agent_pose2d = (agent_pose[0][0], agent_pose[0][2], agent_pose[1][1])
+        self._log["poses"].append(agent_pose2d)
+
+        if observation is not None:
+            for detection in observation.detections:
+                xyxy, conf, cls, thor_locs = detection
+                if cls not in self._log["object_detections"]:
+                    self._log["object_detections"][cls] = []
+
+                self._log["object_detections"][cls].append(
+                    ((conf, self.agent.detector._avg_loc(thor_locs))))
+
         # First, save the img visulized by the visualizer
         belief_path = os.path.join(self.beliefsdir, f"belief_{step:0>3}.png")
         saveimg(img, belief_path)
@@ -370,7 +387,6 @@ class ThorObjectSearchTrialSaver:
         # Then, save the img from Ai2thor (both first person view and top-down view);
         # If it is the first step, then directly save the FPV from thor controller;
         # Otherwise, get the object detection visualization from the detector
-        controller = self.task_env.controller
         if step == 0:
             assert action is None and observation is None
             fp_img = thor_img(controller, cv2=False)
@@ -383,17 +399,25 @@ class ThorObjectSearchTrialSaver:
             fp_img = cv2.cvtColor(fp_img, cv2.COLOR_BGR2RGB)
             td_img = thor_topdown_img(controller, cv2=False)
 
+        # we will do a nice visualization for the td image:
+        nice_td_img = self.nice_topdown_viz(td_img,
+                                            self._log["poses"],
+                                            self._log["object_detections"])
+
         fp_path = os.path.join(self.fpdir, f"fpv_{step:0>3}.png")
         saveimg(fp_img, fp_path)
         print(f"Saved first person view image for step {step}")
 
-        td_path = os.path.join(self.tddir, f"fpv_{step:0>3}.png")
+        td_path = os.path.join(self.tddir, f"td_{step:0>3}.png")
         saveimg(td_img, td_path)
         print(f"Saved top-down view image for step {step}")
 
 
     def finish(self):
         import imageio
+
+        self.plot_trajectory(self._log["poses"],
+                             self._log["object_detections"])
 
         # generate gif if wanted
         if self._generate_gif:
@@ -421,3 +445,49 @@ class ThorObjectSearchTrialSaver:
                     file_path = os.path.join(self.tddir, filename)
                     td_images.append(imageio.imread(file_path))
             imageio.mimsave(os.path.join(self.savedir, "tds.gif"), td_images, fps=self._gif_fps)
+
+    def plot_trajectory(self, thor_poses, thor_detected_object_locs):
+        """
+        Will visualize the topdown view along with the current
+        trajectory as well as detected object locations. The trajectory
+        will be visualized as connected nodes where each node is essentially
+        a viewpoint pose
+        """
+        import matplotlib.pyplot as plt
+        import matplotlib.lines as mlines
+        fig, ax = plt.subplots()
+        ax.set_axis_off()
+        robot_radius = self.agent.grid_map.grid_size / 3
+        prev_center = None
+        for thor_x, thor_z, thor_yaw in thor_poses:
+            # Plot a circle as the robot and then a tick.
+            circle = plt.Circle((thor_x, thor_z), robot_radius, color="lightgray",
+                                edgecolor='black', linewidth=10)
+            ax.add_patch(circle)
+            center = (thor_x, thor_z)
+            heading = (thor_x + robot_radius*math.sin(thor_yaw),
+                       thor_z + robot_radius*math.cos(thor_yaw))
+            line = mlines.Line2D([center[0], heading[0]],
+                                 [center[1], heading[1]],
+                                 color="black")
+            ax.add_line(line)
+            if prev_center is not None:
+                line = mlines.Line2D([center[0], prev_center[0]],
+                                     [center[1], prev_center[1]])
+                ax.add_line(line)
+            prev_center = center
+
+        # Plot the object detections
+        size = self.agent.grid_map.grid_size / 3
+        for cls in thor_detected_object_locs:
+            for conf, loc3d in thor_detected_object_locs[cls]:
+                x, _, z = loc3d
+                rect = plt.Rectangle((x - size/2,  z - size/2),
+                                     size, size, facecolor="green")
+                ax.add_patch(rect)
+
+        ax.set_xlim(*np.asarray(self.agent.grid_map.ranges_in_thor[0]) * self.agent.grid_map.grid_size)
+        ax.set_ylim(*np.asarray(self.agent.grid_map.ranges_in_thor[1]) * self.agent.grid_map.grid_size)
+        ax.set_aspect('equal')
+
+        plt.savefig(os.path.join(self.savedir, "trajectory.png"), transparent=True, dpi=300)

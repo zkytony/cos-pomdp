@@ -47,6 +47,7 @@ def main():
     trial.config['agent_config']['solver_args'] = {"history": history['history']}
     trial.config['visualize'] = True
     trial.config['viz_config'] = {"res": 30}
+
     if args.save:
         trial.config['save_path'] = os.path.join(args.trial_path, "vis")
         trial.config['save_opts'] = {'gif': args.gif}
