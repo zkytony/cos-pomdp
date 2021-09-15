@@ -233,7 +233,7 @@ class PathResult(PklResult):
                 scene_target_data.append(result_row)
         df_target = pd.DataFrame(scene_target_data)
         df_target.columns = pd.MultiIndex.from_tuples(df_target.transpose().index, names=['baseline', 'metric'])
-        print(df_main.to_latex())
+        print(df_target.to_latex())
 
 
 
