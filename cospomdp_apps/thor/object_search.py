@@ -4,6 +4,7 @@ import math
 import numpy as np
 from collections import namedtuple
 from pprint import pprint
+import cv2
 
 import pomdp_py
 from pomdp_py.utils import typ
@@ -379,6 +380,7 @@ class ThorObjectSearchTrialSaver:
             # Get the object detection visualization
             fp_img = self.agent.detector.plot_detections(
                 observation.img, observation.detections)
+            fp_img = cv2.cvtColor(fp_img, cv2.COLOR_BGR2RGB)
             td_img = thor_topdown_img(controller, cv2=False)
 
         fp_path = os.path.join(self.fpdir, f"fpv_{step:0>3}.png")
