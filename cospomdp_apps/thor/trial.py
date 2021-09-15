@@ -81,8 +81,13 @@ class ThorTrial(Trial):
 
         if self.config.get("visualize", False):
             viz = task_env.visualizer(**self.config["viz_config"])
-            viz.visualize(task_env, agent, step=0)
+            img = viz.visualize(task_env, agent, step=0)
             result['viz'] = viz
+
+            if "save_path" in self.config:
+                saver = task_env.saver(self.config["save_path"], agent)
+                result['saver'] = saver
+                saver.save_step(0, img, None, None)
 
         return result
 
@@ -107,6 +112,7 @@ class ThorTrial(Trial):
         task_env = components['task_env']
         controller = components['controller']
         viz = components.get("viz", None)
+        saver = components.get("saver", None)
 
         _actions = []
 
@@ -142,7 +148,10 @@ class ThorTrial(Trial):
                 sys.stdout.flush()
 
             if self.config.get("visualize", False):
-                viz.visualize(task_env, agent, step=i)
+                img = viz.visualize(task_env, agent, step=i)
+
+                if saver is not None:
+                    saver.save_step(i, img, action, observation)
 
             if step_update_cb is not None:
                 step_update_cb(task_env, agent, viz=viz, **step_update_args)

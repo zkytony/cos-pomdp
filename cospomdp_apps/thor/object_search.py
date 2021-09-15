@@ -13,6 +13,8 @@ import ai2thor.util.metrics as metrics
 import thortils as tt
 from thortils.utils import euclidean_dist
 import thortils.vision.projection as pj
+from thortils.vision.general import saveimg
+from thortils.vision import thor_img, thor_img_depth, thor_topdown_img
 
 from .result_types import PathResult, HistoryResult
 from .common import ThorEnv, TOS_Action, TOS_State, TOS_Observation, ThorAgent
@@ -331,5 +333,60 @@ class TOS(ThorEnv):
     def visualizer(self, **config):
         return ThorObjectSearchViz2D(**config)
 
+    def saver(self, save_path, agent):
+        return ThorObjectSearchTrialSaver(self, agent, save_path)
+
 # Class naming aliases
 ThorObjectSearch = TOS
+
+import os
+class ThorObjectSearchTrialSaver:
+
+    def __init__(self, task_env, agent, savedir):
+        self.task_env = task_env
+        self.agent = agent
+
+        self.beliefsdir = os.path.join(savedir, "beliefs")
+        self.fpdir = os.path.join(savedir, "first-person")
+        self.tddir = os.path.join(savedir, "topdown")
+        self.savedir = savedir
+
+        print(f"Will save the trial visualizations to {savedir}")
+        os.makedir(savedir, exist_ok=True)
+        os.makedir(self.beliefsdir, exist_ok=True)
+        os.makedir(self.fpdir, exist_ok=True)
+        os.makedir(self.tddir, exist_ok=True)
+        self._log = []
+
+    def save_step(self, step, img, action, observation):
+        # First, save the img visulized by the visualizer
+        belief_path = os.path.join(self.beliefsdir, f"belief_{step}.png")
+        saveimg(img, belief_path)
+        print(f"Saved beliefs visualization for step {step}")
+
+        # Then, save the img from Ai2thor (both first person view and top-down view);
+        # If it is the first step, then directly save the FPV from thor controller;
+        # Otherwise, get the object detection visualization from the detector
+        controller = self.task_env.controller
+        if step == 0:
+            assert action is None and observation is None
+            fp_img = observation.img
+            td_img = thor_topdown_img(controller, cv2=False)
+
+        else:
+            # Get the object detection visualization
+            self.agent.detector.plot_detections()
+            fp_img = self.agent.detector.plot_detections(
+                observation.img, observation.detections)
+            td_img = thor_topdown_img(controller, cv2=False)
+
+        fp_path = os.path.join(self.fpdir, f"fpv_{step}.png")
+        saveimg(fp_img, fp_path)
+        print(f"Saved first person view image for step {step}")
+
+        td_path = os.path.join(self.tddir, f"fpv_{step}.png")
+        saveimg(td_img, td_path)
+        print(f"Saved top-down view image for step {step}")
+
+
+        self._step_count += 1

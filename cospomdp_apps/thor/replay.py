@@ -26,6 +26,7 @@ class ReplaySolver(pomdp_py.Planner):
 def main():
     parser = argparse.ArgumentParser(description="Replay")
     parser.add_argument("trial_path", type=str, help="path to trial directory")
+    parser.add_argument("--save", type=str, help="save the sequence of images")
     args = parser.parse_args()
 
     with open(os.path.join(args.trial_path, "trial.pkl"), "rb") as f:
@@ -38,6 +39,8 @@ def main():
     trial.config['agent_config']['solver_args'] = {"history": history['history']}
     trial.config['visualize'] = True
     trial.config['viz_config'] = {"res": 30}
+    if args.save:
+        trial.config['save_path'] = os.path.join(args.trial_path, "vis")
     trial.config['task_config']['detector_config']['plot_detections'] = True
     trial.run()
 
