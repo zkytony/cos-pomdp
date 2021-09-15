@@ -362,9 +362,9 @@ class ThorObjectSearchTrialSaver:
 
     def save_step(self, step, img, action, observation):
         # First, save the img visulized by the visualizer
-        belief_path = os.path.join(self.beliefsdir, f"belief_{step}.png")
+        belief_path = os.path.join(self.beliefsdir, f"belief_{step:0>3}.png")
         saveimg(img, belief_path)
-        print(f"Saved beliefs visualization for step {step:0>3}")
+        print(f"Saved beliefs visualization for step {step}")
 
         # Then, save the img from Ai2thor (both first person view and top-down view);
         # If it is the first step, then directly save the FPV from thor controller;
