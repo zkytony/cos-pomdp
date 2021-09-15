@@ -65,3 +65,6 @@ def discounted_cumulative_reward(rewards, discount_factor):
         total += r*d
         d *= discount_factor
     return total
+
+def pdopt():
+    pd.set_option("display.max_rows", None, "display.max_columns", None)

@@ -12,6 +12,16 @@ import os
 # if it is of a custom class; Use it if you only save generic python objects
 # or popular objects like numpy arrays.
 
+def baseline_name(baseline):
+    mapping = {"random#gt" : 'Random',
+               "greedy-nbv#vision": 'Greedy-NBV (v, acc)',
+               "hierarchical#target-only#vision": 'Target-POMDP',
+               "hierarchical#corr#vision": 'COS-POMDP (v, acc)',
+               "hierarchical#corr#gt": 'COS-POMDP (gt, acc)',
+               "hierarchical#corr-learned#vision": 'COS-POMDP (v, lrn)',
+               "hierarchical#corr-wrong#vision": 'COS-POMDP (v, wrg)'}
+    return mapping[baseline]
+
 class PathResult(PklResult):
     """
     Paths, includes actual path and shortest path,
@@ -148,6 +158,83 @@ class PathResult(PklResult):
         summary_by_scene_type.to_csv(os.path.join(path, "path_result_summary-by-scene-type.csv"))
         summary_by_scene.to_csv(os.path.join(path, "path_result_summary-by-scene.csv"))
         summary_by_target.to_csv(os.path.join(path, "path_result_summary-by-target.csv"))
+
+        # First table:
+        baseline_order = ["random#gt",
+                          "greedy-nbv#vision",
+                          "hierarchical#target-only#vision",
+                          "hierarchical#corr#vision",
+                          "hierarchical#corr#gt",
+                          "hierarchical#corr-learned#vision",
+                          "hierarchical#corr-wrong#vision"]
+
+        # Generate tables usable in paper
+        # First table: summary by scene type
+        df = summary_by_scene_type
+        table_rows = []
+        for baseline in baseline_order:
+            result_row = {('', 'Method'): baseline_name(baseline)}
+            for scene_type in ["bathroom", "bedroom", "kitchen", "living_room"]:
+                scene_type = scene_type.replace('_', '+')
+                row = df.loc[(scene_type, baseline)]
+
+                # spl
+                spl_avg = row[('spl', 'avg')]
+                spl_ci95 = row[('spl', 'ci95')]
+                spl = f"{100*spl_avg:.2f} ({100*spl_ci95:.2f})"
+
+                # discounted_return
+                dr_avg = row[('disc_return', 'avg')]
+                dr_ci95 = row[('disc_return', 'ci95')]
+                dr = f"{dr_avg:.2f} ({dr_ci95:.2f})"
+                # success rate
+                sr_avg = row[('success_rate', 'avg')]
+                sr = f"{100*sr_avg:.2f}"
+
+                result_row[(scene_type, 'SPL (%)')] = spl
+                result_row[(scene_type, 'DR')] = dr
+                result_row[(scene_type, 'SR (%)')] = sr
+            table_rows.append(result_row)
+        df_main = pd.DataFrame(table_rows)
+        df_main.columns = pd.MultiIndex.from_tuples(df_main.transpose().index, names=['scene_type', 'metric'])
+        print(df_main.to_latex())
+
+        # Second table: summary by objects
+        import sys
+        ABS_PATH = os.path.dirname(os.path.abspath(__file__))
+        sys.path.append(os.path.join(ABS_PATH, "../../experiments/thor"))
+        from experiment_thor import OBJECT_CLASSES
+        df = summary_by_target
+        scene_target_data = []
+        for scene_type in sorted(OBJECT_CLASSES):
+            for target in OBJECT_CLASSES[scene_type]['target']:
+                result_row = {
+                    ('', 'Room Type') : scene_type,
+                    ('', 'Target Class') : target
+                }
+                for baseline in ["greedy-nbv#vision", "hierarchical#target-only#vision", "hierarchical#corr#vision"]:
+                    row = df.loc[(target, baseline)]
+                    # spl
+                    spl_avg = row[('spl', 'avg')]
+                    spl_ci95 = row[('spl', 'ci95')]
+                    spl = f"{100*spl_avg:.2f} ({100*spl_ci95:.2f})"
+
+                    # discounted_return
+                    dr_avg = row[('disc_return', 'avg')]
+                    dr_ci95 = row[('disc_return', 'ci95')]
+                    dr = f"{dr_avg:.2f} ({dr_ci95:.2f})"
+                    # success rate
+                    sr_avg = row[('success_rate', 'avg')]
+                    sr = f"{100*sr_avg:.2f}"
+
+                    result_row[(baseline_name(baseline), 'SPL (%)')] = spl
+                    result_row[(baseline_name(baseline), 'DR')] = dr
+                    result_row[(baseline_name(baseline), 'SR (%)')] = sr
+                scene_target_data.append(result_row)
+        df_target = pd.DataFrame(scene_target_data)
+        df_target.columns = pd.MultiIndex.from_tuples(df_target.transpose().index, names=['baseline', 'metric'])
+        print(df_main.to_latex())
+
 
 
 class HistoryResult(YamlResult):
