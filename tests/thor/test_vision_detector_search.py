@@ -34,6 +34,8 @@ def _test_method(method, scene_type, target_class, scene="FloorPlan21"):
     trial = make_trial(method, 0, scene_type, scene, target_class,
                        detector_models, corr_objects=corr_objects,
                        visualize=True)
+    trial.config["save_paths"] = f"./{scene_type}_{target_class}_{Methods.get_name(method)}"
+    trial.config['save_opts'] = {'gif': False}
     trial.run()
 
 
@@ -41,7 +43,7 @@ if __name__ == "__main__":
     # _test_method(Methods.RANDOM, "kitchen", "Bowl")
     # _test_method(Methods.V_GREEDY_NBV_CRT, "kitchen", "Bowl")
     # _test_method(Methods.V_HIERARCHICAL_CORR_CRT, "living_room", "RemoteControl", scene="FloorPlan223")
-    _test_method(Methods.V_HIERARCHICAL_CORR_CRT, "bedroom", "AlarmClock", scene="FloorPlan330")
+    _test_method(Methods.V_HIERARCHICAL_CORR_CRT, "kitchen", "PepperShaker", scene="FloorPlan22")
     # _test_method(Methods.V_HIERARCHICAL_TARGET, "kitchen", "Bowl", scene="FloorPlan21")
     # _test_method(Methods.GT_HIERARCHICAL_CORR_CRT, "kitchen", "Bowl")
     # _test_method(Methods.V_HIERARCHICAL_CORR_CRT, "kitchen", "DishSponge")
