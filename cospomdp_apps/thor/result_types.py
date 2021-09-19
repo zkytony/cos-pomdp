@@ -152,7 +152,8 @@ class PathResult(PklResult):
         summary_by_target = df.groupby(['target', 'baseline'])\
                               .agg([("avg", "mean"),
                                     "std",
-                                    ("ci95", ci_func)])
+                                    ("ci95", ci_func),
+                                    ("count", "sum")])
         df.to_csv(os.path.join(path, "path_result.csv"))
         summary.to_csv(os.path.join(path, "path_result_summary.csv"))
         summary_by_scene_type.to_csv(os.path.join(path, "path_result_summary-by-scene-type.csv"))
