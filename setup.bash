@@ -3,7 +3,8 @@
 cd $HOME/repo/cos-pomdp/
 
 if [ ! -d "venv/cosp" ]; then
-    virtualenv -p $(which python3.8) venv/cosp
+    virtualenv -p python3 venv/cosp
+    source venv/cosp/bin/activate
     pip install -e .  # install the cos-pomdp package
 fi
 
@@ -79,9 +80,11 @@ if [ ! -e "cospomdp_apps/thor/mjolnir" ]; then
 fi
 
 # ask if want to create alias command
-read -p "Create alias cosp for starting cos-pomdp venv? " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    echo -e "alias cosp='source $HOME/repo/cos-pomdp/setup.bash'" >> ~/.bashrc
+if [[ $source_venv = false ]]; then
+    read -p "Create alias cosp for starting cos-pomdp venv? " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]];
+    then
+        echo -e "alias cosp='source $HOME/repo/cos-pomdp/setup.bash'" >> ~/.bashrc
+    fi
 fi
