@@ -183,7 +183,11 @@ class YOLODetector(Detector):
         # check the detectable classes are in config
         if self.detectable_classes != 'any':
             if not all(c in self.config["names"] for c in self.detectable_classes):
-                raise ValueError("Not all detectable objects are handled by the YOLO detector")
+                raise ValueError("Not all detectable objects are handled"
+                                 "by the YOLO detector; Classes that can't be detected: {}.\n"
+                                 "YOLO can detect: {}"\
+                                 .format(set(self.detectable_classes) - set(self.config['names']),
+                                         self.config['names']))
         else:
             self.detectable_classes = self.classes
 
