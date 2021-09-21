@@ -24,6 +24,7 @@ def _test_manual_agent(target,
                     task_env="ThorObjectSearch",
                     max_steps=max_steps,
                     agent_init_inputs=agent_init_inputs,
+                    max_repeated_detections=10,
                     use_vision_detector=True,
                     plot_detections=True)
     config = make_config(args)
