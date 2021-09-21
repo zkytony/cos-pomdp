@@ -11,10 +11,14 @@ from experiment_thor import OBJECT_CLASSES
 
 def _test_manual_agent(target,
                        scene="FloorPlan1",
+                       detectables="default",
                        max_steps=100):
     print("Test cospomdp_keyboard manual agent")
     scene_type = tt.ithor_scene_type(scene)
-    detectables = OBJECT_CLASSES[scene_type]["corr"] + [target]
+    if detectables == "default":
+        detectables = OBJECT_CLASSES[scene_type]["corr"] + [target]
+    else:
+        detectables = detectables#q + [target]
 
     agent_init_inputs = ["grid_map"]
     args = TaskArgs(detectables=detectables,
@@ -39,4 +43,5 @@ def _test_manual_agent(target,
 
 if __name__ == "__main__":
     _test_manual_agent('PepperShaker',
-                       scene="FloorPlan1")
+                       scene="FloorPlan23",
+                       detectables=["Microwave", "StoveBurner", "Fridge", "CoffeeMachine"])
