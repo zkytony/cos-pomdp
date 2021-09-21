@@ -317,11 +317,13 @@ def make_config(args):
     agent_class = eval("agentlib." + config["agent_class"])
     if not (agent_class == agentlib.ThorObjectSearchOptimalAgent)\
        and not (agent_class == agentlib.ThorObjectSearchExternalAgent)\
-       and not (agent_class == agentlib.ThorObjectSearchRandomAgent):
+       and not (agent_class == agentlib.ThorObjectSearchRandomAgent)\
+       and not (agent_class == agentlib.ThorObjectSearchKeyboardAgent):  # TODO: refactor long boolean check
         config["agent_config"]["detector_specs"] = args.agent_detector_specs
         config["agent_config"]["corr_specs"] = args.corr_specs
     if not (agent_class == agentlib.ThorObjectSearchGreedyNbvAgent)\
-       and not (agent_class == agentlib.ThorObjectSearchRandomAgent):
+       and not (agent_class == agentlib.ThorObjectSearchRandomAgent)\
+       and not (agent_class == agentlib.ThorObjectSearchKeyboardAgent):
         config["agent_config"]["approx_belief"] = args.approx_belief
 
     # You are expected to modify config['agent_config']

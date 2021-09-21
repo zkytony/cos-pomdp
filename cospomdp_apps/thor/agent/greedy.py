@@ -389,7 +389,8 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
         self._thor_camera_look_actions = thor_camera_look_actions(task_config["nav_config"]["movement_params"])
         self._goal_handler = None
         self._loop_counter = 0
-        self._solver = solver
+        if solver is not None:
+            self.solver = eval(solver)(**solver_args)
         self._look_action = None
 
     @property
@@ -399,8 +400,8 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
         return self.greedy_agent
 
     def act(self):
-        if isinstance(self._solver, ReplaySolver):
-            a = self._solver.plan(self.cos_agent)
+        if isinstance(self.solver, ReplaySolver):
+            a = self.solver.plan(self.cos_agent)
             if type(a) == tuple:
                 goal, goal_done, action = a
                 self._goal_handler = DummyGoalHandler(goal, goal_done, self)
@@ -491,6 +492,9 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
 
     def _update_belief(self, action, observation):
         self.greedy_agent.update(action, observation)
+        if isinstance(self.solver, ReplaySolver):
+            self.solver.update(self.cos_agent, self._goal_handler.goal, observation)
+
 
     def interpret_robot_obz(self, tos_observation):
         return ThorObjectSearchBasicCosAgent.interpret_robot_obz(self, tos_observation)

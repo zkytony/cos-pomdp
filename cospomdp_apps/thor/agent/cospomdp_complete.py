@@ -337,6 +337,7 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
                 assert type(action_taken) == tuple
                 goal, goal_done, action_taken = action_taken
             self._goal_handler = DummyGoalHandler(goal, goal_done, self)
+            print(f"Goal: {goal}")
             return action_taken
 
         goal = self.solver.plan(self.cos_agent)

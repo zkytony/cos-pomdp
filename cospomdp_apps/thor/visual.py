@@ -9,7 +9,8 @@ from cospomdp.domain.state import RobotState2D
 from .agent.components.topo_map import draw_topo
 from .agent import (ThorObjectSearchCosAgent,
                     ThorObjectSearchRandomAgent,
-                    ThorObjectSearchGreedyNbvAgent)
+                    ThorObjectSearchGreedyNbvAgent,
+                    ThorObjectSearchKeyboardAgent)
 from . import constants
 from .replay import ReplaySolver
 
@@ -28,8 +29,8 @@ class ThorObjectSearchViz2D(GridMapVisualizer):
 
         _draw_topo = hasattr(agent, "topo_map") and self._draw_topo
 
-        if hasattr(agent, "solver") and isinstance(agent.solver, ReplaySolver):
-            _draw_topo = False
+        # if hasattr(agent, "solver") and isinstance(agent.solver, ReplaySolver):
+        #     _draw_topo = False
 
         objlocs = {}
         for objid in agent.detectable_objects:
@@ -46,7 +47,8 @@ class ThorObjectSearchViz2D(GridMapVisualizer):
         if isinstance(agent, ThorObjectSearchCosAgent):
             return BasicViz2D.render(self, agent, objlocs, draw_fov=step > 0, img=img)
 
-        elif isinstance(agent, ThorObjectSearchRandomAgent):
+        elif isinstance(agent, ThorObjectSearchRandomAgent)\
+             or isinstance(agent, ThorObjectSearchKeyboardAgent):
             thor_robot_pos, thor_robot_rot = task_env.get_state().agent_pose
             thor_robot_pose2d = (thor_robot_pos[0], thor_robot_pos[2], thor_robot_rot[1])
             robot_state = RobotState2D(agent.robot_id,

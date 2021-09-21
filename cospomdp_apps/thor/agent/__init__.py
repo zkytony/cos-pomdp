@@ -4,3 +4,4 @@ from .optimal import ThorObjectSearchOptimalAgent
 from .external import ThorObjectSearchExternalAgent
 from .random import ThorObjectSearchRandomAgent
 from .greedy import ThorObjectSearchGreedyNbvAgent
+from .manual import ThorObjectSearchKeyboardAgent
