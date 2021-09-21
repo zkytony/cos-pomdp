@@ -353,7 +353,7 @@ class ThorObjectSearchTrialSaver:
         self.tddir = os.path.join(savedir, "topdown")
         self.savedir = savedir
         self._generate_gif = kwargs.get("gif", False)
-        self._gif_fps = kwargs.get("fps", 4)
+        self._frame_duration = kwargs.get("duration", 0.2)
 
         print(f"Will save the trial visualizations to {savedir}")
         os.makedirs(savedir, exist_ok=True)
@@ -423,7 +423,7 @@ class ThorObjectSearchTrialSaver:
                 if filename.endswith("png"):
                     file_path = os.path.join(self.beliefsdir, filename)
                     belief_images.append(imageio.imread(file_path))
-            imageio.mimsave(os.path.join(self.savedir, "beliefs.gif"), belief_images, fps=self._gif_fps)
+            imageio.mimsave(os.path.join(self.savedir, "beliefs.gif"), belief_images, duration=self._frame_duration)
 
             print("Generating GIF for First-Person Views")
             fp_images = []
@@ -431,7 +431,7 @@ class ThorObjectSearchTrialSaver:
                 if filename.endswith("png"):
                     file_path = os.path.join(self.fpdir, filename)
                     fp_images.append(imageio.imread(file_path))
-            imageio.mimsave(os.path.join(self.savedir, "fps.gif"), fp_images, fps=self._gif_fps)
+            imageio.mimsave(os.path.join(self.savedir, "fps.gif"), fp_images, duration=self._frame_duration)
 
             print("Generating GIF for Top-Down views")
             td_images = []
@@ -439,7 +439,7 @@ class ThorObjectSearchTrialSaver:
                 if filename.endswith("png"):
                     file_path = os.path.join(self.tddir, filename)
                     td_images.append(imageio.imread(file_path))
-            imageio.mimsave(os.path.join(self.savedir, "tds.gif"), td_images, fps=self._gif_fps)
+            imageio.mimsave(os.path.join(self.savedir, "tds.gif"), td_images, duration=self._frame_duration)
 
     def plot_trajectory(self, thor_poses, thor_detected_object_locs):
         """
