@@ -391,6 +391,8 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
         self._loop_counter = 0
         if solver is not None:
             self.solver = eval(solver)(**solver_args)
+        else:
+            self.solver = None
         self._look_action = None
 
     @property
@@ -445,7 +447,10 @@ class ThorObjectSearchGreedyNbvAgent(ThorObjectSearchCosAgent):
 
     def update(self, tos_action, tos_observation):
         if self._goal_handler.updates_first:
-            self._goal_handler.update(tos_action, tos_observation)
+            # No need to update if the action is lookup/down (because it's
+            # not part of the macro move goal handler's decision
+            if not tos_action.name.startswith("Look"):
+                self._goal_handler.update(tos_action, tos_observation)
 
         super().update(tos_action, tos_observation)
 
