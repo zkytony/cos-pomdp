@@ -151,3 +151,6 @@ _desired_results.pkl
 .testmondata
 
 videos/
+
+tests/thor/test-Floor*/
+tests/thor/test-cosagent-complete/
