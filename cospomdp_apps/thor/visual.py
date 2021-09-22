@@ -29,8 +29,8 @@ class ThorObjectSearchViz2D(GridMapVisualizer):
 
         _draw_topo = hasattr(agent, "topo_map") and self._draw_topo
 
-        # if hasattr(agent, "solver") and isinstance(agent.solver, ReplaySolver):
-        #     _draw_topo = False
+        if hasattr(agent, "solver") and isinstance(agent.solver, ReplaySolver):
+            _draw_topo = False
 
         objlocs = {}
         for objid in agent.detectable_objects:
@@ -44,7 +44,16 @@ class ThorObjectSearchViz2D(GridMapVisualizer):
             img = draw_topo(img, agent.topo_map, self._res,
                             draw_grid_path=self._draw_topo_grid_path)
 
-        if isinstance(agent, ThorObjectSearchCosAgent):
+        if isinstance(agent, ThorObjectSearchGreedyNbvAgent):
+            img = BasicViz2D.render(self, agent, objlocs, draw_fov=step > 0, img=img)
+            if len(agent.greedy_agent.last_viewpoints) > 0:
+                vpts, bestvpt = agent.greedy_agent.last_viewpoints
+                for vpt in vpts:
+                    img = self.draw_robot(img, *vpt, color=(100, 100, 250))
+                img = self.draw_robot(img, *bestvpt, color=(136, 9, 171), thickness=3)
+            return img
+
+        elif isinstance(agent, ThorObjectSearchCosAgent):
             return BasicViz2D.render(self, agent, objlocs, draw_fov=step > 0, img=img)
 
         elif isinstance(agent, ThorObjectSearchRandomAgent)\
