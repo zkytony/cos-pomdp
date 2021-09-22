@@ -20,4 +20,5 @@ if __name__ == "__main__":
     _test_basic_informed_search('Bread', 'Book',
                                 num_sims=200,
                                 show_progress=True,
+                                use_vision_detector=False,
                                 exploration_const=100)

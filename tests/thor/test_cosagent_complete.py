@@ -44,6 +44,7 @@ def _test_complete_search(target,
                           step_act_cb=None,
                           step_act_args={},
                           step_update_cb=None,
+                          save=False,
                           setup_only=False):
     print("Test cospomdp_complete search (prior={})".format(prior))
     print("Target object: {}".format(target))
@@ -71,7 +72,7 @@ def _test_complete_search(target,
 
         if other_false_pos is not None:
             quality = (other_accuracy, other_false_pos, 0.5)
-            other_detector = ("fan-simplefp", dict(fov=90, min_range=1, max_range=other_range), quality)
+            other_detector = ("fan-far", dict(fov=90, min_range=1, mean_range=other_range), quality)
         else:
             other_detector = ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
         detector_specs[other] = other_detector
@@ -103,6 +104,13 @@ def _test_complete_search(target,
     config["viz_config"] = {
         'res': 30
     }
+    config['task_config']['detector_config']['plot_detections'] = True
+    if save:
+        method = "#corr" if other is not None else "#target-only"
+        config['save_path'] = os.path.join(f"./test-{scene}-{target}-cosagent-complete{method}", "vis")
+        config['save_opts'] = {'gif': True,
+                               'duration': 0.25}
+
     trial = ThorObjectSearchTrial("test_cosagent-complete", config, verbose=True)
     print("Trial created")
     if setup_only:
@@ -114,16 +122,21 @@ def _test_complete_search(target,
                   logging=True)
 
 if __name__ == "__main__":
-    _test_complete_search("SaltShaker", "StoveBurner",
+    _test_complete_search("PepperShaker", "StoveBurner",
                           scene="FloorPlan1",
                           step_act_cb=step_act_cb,
                           num_sims=100,
+                          target_range=7,
+                          other_range=9,
+                          target_accuracy=0.7,
+                          other_accuracy=0.8,
                           target_false_pos=0.15,
                           other_false_pos=0.1,
-                          use_vision_detector=False,
+                          use_vision_detector=True,
                           local_search_type="3d",
-                          local_search_params={"pouct": {"num_sims": 200,
-                                                         "max_depth": 30,
+                          save=False,
+                          local_search_params={"pouct": {"num_sims": 150,
+                                                         "max_depth": 20,
                                                          "discount_factor": 0.95,
                                                          "exploration_const": 100,
                                                          "show_progress": True}})

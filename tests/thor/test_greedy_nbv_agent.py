@@ -1,17 +1,7 @@
+import os
 from cospomdp_apps.thor.trial import ThorObjectSearchTrial
 from cospomdp_apps.thor.common import TaskArgs, make_config
 from cospomdp.utils.corr_funcs import around
-
-def step_act_cb(task_env, agent, **kwargs):
-    viz = kwargs.get("viz")
-    step = kwargs.get("step")
-    vpts, bestvpt = agent.greedy_agent.last_viewpoints
-    img = viz.render(task_env, agent, step)
-
-    for vpt in vpts:
-        img = viz.draw_robot(img, *vpt, color=(100, 100, 250))
-    img = viz.draw_robot(img, *bestvpt, color=(136, 9, 171))
-    viz.show_img(img)
 
 def _test_greedy_agent(target,
                        other=None,
@@ -21,8 +11,10 @@ def _test_greedy_agent(target,
                        other_range=8,
                        target_accuracy=0.7,
                        other_accuracy=0.8,
-                       target_quality=(0.7, 0.05),
+                       target_false_pos=0.15,
+                       other_false_pos=0.1,
                        use_vision_detector=False,
+                       save=False,
                        max_steps=100):
     print("Test cospomdp_random agent")
     agent_init_inputs = ["grid_map", "agent_pose"]
@@ -32,13 +24,15 @@ def _test_greedy_agent(target,
         detectables = [target, other]
 
     detector_specs = {
-        target: ("fan-nofp", dict(fov=90, min_range=1, max_range=target_range), (target_accuracy, 0.1))
+        target: ("fan-far", dict(fov=90, min_range=1, mean_range=target_range),
+                 (target_accuracy, target_false_pos, 0.1))
     }
     corr_specs = {}
     if other is not None:
         corr_specs[(target, other)] = (around, dict(d=dist))
         detector_specs[other] =\
-            ("fan-nofp", dict(fov=90, min_range=1, max_range=other_range), (other_accuracy, 0.1))
+            ("fan-far", dict(fov=90, min_range=1, mean_range=other_range),
+             (other_accuracy, other_false_pos, 0.1))
 
     args = TaskArgs(detectables=detectables,
                     scene='FloorPlan1',
@@ -59,10 +53,17 @@ def _test_greedy_agent(target,
     config["viz_config"] = {
         'res': 30
     }
+    if save:
+        method = "#corr" if other is not None else "#target-only"
+        config['task_config']['detector_config']['plot_detections'] = True
+        config['save_path'] = os.path.join(f"./test-{scene}-{target}-greedy-nbv{method}", "vis")
+        config['save_opts'] = {'gif': True,
+                               'duration': 0.25}
     trial = ThorObjectSearchTrial("test_greedy", config, verbose=True)
     print("Trial created")
-    trial.run(step_act_cb=step_act_cb)
+    trial.run()
 
 if __name__ == "__main__":
     _test_greedy_agent('PepperShaker', 'StoveBurner',
-                       use_vision_detector=True)
+                       use_vision_detector=True,
+                       save=True)
