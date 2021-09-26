@@ -144,7 +144,8 @@ class PathResult(PklResult):
         summary_by_scene_type = df.groupby(['scene_type', 'baseline'])\
                              .agg([("avg", "mean"),
                                    "std",
-                                   ("ci95", ci_func)])
+                                   ("ci95", ci_func),
+                                   ("count", "sum")])
         summary_by_scene = df.groupby(['scene', 'baseline'])\
                              .agg([("avg", "mean"),
                                    "std",
