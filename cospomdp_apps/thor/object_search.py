@@ -128,16 +128,23 @@ class TOS(ThorEnv):
         our optimal agent. But will still use it per
         """
         # Uses the ThorObjectSearchOptimalagent to compute the path as shortest path.
-        plan, poses = ThorObjectSearchOptimalAgent.plan(
-            self.controller, self.init_state.agent_pose,
-            self.target, self.task_type,
-            **self.task_config["nav_config"])
-        # Need to prepend starting pose. Get position only
-        shortest_path = [tt.thor_pose_as_dict(self.init_state.agent_pose[0])]\
-                        + [p[0] for p in poses]
-
         actual_path = self.get_current_path()
         rewards = self.get_reward_sequence()
+        try:
+            plan, poses = ThorObjectSearchOptimalAgent.plan(
+                self.controller, self.init_state.agent_pose,
+                self.target, self.task_type,
+                **self.task_config["nav_config"])
+        except ValueError:
+            # Plan not found; this trial is not "completable"; Stil save history,
+            # for later replay.
+            return [PathResult(self.scene, self.target, None, actual_path, None,
+                               rewards, self.task_config["discount_factor"]),
+                    HistoryResult(self._history, self.task_config["discount_factor"])]
+
+        # Need to prepend starting pose. Get position only
+        shortest_path = [tt.thor_pose_as_dict(self.init_state.agent_pose[0])]\
+                         + [p[0] for p in poses]
         last_reward = self._history[-1]['reward']
         success = last_reward == constants.TOS_REWARD_HI
         return [PathResult(self.scene, self.target, shortest_path, actual_path, success,
