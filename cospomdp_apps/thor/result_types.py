@@ -41,7 +41,7 @@ class PathResult(PklResult):
         self.shortest_path = shortest_path
         self.actual_path = actual_path
         self.success = success
-        self.shortest_path_distance = metrics.path_distance(shortest_path)
+        self.shortest_path_distance = metrics.path_distance(shortest_path) if shortest_path is not None else None
         self.actual_path_distance = metrics.path_distance(actual_path)
         self.scene = scene
         self.target = target
