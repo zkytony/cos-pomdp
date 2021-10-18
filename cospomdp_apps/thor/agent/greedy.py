@@ -36,6 +36,7 @@ from .cospomdp_basic import (ThorObjectSearchCosAgent,
 from .cospomdp_complete import _shortest_path
 from .components.action import MoveViewpoint, grid_h_angles, thor_camera_look_actions
 from .components.goal_handlers import MacroMoveHandler, DoneHandler, DummyGoalHandler
+from .components.weighted_particles import WeightedParticles
 
 def weighted_particles(particles):
     return pomdp_py.WeightedParticles(
@@ -233,7 +234,7 @@ class GreedyNbvAgent:
             weight = self.observation_model.probability(observation, next_state)
             _temp_particles.append((starget, weight))
         # resampling
-        _temp_particles = pomdp_py.WeightedParticles(_temp_particles)
+        _temp_particles = weighted_particles(_temp_particles)
         resampled_particles = []
         for _ in range(num_particles):
             starget = _temp_particles.random()
