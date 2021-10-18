@@ -118,7 +118,7 @@ class PathResult(PklResult):
                 if path_result.success:
                     success_count += 1
 
-            if len(episode_results) != 0:
+            if len(episode_results) != 0 and all([None not in res for res in episode_results]):
                 spl = compute_spl(episode_results)
                 rows.append([baseline, spl, success_count, len(results[baseline]), np.mean(disc_returns)])
         cls.sharedheader = ["baseline", "spl", "success", "total", "disc_return"]
