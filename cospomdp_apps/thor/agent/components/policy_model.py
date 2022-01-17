@@ -84,11 +84,18 @@ class PolicyModelTopo(cospomdp.PolicyModel):
 
             closest_target_nid = topo_map.closest_node(*starget.loc)
             path = topo_map.shortest_path(srobot.nid, closest_target_nid)
-            current_gdist = sum(topo_map.edges[eid].grid_dist for eid in path)
+            if path is None:
+                # path not found
+                current_gdist = float("inf");
+            else:
+                current_gdist = sum(topo_map.edges[eid].grid_dist for eid in path)
             for move in self.policy_model.valid_moves(state):
                 # A move is preferred if:
                 # (1) it moves the robot closer to the target, in terms of geodesic distance
                 next_path = topo_map.shortest_path(move.dst_nid, closest_target_nid)
+                if next_path is None:
+                    # path not found
+                    continue
                 next_gdist = sum(topo_map.edges[eid].grid_dist for eid in next_path)
                 if next_gdist < current_gdist:
                     preferences.add((move, self.num_visits_init, self.val_init))

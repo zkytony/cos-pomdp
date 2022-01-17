@@ -402,6 +402,10 @@ class Graph(EdgeNodeSet):
 
         # Return a path
         path = []
+        if dst not in prev:
+            # Path not found
+            return None
+
         pair = prev[dst]
         while pair is not None:
             v, eid = pair
