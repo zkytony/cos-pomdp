@@ -121,6 +121,13 @@ class PathResult(PklResult):
             if len(episode_results) != 0 and all([None not in res for res in episode_results]):
                 spl = compute_spl(episode_results)
                 rows.append([baseline, spl, success_count, len(results[baseline]), np.mean(disc_returns)])
+            else:
+                # one of the baselines does not have valid result (e.g. path to
+                # target not found).  will skip this scene-target object setting
+                # for all baselines so as to make sure we only use results that
+                # are comparable between all baselines.
+                return []
+
         cls.sharedheader = ["baseline", "spl", "success", "total", "disc_return"]
         return rows
 
