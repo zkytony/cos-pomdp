@@ -116,7 +116,9 @@ OBJECT_CLASSES = {
                              "Painting"]},
 
     "bedroom": {"target": ["AlarmClock",
-                           "Pillow",
+                           # "Pillow",
+                           "CellPhone",
+                           "Book",
                            "CD"],
                 "corr": ["DeskLamp",
                          "Laptop",
