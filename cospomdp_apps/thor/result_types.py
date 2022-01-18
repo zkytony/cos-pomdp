@@ -257,15 +257,7 @@ class PathResult(PklResult):
 
         #######################################################################
         # Statistical significance
-        ## Obtain individual results by method
-        # df_for_method = {}
-        # methods = df_raw["baseline"].unique()
-        # for baseline in methods:
-        #     df_method_all_rows = df_raw.loc[df_raw["baseline"] == baseline]
-        #     df_for_method[baseline] = df_method_all_rows
-
         print_sigstr = True
-
         ## SPL
         print("--------------------------------------------------")
         ### total (SPL)
