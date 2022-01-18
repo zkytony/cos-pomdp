@@ -302,7 +302,7 @@ class PathResult(PklResult):
                 print(dfsig)
                 print("\n")
 
-        ## Discounted reward (SPL)
+        ## Discounted reward (DR)
         print("===================================================")
         dr_totals = {
             baseline_name(baseline): df_for_method[baseline]["disc_return"]
@@ -313,7 +313,7 @@ class PathResult(PklResult):
         print(dfsig)
         print("\n")
 
-        ### scene-type-wise (SPL)
+        ### scene-type-wise (DR)
         print("--------------------------------------------------")
         df_for_scene_method = {}
         for scene_type in SCENE_TYPES:
@@ -329,7 +329,7 @@ class PathResult(PklResult):
             print(dfsig)
             print("\n")
 
-        ### target-wise (SPL)
+        ### target-wise (DR)
         print("--------------------------------------------------")
         for scene_type in SCENE_TYPES:
             targets = df_all_rows.loc[df_all_rows["scene_type"] == scene_type]["target"].unique()
