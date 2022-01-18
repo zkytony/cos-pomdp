@@ -258,7 +258,7 @@ class PathResult(PklResult):
             df_method_all_rows = df_all_rows.loc[df_all_rows["baseline"] == baseline]
             df_for_method[baseline] = df_method_all_rows
 
-        print_sigstr = False
+        print_sigstr = True
 
         ## SPL
         ### total (SPL)

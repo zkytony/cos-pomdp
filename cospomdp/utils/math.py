@@ -332,6 +332,8 @@ def tind_test(sample1, sample2):
 def pval2str(pval):
     """Converts p value to ns, *, **, etc.
     Uses the common convention."""
+    if math.isnan(pval):
+        return "NA"
     if pval > 0.05:
         return "ns"
     else:
