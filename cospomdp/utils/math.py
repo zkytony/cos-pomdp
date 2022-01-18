@@ -329,6 +329,7 @@ def tind_test(sample1, sample2):
     res = stats.ttest_ind(a=sample1, b=sample2, equal_var=True)
     return res.statistic, res.pvalue
 
+
 def pval2str(pval):
     """Converts p value to ns, *, **, etc.
     Uses the common convention."""
@@ -346,7 +347,36 @@ def pval2str(pval):
         else:
             return "*"
 
-def test_significance_pairwise(results, sigstr=False):
+def wilcoxon_test(sample1, sample2):
+    """This is a nonparametric test (i.e. no need to compute statistical
+    parameter from the sample like mean).
+
+    From Wikipedia:
+    When applied to test the location of a set of samples, it serves the same
+    purpose as the one-sample Student's t-test.
+
+    On a set of matched samples, it is a paired difference test like the paired
+    Student's t-test
+
+    Unlike Student's t-test, the Wilcoxon signed-rank test does not assume that
+    the differences between paired samples are normally distributed.
+
+    On a wide variety of data sets, it has greater statistical power than
+    Student's t-test and is more likely to produce a statistically significant
+    result. The cost of this applicability is that it has less statistical power
+    than Student's t-test when the data are normally distributed.
+    """
+    def _all_zeros(sample):
+        return all([abs(s) <= 1e-12 for s in sample])
+    if _all_zeros(sample1) and _all_zeros(sample2):
+        # the test cannot be performed; the two samples have no difference
+        return float('nan'), float('nan')
+
+    res = stats.wilcoxon(x=sample1, y=sample2)
+    return res.statistic, res.pvalue
+
+
+def test_significance_pairwise(results, sigstr=False, method="t_ind"):
     """
     Runs statistical significance tests for all pairwise combinations.
     Returns result as a table. Uses two-sample t-test. Assumes independent sample.
@@ -367,7 +397,13 @@ def test_significance_pairwise(results, sigstr=False):
             if meth1 == meth2:
                 row.append("-");
             else:
-                _, pval = tind_test(results[meth1], results[meth2])
+                if method == "t_ind":
+                    _, pval = tind_test(results[meth1], results[meth2])
+                elif method == "wilcoxon":
+                    _, pval = wilcoxon_test(results[meth1], results[meth2])
+                else:
+                    raise ValueError("Unable to perform significance test {}".format(method))
+
                 if sigstr:
                     row.append(pval2str(pval))
                 else:

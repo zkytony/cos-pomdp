@@ -23,9 +23,14 @@ def baseline_name(baseline):
                "hierarchical#corr-wrong#vision": 'COS-POMDP (v, wrg)'}
     return mapping[baseline]
 
-# True positive rate of object detection, at or below which the class is
+# True positive rate of object detection, BELOW (not including) which the class is
 # considered to be hard to detect.
-HARD_TO_DETECT_TP = 0.5
+HARD_TO_DETECT_TP = 0.49
+# Print string representation of statistical significance (e.g. *, **, ns)
+# instead of printing the p value
+SIGSTR = True
+# Statistical significance testing method
+SIGMETHOD = "wilcoxon"
 
 class PathResult(PklResult):
     """
@@ -257,13 +262,12 @@ class PathResult(PklResult):
 
         #######################################################################
         # Statistical significance
-        print_sigstr = True
         ## SPL
         print("--------------------------------------------------")
         ### total (SPL)
         spl_totals = PathResult._filter_results_and_organize_by_method(df_raw, "spl")
         PathResult._print_statistical_significance_matrix(
-            spl_totals, forwhat="total SPL", sigstr=print_sigstr)
+            spl_totals, forwhat="total SPL", sigstr=SIGSTR)
         print("--------------------------------------------------")
         ### scene-type-wise (SPL)
         for scene_type in sorted(SCENE_TYPES):
@@ -271,7 +275,7 @@ class PathResult(PklResult):
             spl_scenes = PathResult._filter_results_and_organize_by_method(
                 df_raw, "spl", filter_func=lambda row: row["scene_type"] == scene_type)
             PathResult._print_statistical_significance_matrix(
-                spl_scenes, forwhat="{} SPL".format(scene_type), sigstr=print_sigstr)
+                spl_scenes, forwhat="{} SPL".format(scene_type), sigstr=SIGSTR)
         ### target-wise (SPL)
         for scene_type in sorted(SCENE_TYPES):
             for target in OBJECT_CLASSES[scene_type]['target']:
@@ -279,14 +283,14 @@ class PathResult(PklResult):
                 spl_targets = PathResult._filter_results_and_organize_by_method(
                     df_raw, "spl", filter_func=lambda row: row["scene_type"] == scene_type and row["target"] == target)
                 PathResult._print_statistical_significance_matrix(
-                    spl_targets, forwhat="{}, {} SPL".format(scene_type, target), sigstr=print_sigstr)
+                    spl_targets, forwhat="{}, {} SPL".format(scene_type, target), sigstr=SIGSTR)
 
         ## DR (discounted return)
         print("--------------------------------------------------")
         ### total (DR)
         dr_totals = PathResult._filter_results_and_organize_by_method(df_raw, "disc_return")
         PathResult._print_statistical_significance_matrix(
-            dr_totals, forwhat="total DR", sigstr=print_sigstr)
+            dr_totals, forwhat="total DR", sigstr=SIGSTR)
         print("--------------------------------------------------")
         ### scene-type-wise (DR)
         for scene_type in sorted(SCENE_TYPES):
@@ -294,7 +298,7 @@ class PathResult(PklResult):
             dr_scenes = PathResult._filter_results_and_organize_by_method(
                 df_raw, "disc_return", filter_func=lambda row: row["scene_type"] == scene_type)
             PathResult._print_statistical_significance_matrix(
-                dr_scenes, forwhat="{} DR".format(scene_type), sigstr=print_sigstr)
+                dr_scenes, forwhat="{} DR".format(scene_type), sigstr=SIGSTR)
         ### target-wise (DR)
         for scene_type in sorted(SCENE_TYPES):
             for target in OBJECT_CLASSES[scene_type]['target']:
@@ -302,7 +306,8 @@ class PathResult(PklResult):
                 dr_targets = PathResult._filter_results_and_organize_by_method(
                     df_raw, "disc_return", filter_func=lambda row: row["scene_type"] == scene_type and row["target"] == target)
                 PathResult._print_statistical_significance_matrix(
-                    dr_targets, forwhat="{}, {} DR".format(scene_type, target), sigstr=print_sigstr)
+                    dr_targets, forwhat="{}, {} DR".format(scene_type, target), sigstr=SIGSTR)
+        print("--------------------------------------------------")
 
         #######################################################################
         # Statical Significance specifically for hard-to-detect objects
@@ -317,7 +322,7 @@ class PathResult(PklResult):
             for csvrow in reader:
                 if csvrow['class'] in OBJECT_CLASSES[csvrow['scene_type']]["target"]:
                     tf_rate = float(csvrow['TP_rate'])
-                    if tf_rate <= HARD_TO_DETECT_TP:
+                    if tf_rate < HARD_TO_DETECT_TP:
                         print("- {}: {:.3f}".format(csvrow['class'], tf_rate))
                         hard_to_detect_targets.add((csvrow['scene_type'], csvrow['class']))
 
@@ -325,12 +330,12 @@ class PathResult(PklResult):
         spl_hard_to_detect = PathResult._filter_results_and_organize_by_method(
             df_raw, "spl", filter_func=lambda row: (row["scene_type"], row["target"]) in hard_to_detect_targets)
         PathResult._print_statistical_significance_matrix(
-            spl_hard_to_detect, forwhat="Hard to Detect SPL".format(scene_type, target), sigstr=print_sigstr)
+            spl_hard_to_detect, forwhat="Hard to Detect SPL".format(scene_type, target), sigstr=SIGSTR)
 
         dr_hard_to_detect = PathResult._filter_results_and_organize_by_method(
             df_raw, "disc_return", filter_func=lambda row: (row["scene_type"], row["target"]) in hard_to_detect_targets)
         PathResult._print_statistical_significance_matrix(
-            dr_hard_to_detect, forwhat="Hard to Detect DR".format(scene_type, target), sigstr=print_sigstr)
+            dr_hard_to_detect, forwhat="Hard to Detect DR".format(scene_type, target), sigstr=SIGSTR)
 
     @staticmethod
     def _filter_results_and_organize_by_method(df_complete, metric, filter_func=None):
@@ -352,6 +357,9 @@ class PathResult(PklResult):
             df_filtered = df_complete
         for baseline in methods:
             df_baseline = df_filtered.loc[df_filtered['baseline'] == baseline]
+            # Note that df_baseline[metric] will preserve the order
+            # of the result values. This is important for non-parametric
+            # tests
             result[baseline_name(baseline)] = df_baseline[metric]
         return result
 
@@ -365,9 +373,10 @@ class PathResult(PklResult):
             forwhat (str): some info to print before printing the matrix
             sigstr (bool): If true, in the matrix will show 'ns', '*', '**', etc. and
                 otherwise show the p value.
+            sigmethod (str): Method of statistical testing. Either 't_ind' or 'wilcoxon'
         """
         print("\nStatistical significance ({}):".format(forwhat))
-        dfsig = test_significance_pairwise(results_by_method, sigstr=sigstr)
+        dfsig = test_significance_pairwise(results_by_method, sigstr=sigstr, method=SIGMETHOD)
         print("** For {}**".format(forwhat))
         print(dfsig)
         print("\n")
