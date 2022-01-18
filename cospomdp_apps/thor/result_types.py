@@ -185,7 +185,7 @@ class PathResult(PklResult):
         table_rows = []
         for baseline in baseline_order:
             result_row = {('', 'Method'): baseline_name(baseline)}
-            for scene_type in SCENE_TYPES:
+            for scene_type in sorted(SCENE_TYPES):
                 scene_type = scene_type.replace('_', '+')
                 row = df.loc[(scene_type, baseline)]
 
@@ -258,6 +258,8 @@ class PathResult(PklResult):
             df_method_all_rows = df_all_rows.loc[df_all_rows["baseline"] == baseline]
             df_for_method[baseline] = df_method_all_rows
 
+        print_sigstr = False
+
         ## SPL
         ### total (SPL)
         print("--------------------------------------------------")
@@ -265,7 +267,7 @@ class PathResult(PklResult):
             baseline_name(baseline): df_for_method[baseline]["spl"]
             for baseline in df_for_method
         }
-        dfsig = test_significance_pairwise(spl_totals, sigstr=True)
+        dfsig = test_significance_pairwise(spl_totals, sigstr=print_sigstr)
         print("\nStatistical significance (overall SPL):")
         print(dfsig)
         print("\n")
@@ -273,7 +275,8 @@ class PathResult(PklResult):
         ### scene-type-wise (SPL)
         print("--------------------------------------------------")
         df_for_scene_method = {}
-        for scene_type in SCENE_TYPES:
+        for scene_type in sorted(SCENE_TYPES):
+            scene_type = scene_type.replace('_', '+')
             print("\nStatistical significance ({} SPL):".format(scene_type))
             spl_scene_type = {}
             for baseline in methods:
@@ -281,15 +284,18 @@ class PathResult(PklResult):
                 d = d.loc[d["scene_type"] == scene_type]
                 spl_scene_type[baseline_name(baseline)] = d["spl"]
                 df_for_scene_method[(scene_type, baseline)] = d
-            dfsig = test_significance_pairwise(spl_scene_type, sigstr=True)
+            dfsig = test_significance_pairwise(spl_scene_type, sigstr=print_sigstr)
             print("**For {}**".format(scene_type))
             print(dfsig)
             print("\n")
 
         ### target-wise (SPL)
         print("--------------------------------------------------")
-        for scene_type in SCENE_TYPES:
+        for scene_type in sorted(SCENE_TYPES):
+            scene_type = scene_type.replace('_', '+')
             targets = df_all_rows.loc[df_all_rows["scene_type"] == scene_type]["target"].unique()
+            if scene_type == "living_room":
+                import pdb; pdb.set_trace()
             for target in targets:
                 print("\nStatistical significance ({}, {} SPL):".format(scene_type, target))
                 spl_target = {}
@@ -297,7 +303,7 @@ class PathResult(PklResult):
                     d = df_for_scene_method[(scene_type, baseline)]
                     dt = d.loc[d["target"] == target]
                     spl_target[baseline_name(baseline)] = dt["spl"]
-                dfsig = test_significance_pairwise(spl_target, sigstr=True)
+                dfsig = test_significance_pairwise(spl_target, sigstr=print_sigstr)
                 print("**For {}**".format(target))
                 print(dfsig)
                 print("\n")
@@ -308,7 +314,7 @@ class PathResult(PklResult):
             baseline_name(baseline): df_for_method[baseline]["disc_return"]
             for baseline in df_for_method
         }
-        dfsig = test_significance_pairwise(dr_totals, sigstr=True)
+        dfsig = test_significance_pairwise(dr_totals, sigstr=print_sigstr)
         print("\nStatistical significance (overall DR):")
         print(dfsig)
         print("\n")
@@ -316,7 +322,8 @@ class PathResult(PklResult):
         ### scene-type-wise (DR)
         print("--------------------------------------------------")
         df_for_scene_method = {}
-        for scene_type in SCENE_TYPES:
+        for scene_type in sorted(SCENE_TYPES):
+            scene_type = scene_type.replace('_', '+')
             print("\nStatistical significance ({} DR):".format(scene_type))
             dr_scene_type = {}
             for baseline in methods:
@@ -324,14 +331,15 @@ class PathResult(PklResult):
                 d = d.loc[d["scene_type"] == scene_type]
                 dr_scene_type[baseline_name(baseline)] = d["disc_return"]
                 df_for_scene_method[(scene_type, baseline)] = d
-            dfsig = test_significance_pairwise(dr_scene_type, sigstr=True)
+            dfsig = test_significance_pairwise(dr_scene_type, sigstr=print_sigstr)
             print("**For {}**".format(scene_type))
             print(dfsig)
             print("\n")
 
         ### target-wise (DR)
         print("--------------------------------------------------")
-        for scene_type in SCENE_TYPES:
+        for scene_type in sorted(SCENE_TYPES):
+            scene_type = scene_type.replace('_', '+')
             targets = df_all_rows.loc[df_all_rows["scene_type"] == scene_type]["target"].unique()
             for target in targets:
                 print("\nStatistical significance ({}, {} DR):".format(scene_type, target))
@@ -340,7 +348,7 @@ class PathResult(PklResult):
                     d = df_for_scene_method[(scene_type, baseline)]
                     dt = d.loc[d["target"] == target]
                     dr_target[baseline_name(baseline)] = dt["disc_return"]
-                dfsig = test_significance_pairwise(dr_target, sigstr=True)
+                dfsig = test_significance_pairwise(dr_target, sigstr=print_sigstr)
                 print("**For {}**".format(target))
                 print(dfsig)
                 print("\n")
