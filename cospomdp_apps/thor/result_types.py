@@ -23,6 +23,9 @@ def baseline_name(baseline):
                "hierarchical#corr-wrong#vision": 'COS-POMDP (v, wrg)'}
     return mapping[baseline]
 
+# True positive rate of object detection, at or below which the class is
+# considered to be hard to detect.
+HARD_TO_DETECT_TP = 0.5
 
 class PathResult(PklResult):
     """
@@ -143,33 +146,34 @@ class PathResult(PklResult):
                 success_rate = row[2] / max(1, row[3])
                 all_rows.append([scene_type, scene, target] + row + [success_rate])
         columns = ["scene_type", "scene", "target"] + cls.sharedheader + ["success_rate"]
-        df_all_rows = pd.DataFrame(all_rows, columns=columns)
+        df_raw = pd.DataFrame(all_rows, columns=columns)
 
         ci_func = lambda x: ci_normal(x, confidence_interval=0.95)
-        summary = df_all_rows.groupby(['baseline'])\
-                             .agg([("avg", "mean"),
-                                   "std",
-                                   ("ci95", ci_func)])
-        summary_by_scene_type = df_all_rows.groupby(['scene_type', 'baseline'])\
-                                           .agg([("avg", "mean"),
-                                                 "std",
-                                                 ("ci95", ci_func),
-                                                 ("count", "sum")])
-        summary_by_scene = df_all_rows.groupby(['scene', 'baseline'])\
+        summary = df_raw.groupby(['baseline'])\
+                        .agg([("avg", "mean"),
+                              "std",
+                              ("ci95", ci_func)])
+        summary_by_scene_type = df_raw.groupby(['scene_type', 'baseline'])\
                                       .agg([("avg", "mean"),
                                             "std",
-                                            ("ci95", ci_func)])
-        summary_by_target = df_all_rows.groupby(['target', 'baseline'])\
-                                       .agg([("avg", "mean"),
-                                             "std",
-                                             ("ci95", ci_func),
-                                             ("count", "sum")])
-        df_all_rows.to_csv(os.path.join(path, "path_result.csv"))
+                                            ("ci95", ci_func),
+                                            ("count", "sum")])
+        summary_by_scene = df_raw.groupby(['scene', 'baseline'])\
+                                 .agg([("avg", "mean"),
+                                       "std",
+                                       ("ci95", ci_func)])
+        summary_by_target = df_raw.groupby(['target', 'baseline'])\
+                                  .agg([("avg", "mean"),
+                                        "std",
+                                        ("ci95", ci_func),
+                                        ("count", "sum")])
+        df_raw.to_csv(os.path.join(path, "path_result.csv"))
         summary.to_csv(os.path.join(path, "path_result_summary.csv"))
         summary_by_scene_type.to_csv(os.path.join(path, "path_result_summary-by-scene-type.csv"))
         summary_by_scene.to_csv(os.path.join(path, "path_result_summary-by-scene.csv"))
         summary_by_target.to_csv(os.path.join(path, "path_result_summary-by-target.csv"))
 
+        #######################################################################
         # First table:
         baseline_order = ["random#gt",
                           "greedy-nbv#vision",
@@ -212,6 +216,7 @@ class PathResult(PklResult):
         df_main = df_main.iloc[:, 1:]
         print(df_main.to_latex())
 
+        #######################################################################
         # Second table: summary by objects
         import sys
         ABS_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -250,109 +255,130 @@ class PathResult(PklResult):
         df_target = df_target.iloc[:, 2:]
         print(df_target.to_latex(multirow=True))
 
+        #######################################################################
         # Statistical significance
         ## Obtain individual results by method
-        df_for_method = {}
-        methods = df_all_rows["baseline"].unique()
-        for baseline in methods:
-            df_method_all_rows = df_all_rows.loc[df_all_rows["baseline"] == baseline]
-            df_for_method[baseline] = df_method_all_rows
+        # df_for_method = {}
+        # methods = df_raw["baseline"].unique()
+        # for baseline in methods:
+        #     df_method_all_rows = df_raw.loc[df_raw["baseline"] == baseline]
+        #     df_for_method[baseline] = df_method_all_rows
 
         print_sigstr = True
 
         ## SPL
+        print("--------------------------------------------------")
         ### total (SPL)
+        spl_totals = PathResult._filter_results_and_organize_by_method(df_raw, "spl")
+        PathResult._print_statistical_significance_matrix(
+            spl_totals, forwhat="total SPL", sigstr=print_sigstr)
         print("--------------------------------------------------")
-        spl_totals = {
-            baseline_name(baseline): df_for_method[baseline]["spl"]
-            for baseline in df_for_method
-        }
-        dfsig = test_significance_pairwise(spl_totals, sigstr=print_sigstr)
-        print("\nStatistical significance (overall SPL):")
-        print(dfsig)
-        print("\n")
-
         ### scene-type-wise (SPL)
-        print("--------------------------------------------------")
-        df_for_scene_method = {}
         for scene_type in sorted(SCENE_TYPES):
             scene_type = scene_type.replace('_', '+')
-            print("\nStatistical significance ({} SPL):".format(scene_type))
-            spl_scene_type = {}
-            for baseline in methods:
-                d = df_for_method[baseline]
-                d = d.loc[d["scene_type"] == scene_type]
-                spl_scene_type[baseline_name(baseline)] = d["spl"]
-                df_for_scene_method[(scene_type, baseline)] = d
-            dfsig = test_significance_pairwise(spl_scene_type, sigstr=print_sigstr)
-            print("**For {}**".format(scene_type))
-            print(dfsig)
-            print("\n")
-
+            spl_scenes = PathResult._filter_results_and_organize_by_method(
+                df_raw, "spl", filter_func=lambda row: row["scene_type"] == scene_type)
+            PathResult._print_statistical_significance_matrix(
+                spl_scenes, forwhat="{} SPL".format(scene_type), sigstr=print_sigstr)
         ### target-wise (SPL)
+        for scene_type in sorted(SCENE_TYPES):
+            for target in OBJECT_CLASSES[scene_type]['target']:
+                scene_type = scene_type.replace('_', '+')
+                spl_targets = PathResult._filter_results_and_organize_by_method(
+                    df_raw, "spl", filter_func=lambda row: row["scene_type"] == scene_type and row["target"] == target)
+                PathResult._print_statistical_significance_matrix(
+                    spl_targets, forwhat="{}, {} SPL".format(scene_type, target), sigstr=print_sigstr)
+
+        ## DR (discounted return)
         print("--------------------------------------------------")
+        ### total (DR)
+        dr_totals = PathResult._filter_results_and_organize_by_method(df_raw, "disc_return")
+        PathResult._print_statistical_significance_matrix(
+            dr_totals, forwhat="total DR", sigstr=print_sigstr)
+        print("--------------------------------------------------")
+        ### scene-type-wise (DR)
         for scene_type in sorted(SCENE_TYPES):
             scene_type = scene_type.replace('_', '+')
-            targets = df_all_rows.loc[df_all_rows["scene_type"] == scene_type]["target"].unique()
-            if scene_type == "living_room":
-                import pdb; pdb.set_trace()
-            for target in targets:
-                print("\nStatistical significance ({}, {} SPL):".format(scene_type, target))
-                spl_target = {}
-                for baseline in methods:
-                    d = df_for_scene_method[(scene_type, baseline)]
-                    dt = d.loc[d["target"] == target]
-                    spl_target[baseline_name(baseline)] = dt["spl"]
-                dfsig = test_significance_pairwise(spl_target, sigstr=print_sigstr)
-                print("**For {}**".format(target))
-                print(dfsig)
-                print("\n")
+            dr_scenes = PathResult._filter_results_and_organize_by_method(
+                df_raw, "disc_return", filter_func=lambda row: row["scene_type"] == scene_type)
+            PathResult._print_statistical_significance_matrix(
+                dr_scenes, forwhat="{} DR".format(scene_type), sigstr=print_sigstr)
+        ### target-wise (DR)
+        for scene_type in sorted(SCENE_TYPES):
+            for target in OBJECT_CLASSES[scene_type]['target']:
+                scene_type = scene_type.replace('_', '+')
+                dr_targets = PathResult._filter_results_and_organize_by_method(
+                    df_raw, "disc_return", filter_func=lambda row: row["scene_type"] == scene_type and row["target"] == target)
+                PathResult._print_statistical_significance_matrix(
+                    dr_targets, forwhat="{}, {} DR".format(scene_type, target), sigstr=print_sigstr)
 
-        ## Discounted reward (DR)
-        print("===================================================")
-        dr_totals = {
-            baseline_name(baseline): df_for_method[baseline]["disc_return"]
-            for baseline in df_for_method
-        }
-        dfsig = test_significance_pairwise(dr_totals, sigstr=print_sigstr)
-        print("\nStatistical significance (overall DR):")
+        #######################################################################
+        # Statical Significance specifically for hard-to-detect objects
+        ## load the detector_params.csv
+        import csv
+        path_to_detector_params_csv = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                   "../../experiments/thor/detector_params.csv")
+        hard_to_detect_targets = set()
+        print("Hard to Detect Classes:")
+        with open(path_to_detector_params_csv) as f:
+            reader = csv.DictReader(f)
+            for csvrow in reader:
+                if csvrow['class'] in OBJECT_CLASSES[csvrow['scene_type']]["target"]:
+                    tf_rate = float(csvrow['TP_rate'])
+                    if tf_rate <= HARD_TO_DETECT_TP:
+                        print("- {}: {:.3f}".format(csvrow['class'], tf_rate))
+                        hard_to_detect_targets.add((csvrow['scene_type'], csvrow['class']))
+
+        # note that df_raw is the dataframe that contains ALL individual results without any aggregation..
+        spl_hard_to_detect = PathResult._filter_results_and_organize_by_method(
+            df_raw, "spl", filter_func=lambda row: (row["scene_type"], row["target"]) in hard_to_detect_targets)
+        PathResult._print_statistical_significance_matrix(
+            spl_hard_to_detect, forwhat="Hard to Detect SPL".format(scene_type, target), sigstr=print_sigstr)
+
+        dr_hard_to_detect = PathResult._filter_results_and_organize_by_method(
+            df_raw, "disc_return", filter_func=lambda row: (row["scene_type"], row["target"]) in hard_to_detect_targets)
+        PathResult._print_statistical_significance_matrix(
+            dr_hard_to_detect, forwhat="Hard to Detect DR".format(scene_type, target), sigstr=print_sigstr)
+
+    @staticmethod
+    def _filter_results_and_organize_by_method(df_complete, metric, filter_func=None):
+        """Given a dataframe that contains all result rows, returns a dictionary that
+        maps from method name (e.g. 'Random') to a series that contains only
+        the result of given metric (e.g. 'spl'), such that this series is filtered
+        is according to a criteria specified by the given filtering function.
+
+        filter_func takes in row (pandas row) and returns True or False.
+
+        Note that the method name is the output of baseline_name() function.
+        """
+        methods = df_complete["baseline"].unique()
+        result = {}  # maps from method name to series.
+        if filter_func is not None:
+            m = df_complete.apply(filter_func, axis=1)
+            df_filtered = df_complete[m]
+        else:
+            df_filtered = df_complete
+        for baseline in methods:
+            df_baseline = df_filtered.loc[df_filtered['baseline'] == baseline]
+            result[baseline_name(baseline)] = df_baseline[metric]
+        return result
+
+    @staticmethod
+    def _print_statistical_significance_matrix(results_by_method, forwhat="", sigstr=True):
+        """
+        utility function to print statistical significance matrix.
+        Args:
+            results_by_method: dictionary mapping from baseline name (e.g. Random)
+                to a list of result values (for example, all the SPL values for all trials).
+            forwhat (str): some info to print before printing the matrix
+            sigstr (bool): If true, in the matrix will show 'ns', '*', '**', etc. and
+                otherwise show the p value.
+        """
+        print("\nStatistical significance ({}):".format(forwhat))
+        dfsig = test_significance_pairwise(results_by_method, sigstr=sigstr)
+        print("** For {}**".format(forwhat))
         print(dfsig)
         print("\n")
-
-        ### scene-type-wise (DR)
-        print("--------------------------------------------------")
-        df_for_scene_method = {}
-        for scene_type in sorted(SCENE_TYPES):
-            scene_type = scene_type.replace('_', '+')
-            print("\nStatistical significance ({} DR):".format(scene_type))
-            dr_scene_type = {}
-            for baseline in methods:
-                d = df_for_method[baseline]
-                d = d.loc[d["scene_type"] == scene_type]
-                dr_scene_type[baseline_name(baseline)] = d["disc_return"]
-                df_for_scene_method[(scene_type, baseline)] = d
-            dfsig = test_significance_pairwise(dr_scene_type, sigstr=print_sigstr)
-            print("**For {}**".format(scene_type))
-            print(dfsig)
-            print("\n")
-
-        ### target-wise (DR)
-        print("--------------------------------------------------")
-        for scene_type in sorted(SCENE_TYPES):
-            scene_type = scene_type.replace('_', '+')
-            targets = df_all_rows.loc[df_all_rows["scene_type"] == scene_type]["target"].unique()
-            for target in targets:
-                print("\nStatistical significance ({}, {} DR):".format(scene_type, target))
-                dr_target = {}
-                for baseline in methods:
-                    d = df_for_scene_method[(scene_type, baseline)]
-                    dt = d.loc[d["target"] == target]
-                    dr_target[baseline_name(baseline)] = dt["disc_return"]
-                dfsig = test_significance_pairwise(dr_target, sigstr=print_sigstr)
-                print("**For {}**".format(target))
-                print(dfsig)
-                print("\n")
-
 
 
 class HistoryResult(YamlResult):
