@@ -25,7 +25,7 @@ def baseline_name(baseline):
 
 # True positive rate of object detection, BELOW (not including) which the class is
 # considered to be hard to detect.
-HARD_TO_DETECT_TP = 0.49
+HARD_TO_DETECT_TP = 0.4
 # Print string representation of statistical significance (e.g. *, **, ns)
 # instead of printing the p value
 SIGSTR = True
