@@ -295,3 +295,81 @@ def euclidean_dist(p1, p2):
 def indicies2d(m, n):
     # reference: https://stackoverflow.com/a/44230705/2893053
     return np.indices((m,n)).transpose(1,2,0)
+
+
+def tind_test(sample1, sample2):
+    """Performs a two-sample independent t-test.  Note that in statistics, a sample
+    is a set of individuals (observations) or objects collected or selected from
+    a statistical population by a defined procedure.
+
+    references:
+    https://www.reneshbedre.com/blog/ttest.html#two-sample-t-test-unpaired-or-independent-t-test.
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_ind.html
+
+    Formula:
+
+        t = (m1 - m2)  / sqrt ( s^2 (1/n1 + 1/n2) )
+
+    where m1, m2 are the means of two independent samples, and s^2 is the "pooled"
+    sample variance, calculated as:
+
+        s^2 = [ (n1-1)s1^2 + (n2-1)s2^2 ] / (n1 + n2 - 2)
+
+    and n1, n2 are the sample sizes
+
+    Note: Independent samples are samples that are selected randomly so that its
+    observations do not depend on the values other observations.
+
+    Args:
+        sample1 (list or numpy array)
+        sample2 (list or numpy array)
+    Returns:
+        (tstatistic, pvalue)
+    """
+    res = stats.ttest_ind(a=sample1, b=sample2, equal_var=True)
+    return res.statistic, res.pvalue
+
+def pval2str(pval):
+    """Converts p value to ns, *, **, etc.
+    Uses the common convention."""
+    if pval > 0.05:
+        return "ns"
+    else:
+        if pval <= 0.0001:
+            return "****"
+        elif pval <= 0.001:
+            return "***"
+        elif pval <= 0.01:
+            return "**"
+        else:
+            return "*"
+
+def test_significance_pairwise(results, sigstr=False):
+    """
+    Runs statistical significance tests for all pairwise combinations.
+    Returns result as a table. Uses two-sample t-test. Assumes independent sample.
+
+    Args:
+        results (dict): Maps from method name to a list of values for the result.
+        sigstr (bool): If True, then the table entries will be strings like *, **, ns etc;
+             otherwise, they will be pvalues.
+    Returns:
+        pd.DataFrame: (X, Y) entry will be the statistical significance between
+            method X and method Y.
+    """
+    method_names = list(results.keys())
+    rows = []
+    for meth1 in method_names:
+        row = []
+        for meth2 in method_names:
+            if meth1 == meth2:
+                row.append("-");
+            else:
+                _, pval = tind_test(results[meth1], results[meth2])
+                if sigstr:
+                    row.append(pval2str(pval))
+                else:
+                    row.append(pval)
+        rows.append(row)
+    df = pd.DataFrame(rows, method_names, method_names)
+    return df

@@ -1,5 +1,6 @@
 from thortils import compute_spl
-from cospomdp.utils.math import ci_normal
+from cospomdp.utils.math import ci_normal, test_significance_pairwise
+from cospomdp_apps.thor.constants import SCENE_TYPES
 from sciex import Result, PklResult, YamlResult
 import ai2thor.util.metrics as metrics
 import pandas as pd
@@ -21,6 +22,7 @@ def baseline_name(baseline):
                "hierarchical#corr-learned#vision": 'COS-POMDP (v, lrn)',
                "hierarchical#corr-wrong#vision": 'COS-POMDP (v, wrg)'}
     return mapping[baseline]
+
 
 class PathResult(PklResult):
     """
@@ -141,28 +143,28 @@ class PathResult(PklResult):
                 success_rate = row[2] / max(1, row[3])
                 all_rows.append([scene_type, scene, target] + row + [success_rate])
         columns = ["scene_type", "scene", "target"] + cls.sharedheader + ["success_rate"]
-        df = pd.DataFrame(all_rows, columns=columns)
+        df_all_rows = pd.DataFrame(all_rows, columns=columns)
 
         ci_func = lambda x: ci_normal(x, confidence_interval=0.95)
-        summary = df.groupby(['baseline'])\
-                    .agg([("avg", "mean"),
-                          "std",
-                          ("ci95", ci_func)])
-        summary_by_scene_type = df.groupby(['scene_type', 'baseline'])\
-                             .agg([("avg", "mean"),
-                                   "std",
-                                   ("ci95", ci_func),
-                                   ("count", "sum")])
-        summary_by_scene = df.groupby(['scene', 'baseline'])\
+        summary = df_all_rows.groupby(['baseline'])\
                              .agg([("avg", "mean"),
                                    "std",
                                    ("ci95", ci_func)])
-        summary_by_target = df.groupby(['target', 'baseline'])\
-                              .agg([("avg", "mean"),
-                                    "std",
-                                    ("ci95", ci_func),
-                                    ("count", "sum")])
-        df.to_csv(os.path.join(path, "path_result.csv"))
+        summary_by_scene_type = df_all_rows.groupby(['scene_type', 'baseline'])\
+                                           .agg([("avg", "mean"),
+                                                 "std",
+                                                 ("ci95", ci_func),
+                                                 ("count", "sum")])
+        summary_by_scene = df_all_rows.groupby(['scene', 'baseline'])\
+                                      .agg([("avg", "mean"),
+                                            "std",
+                                            ("ci95", ci_func)])
+        summary_by_target = df_all_rows.groupby(['target', 'baseline'])\
+                                       .agg([("avg", "mean"),
+                                             "std",
+                                             ("ci95", ci_func),
+                                             ("count", "sum")])
+        df_all_rows.to_csv(os.path.join(path, "path_result.csv"))
         summary.to_csv(os.path.join(path, "path_result_summary.csv"))
         summary_by_scene_type.to_csv(os.path.join(path, "path_result_summary-by-scene-type.csv"))
         summary_by_scene.to_csv(os.path.join(path, "path_result_summary-by-scene.csv"))
@@ -183,7 +185,7 @@ class PathResult(PklResult):
         table_rows = []
         for baseline in baseline_order:
             result_row = {('', 'Method'): baseline_name(baseline)}
-            for scene_type in ["bathroom", "bedroom", "kitchen", "living_room"]:
+            for scene_type in SCENE_TYPES:
                 scene_type = scene_type.replace('_', '+')
                 row = df.loc[(scene_type, baseline)]
 
@@ -247,6 +249,101 @@ class PathResult(PklResult):
         df_target.index = pd.MultiIndex.from_tuples(zip(df_target.loc[:, ('', 'Room Type')], df_target.loc[:, ('', 'Target Class')]))
         df_target = df_target.iloc[:, 2:]
         print(df_target.to_latex(multirow=True))
+
+        # Statistical significance
+        ## Obtain individual results by method
+        df_for_method = {}
+        methods = df_all_rows["baseline"].unique()
+        for baseline in methods:
+            df_method_all_rows = df_all_rows.loc[df_all_rows["baseline"] == baseline]
+            df_for_method[baseline] = df_method_all_rows
+
+        ## SPL
+        ### total (SPL)
+        print("--------------------------------------------------")
+        spl_totals = {
+            baseline_name(baseline): df_for_method[baseline]["spl"]
+            for baseline in df_for_method
+        }
+        dfsig = test_significance_pairwise(spl_totals, sigstr=True)
+        print("\nStatistical significance (overall SPL):")
+        print(dfsig)
+        print("\n")
+
+        ### scene-type-wise (SPL)
+        print("--------------------------------------------------")
+        df_for_scene_method = {}
+        for scene_type in SCENE_TYPES:
+            print("\nStatistical significance ({} SPL):".format(scene_type))
+            spl_scene_type = {}
+            for baseline in methods:
+                d = df_for_method[baseline]
+                d = d.loc[d["scene_type"] == scene_type]
+                spl_scene_type[baseline_name(baseline)] = d["spl"]
+                df_for_scene_method[(scene_type, baseline)] = d
+            dfsig = test_significance_pairwise(spl_scene_type, sigstr=True)
+            print("**For {}**".format(scene_type))
+            print(dfsig)
+            print("\n")
+
+        ### target-wise (SPL)
+        print("--------------------------------------------------")
+        for scene_type in SCENE_TYPES:
+            targets = df_all_rows.loc[df_all_rows["scene_type"] == scene_type]["target"].unique()
+            for target in targets:
+                print("\nStatistical significance ({}, {} SPL):".format(scene_type, target))
+                spl_target = {}
+                for baseline in methods:
+                    d = df_for_scene_method[(scene_type, baseline)]
+                    dt = d.loc[d["target"] == target]
+                    spl_target[baseline_name(baseline)] = dt["spl"]
+                dfsig = test_significance_pairwise(spl_target, sigstr=True)
+                print("**For {}**".format(target))
+                print(dfsig)
+                print("\n")
+
+        ## Discounted reward (SPL)
+        print("===================================================")
+        dr_totals = {
+            baseline_name(baseline): df_for_method[baseline]["disc_return"]
+            for baseline in df_for_method
+        }
+        dfsig = test_significance_pairwise(dr_totals, sigstr=True)
+        print("\nStatistical significance (overall DR):")
+        print(dfsig)
+        print("\n")
+
+        ### scene-type-wise (SPL)
+        print("--------------------------------------------------")
+        df_for_scene_method = {}
+        for scene_type in SCENE_TYPES:
+            print("\nStatistical significance ({} DR):".format(scene_type))
+            dr_scene_type = {}
+            for baseline in methods:
+                d = df_for_method[baseline]
+                d = d.loc[d["scene_type"] == scene_type]
+                dr_scene_type[baseline_name(baseline)] = d["disc_return"]
+                df_for_scene_method[(scene_type, baseline)] = d
+            dfsig = test_significance_pairwise(dr_scene_type, sigstr=True)
+            print("**For {}**".format(scene_type))
+            print(dfsig)
+            print("\n")
+
+        ### target-wise (SPL)
+        print("--------------------------------------------------")
+        for scene_type in SCENE_TYPES:
+            targets = df_all_rows.loc[df_all_rows["scene_type"] == scene_type]["target"].unique()
+            for target in targets:
+                print("\nStatistical significance ({}, {} DR):".format(scene_type, target))
+                dr_target = {}
+                for baseline in methods:
+                    d = df_for_scene_method[(scene_type, baseline)]
+                    dt = d.loc[d["target"] == target]
+                    dr_target[baseline_name(baseline)] = dt["disc_return"]
+                dfsig = test_significance_pairwise(dr_target, sigstr=True)
+                print("**For {}**".format(target))
+                print(dfsig)
+                print("\n")
 
 
 
