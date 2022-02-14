@@ -404,10 +404,10 @@ def test_significance_pairwise(results, sigstr=False, method="t_ind"):
                 else:
                     raise ValueError("Unable to perform significance test {}".format(method))
 
+                pvalstr = "{0:.4f}".format(pval)
                 if sigstr:
-                    row.append(pval2str(pval))
-                else:
-                    row.append(pval)
+                    pvalstr += " ({})".format(pval2str(pval))
+                row.append(pvalstr)
         rows.append(row)
     df = pd.DataFrame(rows, method_names, method_names)
     return df
