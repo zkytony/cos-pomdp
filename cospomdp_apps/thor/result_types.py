@@ -116,8 +116,9 @@ class PathResult(PklResult):
         rows = []
         for baseline in results:
             episode_results = []  # results for 'episodes' (i.e. individual search trials)
-            disc_returns = []   # discounted returns per trial (because each seed is a search trial for the same object)
+            disc_returns = []     # discounted returns per trial (because each seed is a search trial for the same object)
             success_count = 0
+            success_path_distances = []   # actual path distances for successful trials (added for camera-ready)
             for seed in results[baseline]:
                 path_result = results[baseline][seed]
                 if type(path_result) == dict:
@@ -127,10 +128,11 @@ class PathResult(PklResult):
                 disc_returns.append(disc_return)
                 if path_result.success:
                     success_count += 1
+                    success_path_distances.append(path_result.actual_path_distance)
 
             if len(episode_results) != 0 and all([None not in res for res in episode_results]):
                 spl = compute_spl(episode_results)
-                rows.append([baseline, spl, success_count, len(results[baseline]), np.mean(disc_returns)])
+                rows.append([baseline, spl, success_count, len(results[baseline]), np.mean(disc_returns), np.mean(success_path_distances)])
             else:
                 # one of the baselines does not have valid result (e.g. path to
                 # target not found).  will skip this scene-target object setting
@@ -138,7 +140,7 @@ class PathResult(PklResult):
                 # are comparable between all baselines.
                 return []
 
-        cls.sharedheader = ["baseline", "spl", "success", "total", "disc_return"]
+        cls.sharedheader = ["baseline", "spl", "success", "total", "disc_return", "success_path_dist"]
         return rows
 
     @classmethod
@@ -148,7 +150,7 @@ class PathResult(PklResult):
         for global_name in gathered_results:
             scene_type, scene, target = global_name.split("-")
             for row in gathered_results[global_name]:
-                success_rate = row[2] / max(1, row[3])
+                success_rate = row[2] / max(1, row[3])  # success / total
                 all_rows.append([scene_type, scene, target] + row + [success_rate])
         columns = ["scene_type", "scene", "target"] + cls.sharedheader + ["success_rate"]
         df_raw = pd.DataFrame(all_rows, columns=columns)
@@ -207,6 +209,7 @@ class PathResult(PklResult):
                 dr_avg = row[('disc_return', 'avg')]
                 dr_ci95 = row[('disc_return', 'ci95')]
                 dr = f"{dr_avg:.2f} ({dr_ci95:.2f})"
+
                 # success rate
                 sr_avg = row[('success_rate', 'avg')]
                 sr = f"{100*sr_avg:.2f}"
