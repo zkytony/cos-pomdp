@@ -1,13 +1,20 @@
 from thortils import compute_spl
-from cospomdp.utils.math import ci_normal, test_significance_pairwise
-from cospomdp_apps.thor.constants import SCENE_TYPES
+from cospomdp.utils.math import ci_normal, test_significance_pairwise, euclidean_dist
+from cospomdp_apps.thor.constants import (
+    SCENE_TYPES,
+    MOVE_STEP_SIZE,
+    H_ROTATION,
+    MAX_STEPS
+)
 from sciex import Result, PklResult, YamlResult
 import ai2thor.util.metrics as metrics
 import pandas as pd
 import seaborn as sns
 import pickle
 import numpy as np
+import sys
 import os
+ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # Note: For PklResult, it is not recommended to save the object directly
 # if it is of a custom class; Use it if you only save generic python objects
@@ -28,9 +35,21 @@ def baseline_name(baseline):
 HARD_TO_DETECT_TP = 0.4
 # Print string representation of statistical significance (e.g. *, **, ns)
 # instead of printing the p value
-SIGSTR = True
+SIGSTR = False
 # Statistical significance testing method
 SIGMETHOD = "wilcoxon"
+
+# Used to estimate path time
+LINEAR_SPEED=0.5  # m/s; slightly faster than roomba (0.3m/s)
+ANGULAR_SPEED=45  # degree/s; typical speed (my experience).
+## Necessary to estimate room sizes
+sys.path.insert(0, os.path.join(ABS_PATH, "../../experiments/thor"))
+from collect_scene_sizes import collect_val_scene_sizes
+print("Collecting scene sizes...")
+SCENE_SIZES=collect_val_scene_sizes()
+# Assumes it takes about 5 seconds to search within an area of size 1m^2; unit: second per meter squared
+EST_COVER_RATE=5
+
 
 class PathResult(PklResult):
     """
@@ -91,6 +110,41 @@ class PathResult(PklResult):
             discount *= self.discount_factor
         return ret
 
+    def estimate_time(self):
+        """If the search is successful, based purely on the search trajectory,
+        estimate the time taken to execute this trajectory using a
+        typical linear and angular velocity. If the search is
+        unsuccessful, then we set the estimated time to be EST_COVER_RATE(s/m^2)*Area.
+
+        Note that we cannot ignore the time of these failed
+        trajectories because otherwise we are not comparing the times
+        from the same runs. Also, when failure happens, we cannot make
+        use of the actual path because it might be short, but the
+        robot had made a mistake at Done; Technically, it would have
+        to start searching again.
+        """
+        if not self.success:
+            # failure
+            width, length = SCENE_SIZES[self.scene]['dim']
+            return EST_COVER_RATE*(width*length)
+        else:
+            traj_time = 0
+            for i in range(1, len(self.actual_path)):
+                # a point is (x, y, z); we can obtain the
+                # linear difference by subtracting the x, z
+                # coordinates. If they are the same, then
+                # a rotation took place. We use the rotation
+                # size defined in constants.
+                xcur, zcur = self.actual_path[i]['x'], self.actual_path[i]['z']
+                xprev, zprev = self.actual_path[i-1]['x'], self.actual_path[i-1]['z']
+                if xcur == xprev and zcur == zprev:
+                    # rotation action.
+                    traj_time += H_ROTATION / ANGULAR_SPEED
+                else:
+                    distdiff = euclidean_dist((xcur, zcur), (xprev, zprev))
+                    traj_time += distdiff / LINEAR_SPEED
+            return traj_time
+
     @classmethod
     def FILENAME(cls):
         return "paths.pkl"
@@ -118,7 +172,7 @@ class PathResult(PklResult):
             episode_results = []  # results for 'episodes' (i.e. individual search trials)
             disc_returns = []     # discounted returns per trial (because each seed is a search trial for the same object)
             success_count = 0
-            success_path_distances = []   # actual path distances for successful trials (added for camera-ready)
+            time_estimates = []   # actual path distances for successful trials (added for camera-ready)
             for seed in results[baseline]:
                 path_result = results[baseline][seed]
                 if type(path_result) == dict:
@@ -128,11 +182,11 @@ class PathResult(PklResult):
                 disc_returns.append(disc_return)
                 if path_result.success:
                     success_count += 1
-                    success_path_distances.append(path_result.actual_path_distance)
+                time_estimates.append(path_result.estimate_time())
 
             if len(episode_results) != 0 and all([None not in res for res in episode_results]):
                 spl = compute_spl(episode_results)
-                rows.append([baseline, spl, success_count, len(results[baseline]), np.mean(disc_returns), np.mean(success_path_distances)])
+                rows.append([baseline, spl, success_count, len(results[baseline]), np.mean(disc_returns), np.mean(time_estimates)])
             else:
                 # one of the baselines does not have valid result (e.g. path to
                 # target not found).  will skip this scene-target object setting
@@ -140,7 +194,7 @@ class PathResult(PklResult):
                 # are comparable between all baselines.
                 return []
 
-        cls.sharedheader = ["baseline", "spl", "success", "total", "disc_return", "success_path_dist"]
+        cls.sharedheader = ["baseline", "spl", "success", "total", "disc_return", "time_est"]
         return rows
 
     @classmethod
@@ -339,6 +393,15 @@ class PathResult(PklResult):
             df_raw, "disc_return", filter_func=lambda row: (row["scene_type"], row["target"]) in hard_to_detect_targets)
         PathResult._print_statistical_significance_matrix(
             dr_hard_to_detect, forwhat="Hard to Detect DR".format(scene_type, target), sigstr=SIGSTR)
+
+        time_hard_to_detect = PathResult._filter_results_and_organize_by_method(
+            df_raw, "time_est", filter_func=lambda row: (row["scene_type"], row["target"]) in hard_to_detect_targets)
+        PathResult._print_statistical_significance_matrix(
+            dr_hard_to_detect, forwhat="Time Estimate".format(scene_type, target), sigstr=SIGSTR)
+        _df_time = pd.DataFrame({"method": list(time_hard_to_detect.keys()),
+                                 "avg_time_est": [np.nanmean(time_hard_to_detect[method])
+                                                  for method in time_hard_to_detect]})
+        print(_df_time)
 
     @staticmethod
     def _filter_results_and_organize_by_method(df_complete, metric, filter_func=None):
