@@ -6,7 +6,7 @@ from cospomdp.models.correlation import CorrelationDist
 from cospomdp.models.observation_model import (FanModelYoonseon,
                                                FanModelNoFP)
 from cospomdp.models.reward_model import ObjectSearchRewardModel, NavRewardModel
-from cospomdp_apps.basic import RobotTransition2D, PolicyModel2D
+from cospomdp_apps.basic import RobotTransition2D, PolicyModel2D, initialize_target_belief_2d, update_target_belief_2d
 
 def test_agent_creation():
 
@@ -45,5 +45,7 @@ def test_agent_creation():
                      policy_model,
                      corr_dists,
                      detectors,
-                     reward_model)
+                     reward_model,
+                     initialize_target_belief_2d,
+                     update_target_belief_2d)
     assert agent.belief.mpe().s(robot_id)["pose"] == init_robot_pose
