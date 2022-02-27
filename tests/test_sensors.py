@@ -65,22 +65,23 @@ def test_fansensor3d_geometry(fansensor_big, dim, show_plots):
     if show_plots:
         fig, ax = plt.subplots()
 
-    assert 0 < pitch_facing((0,0,0), (0,5,3)) < 90
-    assert 270 < pitch_facing((0,0,0), (0,5,-3)) < 360
-    assert 270 < pitch_facing((2,2,0), (0,5,-3)) < 360
+    assert 0 < pitch_facing((0,0,0), (0.2,5,3)) < 90
+    assert 0 < pitch_facing((0,0,0), (0.2,5,-3)) < 180
+    assert 180 < pitch_facing((2,2,0), (0,5,-3)) < 270
 
     fan2d = fansensor_big
 
     fan3d = FanSensor3D(max_range=fan2d.max_range,
                         min_range=fan2d.min_range,
-                        fov=fan2d.fov)
+                        fov=fan2d.fov,
+                        v_angles=[-30, 0, 30, 60])
 
     assert fan3d._project2d((0, 0, 0, 0, 0)) == fan2d
 
     w, l = dim
-    thetas = [0, 30, 60, 90, 135, 180, 225, 275, 360]
+    thetas = [60, 225]
     pitches = [-60, -45, -30, -15, 0, 15, 30, 45, 60]
-    heights = [0, 2, 4, 6]
+    heights = [0, 3]
     robot_pos = (10, 10)
     for k in range(len(heights)):
         height = heights[k]
