@@ -68,11 +68,11 @@ You are expected to see something like:
 ======= 14 passed, 2 skipped, 3 warnings in 43.71s ======
 ```
 
-At this point, you should be able to run a basic object search domain with COS-POMDP. A
+At this point, you should be able to run a basic object search domain with COS-POMDP.
 ```
 python -m cospomdp_apps.basic.search
 ```
-pygame window will be displayed
+A pygame window will be displayed
 
 ### To Run in Ai2Thor 
 (Skip this if you are running on a computer connected to a display) If you are running offline, or on a server, make sure there is an x server running.
