@@ -53,7 +53,6 @@ if [ $setup_repos = true ]; then
     pip install torchvision
     pip install networkx
     pip install pytest
-    pip install sciex
     pip install gdown
 
     cd external

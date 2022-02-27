@@ -16,7 +16,8 @@ setup(name='cos-pomdp',
           'prettytable',
           'pytz',
           'pandas',
-          'seaborn'
+          'seaborn',
+          'sciex==0.3',
       ],
       author='Kaiyu Zheng',
       author_email='kaiyutony@gmail.com')
