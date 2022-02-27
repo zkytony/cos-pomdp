@@ -51,6 +51,8 @@ if [ $setup_repos = true ]; then
     pip install numpy
     pip install matplotlib
     pip install torchvision
+    pip install networkx
+    pip install pytest
 
     cd external
     # clone thortils
@@ -67,7 +69,7 @@ cd $repo_root
 
 # ask if want to create alias command
 if [[ $source_venv = false ]]; then
-    read -p "Create alias cosp for starting cos-pomdp venv? " -n 1 -r
+    read -p "Create alias 'cosp' for starting cos-pomdp venv? " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]];
     then
