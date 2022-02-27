@@ -4,7 +4,8 @@ from cospomdp_apps.thor.constants import (
     SCENE_TYPES,
     MOVE_STEP_SIZE,
     H_ROTATION,
-    MAX_STEPS
+    MAX_STEPS,
+    GRID_SIZE
 )
 from sciex import Result, PklResult, YamlResult
 import ai2thor.util.metrics as metrics
@@ -41,14 +42,19 @@ SIGMETHOD = "wilcoxon"
 
 # Used to estimate path time
 LINEAR_SPEED=0.5  # m/s; slightly faster than roomba (0.3m/s)
-ANGULAR_SPEED=45  # degree/s; typical speed (my experience).
+ANGULAR_SPEED=60  # degree/s; typical speed (my experience).
 ## Necessary to estimate room sizes
 sys.path.insert(0, os.path.join(ABS_PATH, "../../experiments/thor"))
 from collect_scene_sizes import collect_val_scene_sizes
 print("Collecting scene sizes...")
 SCENE_SIZES=collect_val_scene_sizes()
-# Assumes it takes about 5 seconds to search within an area of size 1m^2; unit: second per meter squared
-EST_COVER_RATE=5
+# Seconds assumed to take to search within an area of size 1m^2; unit: second per meter squared
+EST_COVER_RATE=10
+_areas = []
+for scene in SCENE_SIZES:
+    w_m, h_m = SCENE_SIZES[scene]["dim"]
+    _areas.append(w_m*h_m)
+print("Average room area (m^2): ", np.mean(_areas))
 
 
 class PathResult(PklResult):
@@ -125,8 +131,8 @@ class PathResult(PklResult):
         """
         if not self.success:
             # failure
-            width, length = SCENE_SIZES[self.scene]['dim']
-            return EST_COVER_RATE*(width*length)
+            width_m, length_m = SCENE_SIZES[self.scene]['dim']
+            return EST_COVER_RATE*(width_m*length_m)
         else:
             traj_time = 0
             for i in range(1, len(self.actual_path)):

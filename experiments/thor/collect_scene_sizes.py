@@ -26,7 +26,7 @@ def collect_val_scene_sizes():
         for scene in tt.ithor_scene_names(scene_type, range(21, 31)):
             grid_size = constants.GRID_SIZE
             grid_map = load_grid_map(scene, grid_size)
-            dim = (grid_map.width, grid_map.length)
+            dim = (grid_map.width*grid_size, grid_map.length*grid_size)
             free_area = len(grid_map.free_locations) * grid_size**2
             result[scene] = {"dim": dim, "free_area": free_area}
     return result
