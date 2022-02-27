@@ -40,9 +40,12 @@ such as ai2thor.
 
 ### Requirements
 * Ubuntu 18.04+
-* Python 3.8+ 
+* Python 3.8+
 
-Check out instructions to use the Dockerfile if you don't meet these requirements
+If your system does not meet these requirements, you can use Docker. Although we do not provide
+currently a Dockerfile (help would be appreciated), you could build upon the [ubuntu:20.04](https://hub.docker.com/layers/ubuntu/library/ubuntu/20.04/images/sha256-7c9c7fed23def3653a0da5bc9ecb651efe155ebd5802c7ba5d585edaa6c89496?context=explore) image (recommended)
+or [ai2thor-docker](https://github.com/allenai/ai2thor-docker) (I have not tried),
+and then do the following instructions inside it. You can set up X11 forwarding to enable GUI inside docker.
 
 ### Setup Repo
 Clone the repo:
@@ -74,7 +77,7 @@ python -m cospomdp_apps.basic.search
 ```
 A pygame window will be displayed
 
-### To Run in Ai2Thor 
+### To Run in Ai2Thor
 (Skip this if you are running on a computer connected to a display) If you are running offline, or on a server, make sure there is an x server running.
 You can do this by:
 1. Creating the [`xorg_conf`](https://www.x.org/releases/current/doc/man/man5/xorg.conf.5.xhtml) file. (Check [this out](https://github.com/allenai/ai2thor/issues/886))
