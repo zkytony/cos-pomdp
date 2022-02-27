@@ -126,7 +126,25 @@ ln -sf $HOME/repo/cos-pomdp/external/mjolnir/ mjolnir
 **Note**: setup for SAVN, MJOLNIR etc. were attempted during the project; MJOLNIR can run but does not work well.
 
 
-## AI2-Thor Setup
+# Experiment Results
+You can download experiment results (individual trials) from this Google Drive file link: [cospomdp-results-final.zip](https://drive.google.com/uc?id=1H4LDyJyVWz2UNr91kzs7eBulxW4zT-MK) (45.1MB)
+Place this file under the `results/` folder and decompress it.
+You can gather statistics by running:
+```
+cd cospomdp-results-final
+python gather_results.py
+```
+Refer to the [sciex](https://github.com/zkytony/sciex) package for more information on the experiment framework.
+
+You can replay a trial by:
+```
+python -m cospomdp_apps.thor.replay <trial_name>
+```
+The `<trial_name>` is the name of a directory inside `cospomdp-results-final`, for example `bathroom-FloorPlan421-Candle_000_random#gt`.
+Note that the dynamically generated topological graph was not saved therefore is not visualized.
+
+
+## Appendix: AI2-Thor Constants Configuration
 
 Compare with:
 - [1] IQA (CVPR'18)
@@ -146,13 +164,3 @@ Compare with:
 | ours             | 0.25      | 45       | 30       | 90  |
 
 Constants can be found in `cospomdp_apps/thor/constants.py`.
-
-# Experiment Results
-You can download experiment results (individual trials) from this Google Drive file link: [cospomdp-results-final.zip](https://drive.google.com/uc?id=1H4LDyJyVWz2UNr91kzs7eBulxW4zT-MK) (45.1MB)
-Place this file under the `results/` folder and decompress it.
-You can gather statistics by running:
-```
-cd cospomdp-results-final
-python gather_results.py
-```
-Refer to the [sciex](https://github.com/zkytony/sciex) package for more information on the experiment framework.
