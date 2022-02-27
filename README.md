@@ -4,9 +4,8 @@ This is the repository for "[Towards Optimal Correlational Object Search](https:
 * [paper on arxiv](https://arxiv.org/pdf/2110.09991.pdf)
 * [Video on youtube](https://www.youtube.com/watch?v=RneTq4o0a-A&feature=emb_title)
 
-
-What is COS-POMDP?
-COS-POMDP is a POMDP.
+COS-POMDP stands for Correlational Object Search Partially Observable Markov Decision Process.
+Essentially, COS-POMDP is a POMDP.
 This package defines that POMDP and a planner to solve it.
 This package also includes instantiation of this POMDP to Ai2Thor for object search.
 
@@ -16,7 +15,7 @@ Do all the necessary state (e.g. coordinate) conversions.
 You create one or more planner given that POMDP.
 Then, you have a POMDP and a solver for it!
 
-Technically, COS-POMDP stands for Correlational Object Search Partially Observable Markov Decision Process.
+
 
 ## Organization
 Contains two packages: `cospomdp` and `cospomdp_apps`.
@@ -126,7 +125,7 @@ ln -sf $HOME/repo/cos-pomdp/external/mjolnir/ mjolnir
 **Note**: setup for SAVN, MJOLNIR etc. were attempted during the project; MJOLNIR can run but does not work well.
 
 
-# Experiment Results
+## Experiment Results
 You can download experiment results (individual trials) from this Google Drive file link: [cospomdp-results-final.zip](https://drive.google.com/uc?id=1H4LDyJyVWz2UNr91kzs7eBulxW4zT-MK) (45.1MB)
 Place this file under the `results/` folder and decompress it.
 You can gather statistics by running:
