@@ -131,3 +131,14 @@ Compare with:
 
 Check out requirements.txt. This is created under
 the `cosp` virtual environment (07-24-2021).
+
+
+## Citation
+```
+@inproceedings{zheng2022towards,
+  title={Towards Optimal Correlational Object Search,
+  booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
+  author={Zheng, Kaiyu and Chitnis, Rohan and Sung, Yoonchang and Konidaris, George and Tellex, Stefanie},
+  year={2022}
+}
+```
