@@ -144,3 +144,12 @@ Compare with:
 
 Constants can be found in `cospomdp_apps/thor/constants.py`.
 
+# Experiment Results
+You can download experiment results (individual trials) from this Google Drive file link: [cospomdp-results-final.zip](https://drive.google.com/uc?id=1H4LDyJyVWz2UNr91kzs7eBulxW4zT-MK) (45.1MB)
+Place this file under the `results/` folder and decompress it.
+You can gather statistics by running:
+```
+cd cospomdp-results-final
+python gather_results.py
+```
+Refer to the [sciex](https://github.com/zkytony/sciex) package for more information on the experiment framework.
