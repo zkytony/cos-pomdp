@@ -1,4 +1,17 @@
 #!/bin/bash
+source_venv=true
+if [[ "$VIRTUAL_ENV" == *"cosp"* ]]; then
+    source_venv=false
+fi
+
+if [ $source_venv = true ]; then
+    # we would like to activate the vritualenv and it's there
+    if [ -d venv/cosp ]; then
+        source venv/cosp/bin/activate
+        exit 0
+    fi
+fi
+
 # Run this script from repository root
 if [[ ! $PWD = *cos-pomdp ]]; then
     echo "You must be in the root directory of the cos-pomdp repository."
@@ -10,15 +23,6 @@ if [ ! -d "venv/cosp" ]; then
     virtualenv -p python3 venv/cosp
     source venv/cosp/bin/activate
     pip install -e .  # install the cos-pomdp package
-fi
-
-source_venv=true
-if [[ "$VIRTUAL_ENV" == *"cosp"* ]]; then
-    source_venv=false
-fi
-
-if [ $source_venv = true ]; then
-    source venv/cosp/bin/activate
 fi
 
 # Parse arguments
