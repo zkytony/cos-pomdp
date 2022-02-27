@@ -1,6 +1,10 @@
 #!/bin/bash
-
-cd $HOME/repo/cos-pomdp/
+# Run this script from repository root
+if [[ ! $PWD = *cos-pomdp ]]; then
+    echo "You must be in the root directory of the cos-pomdp repository."
+    return 1
+fi
+repo_root=$PWD
 
 if [ ! -d "venv/cosp" ]; then
     virtualenv -p python3 venv/cosp
@@ -67,7 +71,7 @@ if [ $setup_repos = true ]; then
         cd ..
     fi
 fi
-cd $HOME/repo/cos-pomdp/
+cd $repo_root
 
 # Submodules
 if [ $update_submodules = true ]; then
@@ -85,6 +89,6 @@ if [[ $source_venv = false ]]; then
     echo
     if [[ $REPLY =~ ^[Yy]$ ]];
     then
-        echo -e "alias cosp='source $HOME/repo/cos-pomdp/setup.bash'" >> ~/.bashrc
+        echo -e "alias cosp='source $repo_root/setup.bash'" >> ~/.bashrc
     fi
 fi
