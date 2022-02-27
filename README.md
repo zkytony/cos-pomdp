@@ -1,5 +1,11 @@
 # cos-pomdp
 
+This is the repository for "[Towards Optimal Correlational Object Search](https://arxiv.org/pdf/2110.09991.pdf)" (ICRA 2022).
+* [paper on arxiv](https://arxiv.org/pdf/2110.09991.pdf)
+* [Video on youtube](https://www.youtube.com/watch?v=RneTq4o0a-A&feature=emb_title)
+
+
+What is COS-POMDP?
 COS-POMDP is a POMDP.
 This package defines that POMDP and a planner to solve it.
 This package also includes instantiation of this POMDP to Ai2Thor for object search.
@@ -10,12 +16,25 @@ Do all the necessary state (e.g. coordinate) conversions.
 You create one or more planner given that POMDP.
 Then, you have a POMDP and a solver for it!
 
+Technically, COS-POMDP stands for Correlational Object Search Partially Observable Markov Decision Process.
+
 ## Organization
 Contains two packages: `cospomdp` and `cospomdp_apps`.
 The former defines the COS-POMDP (domain, models, agent, planner)
 and the latter applies COS-POMDP to specific applications
 such as ai2thor.
 
+
+
+## Citation
+```
+@inproceedings{zheng2022towards,
+  title={Towards Optimal Correlational Object Search,
+  booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
+  author={Zheng, Kaiyu and Chitnis, Rohan and Sung, Yoonchang and Konidaris, George and Tellex, Stefanie},
+  year={2022}
+}
+```
 
 ## Installation and Setup
 
@@ -125,13 +144,3 @@ Compare with:
 
 Constants can be found in `cospomdp_apps/thor/constants.py`.
 
-
-## Citation
-```
-@inproceedings{zheng2022towards,
-  title={Towards Optimal Correlational Object Search,
-  booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
-  author={Zheng, Kaiyu and Chitnis, Rohan and Sung, Yoonchang and Konidaris, George and Tellex, Stefanie},
-  year={2022}
-}
-```
