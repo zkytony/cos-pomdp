@@ -10,14 +10,9 @@ Do all the necessary state (e.g. coordinate) conversions.
 You create one or more planner given that POMDP.
 Then, you have a POMDP and a solver for it!
 
-Installation
-```
-pip install -e .
-```
-This will install `cospomdp` which is the core code for the POMDP components,
+Installation: see the Wiki page  ["Setting up COS POMDP project"](https://github.com/zkytony/cos-pomdp/wiki/Setting-up-COS-POMDP-project). This will install `cospomdp` which is the core code for the POMDP components,
 and `cospomdp_apps` which contains application to the POMDP to several domains.
-
-Test basic example:
+After installation is successful, you could test out the basic example:
 ```
 python -m cospomdp_apps.basic.search
 ```
