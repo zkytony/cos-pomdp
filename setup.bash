@@ -35,45 +35,8 @@ do
     fi
 done
 
-# clone and install necessary repositories, if not yet already
-if [ $setup_repos = true ]; then
-    pip install numpy
-    pip install matplotlib
-
-    # clone and install pomdp-py
-    cd $HOME/repo/
-    if [ ! -d "pomdp-py" ]; then
-        git clone git@github.com:h2r/pomdp-py.git
-        cd pomdp-py
-        sudo apt install graphviz
-        pip install Cython
-        pip install -e .
-        make build
-        cd ..
-    fi
-
-    # clone thortils
-    if [ ! -d "thortils" ]; then
-        git clone git@github.com:zkytony/thortils.git
-        cd thortils
-        git checkout v3.3.4
-        git pull
-        pip install -e .
-        cd ..
-    fi
-
-    # clone mos3d
-    if [ ! -d "mos3d" ]; then
-        git clone git@github.com:zkytony/mos3d-prep.git
-        mv mos3d-prep mos3d
-        cd mos3d
-        pip install -e .
-        cd ..
-    fi
-fi
-cd $repo_root
-
 # Submodules
+cd $repo_root
 if [ $update_submodules = true ]; then
     git submodule update --force --recursive --init --remote
 fi
@@ -82,6 +45,25 @@ fi
 if [ ! -e "cospomdp_apps/thor/mjolnir" ]; then
     ln -sf $(readlink -f external/mjolnir) cospomdp_apps/thor/mjolnir
 fi
+
+# clone and install necessary repositories, if not yet already
+if [ $setup_repos = true ]; then
+    pip install numpy
+    pip install matplotlib
+    pip install torchvision
+
+    cd external
+    # clone thortils
+    if [ ! -d "thortils" ]; then
+        git clone git@github.com:zkytony/thortils.git
+        cd thortils
+        git checkout v3.3.4-stable
+        git pull
+        pip install -e .
+        cd ..
+    fi
+fi
+cd $repo_root
 
 # ask if want to create alias command
 if [[ $source_venv = false ]]; then
