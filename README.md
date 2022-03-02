@@ -47,8 +47,9 @@ or [ai2thor-docker](https://github.com/allenai/ai2thor-docker) (I have not tried
 and then do the following instructions inside it. You can set up X11 forwarding to enable GUI inside docker.
 
 Note on dependencies: `requirements_snapshot.txt` contains a dump of the installed pip packages
-at the time when the experiments were conducted. COS-POMDP should work
-if you choose to install the latest versions of those packages that contain security vulnerability fixes (e.g. for [Pillow](https://snyk.io/vuln/pip:pillow)),
+at the time when the experiments were conducted. You don't have to install dependencies through
+this file. Just follow the steps below. COS-POMDP should still work with
+the latest versions of those packages that contain security vulnerability fixes (e.g. for [Pillow](https://snyk.io/vuln/pip:pillow)),
 with minor changes when interfacing with those packages, as long as the functionalities of those packages are preserved.
 
 
