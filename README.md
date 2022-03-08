@@ -111,12 +111,6 @@ This will run a search trial for AlarmClock in a bedroom scene. When everything 
 Note that the search process may vary due to random sampling during planning.
 
 
-Installation: see the Wiki page  ["Setting up COS POMDP project"](https://github.com/zkytony/cos-pomdp/wiki/Setting-up-COS-POMDP-project). This will install `cospomdp` which is the core code for the POMDP components,
-and `cospomdp_apps` which contains application to the POMDP to several domains.
-After installation is successful, you could test out the basic example:
-```
-python -m cospomdp_apps.basic.search
-```
 
 ### Caveats
 The external methods, e.g. SAVN, MJOLNIR, are placed under `cos-pomdp/external`.
