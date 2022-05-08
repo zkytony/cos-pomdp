@@ -7,9 +7,14 @@ This is the repository for "[Towards Optimal Correlational Object Search](https:
 **Abstract:**
 In realistic applications of **object search**, robots will need to locate target objects in complex environments while coping with **unreliable sensors**, especially for **small or hard-todetect objects**. In such settings, **correlational information** can be valuable for planning efficiently. Previous approaches that consider correlational information typically resort to ad-hoc, greedy search strategies. We introduce the **Correlational Object Search POMDP (COS-POMDP)**, which models correlations while preserving optimal solutions with a reduced state space. We propose **a hierarchical planning algorithm** to scale up COS-POMDPs for practical domains. Our evaluation, conducted with the AI2-THOR household simulator and the YOLOv5 object detector, shows that our method finds objects more successfully and efficiently compared to baselines, particularly for hard-to-detect objects such as srub brush and remote control.
 
-* [Paper on arxiv](https://arxiv.org/pdf/2110.09991.pdf)
-* [Presentation video on Youtube](https://www.youtube.com/watch?v=-eehMN6sod8&ab_channel=KaiyuZheng)
-* [Demo video on Youtube](https://www.youtube.com/watch?v=RneTq4o0a-A&feature=emb_title)
+
+
+![cospomdp-example-creditcard](https://user-images.githubusercontent.com/7720184/167313059-34f03724-f9b4-49ed-bd99-bfbf134abfb8.gif)
+
+
+* Paper on arxiv: https://arxiv.org/pdf/2110.09991.pdf
+* Presentation video on Youtube: https://www.youtube.com/watch?v=-eehMN6sod8
+* More demos: https://www.youtube.com/watch?v=RneTq4o0a-A
 
 
 ## Organization
