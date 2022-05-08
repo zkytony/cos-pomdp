@@ -3,29 +3,21 @@
 # cos-pomdp
 
 This is the repository for "[Towards Optimal Correlational Object Search](https://arxiv.org/pdf/2110.09991.pdf)" (ICRA 2022).
-* [paper on arxiv](https://arxiv.org/pdf/2110.09991.pdf)
-* [Video on youtube](https://www.youtube.com/watch?v=RneTq4o0a-A&feature=emb_title)
 
-COS-POMDP stands for Correlational Object Search Partially Observable Markov Decision Process.
-Essentially, COS-POMDP is a POMDP.
-This package defines that POMDP and a planner to solve it.
-This package also includes instantiation of this POMDP to Ai2Thor for object search.
+**Abstract:**
+In realistic applications of **object search**, robots will need to locate target objects in complex environments while coping with **unreliable sensors**, especially for **small or hard-todetect objects**. In such settings, **correlational information** can be valuable for planning efficiently. Previous approaches that consider correlational information typically resort to ad-hoc, greedy search strategies. We introduce the **Correlational Object Search POMDP (COS-POMDP)**, which models correlations while preserving optimal solutions with a reduced state space. We propose **a hierarchical planning algorithm** to scale up COS-POMDPs for practical domains. Our evaluation, conducted with the AI2-THOR household simulator and the YOLOv5 object detector, shows that our method finds objects more successfully and efficiently compared to baselines, particularly for hard-to-detect objects such as srub brush and remote control.
 
-How should a POMDP project be developed?
-You define the POMDP. Then, instantiate it on your domain.
-Do all the necessary state (e.g. coordinate) conversions.
-You create one or more planner given that POMDP.
-Then, you have a POMDP and a solver for it!
-
+* [Paper on arxiv](https://arxiv.org/pdf/2110.09991.pdf)
+* [Presentation video on Youtube](https://www.youtube.com/watch?v=-eehMN6sod8&ab_channel=KaiyuZheng)
+* [Demo video on Youtube](https://www.youtube.com/watch?v=RneTq4o0a-A&feature=emb_title)
 
 
 ## Organization
-Contains two packages: `cospomdp` and `cospomdp_apps`.
-The former defines the COS-POMDP (domain, models, agent, planner)
+Contains two packages: [cospomdp](https://github.com/zkytony/cos-pomdp/tree/master/cospomdp) and [cospomdp_apps](https://github.com/zkytony/cos-pomdp/tree/master/cospomdp_apps).
+The former defines the COS-POMDP (domain, models, agent)
 and the latter applies COS-POMDP to specific applications
-such as ai2thor.
-
-
+such as AI2-THOR, along with [agents](https://github.com/zkytony/cos-pomdp/tree/master/cospomdp_apps/thor/agent) that can perform object search
+in the specific application domain.
 
 ## Citation
 ```
