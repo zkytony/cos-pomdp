@@ -1,3 +1,5 @@
+<img src='https://user-images.githubusercontent.com/7720184/167312293-6a747b75-497b-406a-b4c3-231ed18d64e4.png' width="800px">
+
 # cos-pomdp
 
 This is the repository for "[Towards Optimal Correlational Object Search](https://arxiv.org/pdf/2110.09991.pdf)" (ICRA 2022).
