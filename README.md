@@ -14,7 +14,8 @@ In realistic applications of **object search**, robots will need to locate targe
 
 * Paper on arxiv: https://arxiv.org/pdf/2110.09991.pdf
 * Presentation video on Youtube: https://www.youtube.com/watch?v=-eehMN6sod8
-* More demos: https://www.youtube.com/watch?v=RneTq4o0a-A
+* More sim demos: https://www.youtube.com/watch?v=RneTq4o0a-A
+* Robot demo (on Boston Dynamics Spot): https://www.youtube.com/watch?v=9tCnRTZa9C4&t=7s
 
 
 ## Organization
