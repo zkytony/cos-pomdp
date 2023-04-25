@@ -13,14 +13,16 @@
 # limitations under the License.
 
 import math
-from cospomdp.utils.math import to_deg, closest, to_rad, fround
-from cospomdp.models.transition_model import RobotTransition
-from cospomdp.models.sensors import yaw_facing, pitch_facing
+
 from cospomdp.domain.action import Done
 from cospomdp.domain.state import RobotStatus
-from .state import RobotState3D
+from cospomdp.models.sensors import yaw_facing, pitch_facing
+from cospomdp.models.transition_model import RobotTransition
+from cospomdp.utils.math import to_rad, fround
 from .action import MoveTopo, Move
+from .state import RobotState3D
 from .state import RobotStateTopo
+
 
 class RobotTransitionTopo(RobotTransition):
 
@@ -50,7 +52,8 @@ class RobotTransitionTopo(RobotTransition):
                 next_pose = (*next_robot_pos, yaw)
                 next_topo_nid = action.dst_nid
             else:
-                print(":::::WARNING::::: Unexpected action {} for robot state {}. Ignoring action".format(action, srobot))
+                print(
+                    ":::::WARNING::::: Unexpected action {} for robot state {}. Ignoring action".format(action, srobot))
 
         elif isinstance(action, Done):
             next_status = RobotStatus(done=True)
@@ -82,16 +85,18 @@ def robot_pose_transition3d(robot_pose, action):
     rx, ry, rz, pitch, yaw = robot_pose
     forward, h_angle, v_angle = action.delta
     new_yaw = (yaw + h_angle) % 360
-    nx = rx + forward*math.cos(to_rad(new_yaw))
-    ny = ry + forward*math.sin(to_rad(new_yaw))
+    nx = rx + forward * math.cos(to_rad(new_yaw))
+    ny = ry + forward * math.sin(to_rad(new_yaw))
     new_pitch = (pitch + v_angle) % 360
     return (nx, ny, rz, new_pitch, new_yaw)
+
 
 def _to_full_pose(srobot):
     x, y, yaw = srobot["pose"]
     pitch = srobot.horizon
     z = srobot.height
     return (x, y, z, pitch, yaw)
+
 
 def _to_state_pose(full_pose):
     x, y, z, pitch, yaw = full_pose
@@ -120,9 +125,14 @@ class RobotTransition3D(RobotTransition):
         elif isinstance(action, Done):
             next_robot_status = RobotStatus(done=True)
 
+        current_pose2d, current_height, current_pitch = _to_state_pose(current_robot_pose)
+        current_position = current_pose2d[:2]
+
         next_pose2d, height, pitch = _to_state_pose(next_robot_pose)
-        if pitch not in self._v_angles\
-           or next_pose2d[:2] not in self.reachable_positions:
+        next_position = next_pose2d[:2]
+        position_unreachable = next_position != current_position and next_position not in self.reachable_positions
+        pitch_unreachable = pitch not in self._v_angles
+        if pitch_unreachable or position_unreachable:
             return RobotState3D(self.robot_id, srobot["pose"],
                                 height, srobot.horizon, next_robot_status)
         else:

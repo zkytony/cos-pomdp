@@ -376,10 +376,10 @@ class ThorObjectSearchCompleteCosAgent(ThorObjectSearchCosAgent):
             else:
                 # replan
                 self._loop_counter += 1
-                print("Loop", self._loop_count)
+                print("Loop", self._loop_counter)
                 action = self.act()
         else:
-            self._loop_count = 0
+            self._loop_counter = 0
             assert isinstance(action, TOS_Action)
 
         return action

@@ -196,7 +196,7 @@ def make_trial(method, run_num, scene_type, scene, target, detector_models,
     config["viz_config"] = {
         'res': viz_res
     }
-    trial_name = f"{scene_type.replace('_', '+')}-{scene}-{target}_{run_num:0>3}_{Methods.get_name(method)}"
+    trial_name = f"{scene_type.replace('_', '+')}-{scene.replace('_', '+')}-{target}_{run_num:0>3}_{Methods.get_name(method)}"
     trial = ThorObjectSearchTrial(trial_name, config, verbose=True)
     return trial
 

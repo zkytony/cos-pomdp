@@ -144,7 +144,7 @@ class MacroMoveHandler(GoalHandler):
             return None
 
     def update(self, tos_action, tos_observation):
-        if self._index >= len(self._plan):
+        if self.done:
             return  # the index is already out of bound. we are done
 
         # Check if the robot pose is expected
