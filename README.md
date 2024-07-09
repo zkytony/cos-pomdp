@@ -132,7 +132,7 @@ ln -sf $HOME/repo/cos-pomdp/external/mjolnir/ mjolnir
 
 
 ## Experiment Results
-You can download experiment results (individual trials) from this Google Drive file link: [cospomdp-results-final.zip](https://drive.google.com/uc?id=1H4LDyJyVWz2UNr91kzs7eBulxW4zT-MK) (45.1MB)
+You can download experiment results (individual trials) from this Google Drive file link: [cospomdp-results-final.zip](https://drive.google.com/file/d/1DJFZLf2QTnQ-NE2IVbdClvQeP-jjwT3s) (45.1MB)
 Place this file under the `results/` folder and decompress it.
 You can gather statistics by running:
 ```
