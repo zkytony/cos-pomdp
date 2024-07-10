@@ -23,7 +23,7 @@ outfname = "yolov5-training-data.zip"
 output = f"data/{outfname}"
 if not os.path.exists(output):
     print("Downloading yolov5 training data")
-    yolov5_training_data_url = "https://drive.google.com/uc?id=1V0GC3wyTsrEAaDfXR0ZyGWLY4j2hYMsx"
+    yolov5_training_data_url = "https://drive.google.com/uc?id=1hAdoD4-mcCbVovR4aO2qASN4EXbWsx8p"
     gdown.download(yolov5_training_data_url, output, quiet=False)
     cmd=f'''
 cd data/
@@ -52,7 +52,7 @@ outfname = "yolov5-detectors.zip"
 output = f"models/{outfname}"
 if not os.path.exists(output):
     print("Downloading yolov5 detectors")
-    yolov5_detector_url = "https://drive.google.com/uc?id=1gfgtLgyLpYa0YLsHkpBF2YWioHR3_ilw"
+    yolov5_detector_url = "https://drive.google.com/uc?id=1gOdgkOeLnLB0v4PAeA4pJ9IslfpOP6Ih"
     gdown.download(yolov5_detector_url, output, quiet=False)
     cmd=f'''
 cd models/
@@ -79,7 +79,7 @@ outfname = "corrs.zip"
 output = f"data/thor/{outfname}"
 if not os.path.exists(output):
     print("Downloading corr distances")
-    corr_distances_url = "https://drive.google.com/uc?id=1uKekHoUcIOKPuVfD02YzYTk908SeGKbm"
+    corr_distances_url = "https://drive.google.com/uc?id=1btyqud0KP1pvuUpGr7_h8PB0t_Yfkyzo"
     gdown.download(corr_distances_url, output, quiet=False)
     cmd=f'''
 cd data/thor
